@@ -1,0 +1,24 @@
+<!doctype html><meta charset="utf-8"><title>S02 isolated browser measurement</title>
+<style>body{margin:8px;font:14px Arial}iframe{width:100%;height:82vh;border:1px solid #888}pre{white-space:pre-wrap}</style>
+<h1>S02 synthetic browser baseline — 200 visits / 200 agendas</h1>
+<p>Read-only localhost probes. Original Admin UI below. No production services. Keep this tab visible.</p>
+<button id="run">Run 1 observed navigation + 5 warmups + 30 samples</button><pre id="status">Ready</pre><iframe id="app" title="Unchanged Admin UI"></iframe>
+<script>
+document.getElementById('run').onclick=async()=>{
+ const button=document.getElementById('run'),status=document.getElementById('status'),frame=document.getElementById('app');button.disabled=true;
+ const runs=[];let firstObserved;
+ try{
+  for(let i=0;i<36;i++){
+   if(document.visibilityState!=='visible')throw Error('Runner hidden');
+   status.textContent='Navigation '+(i+1)+' / 36';
+   await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(Error('Navigation timeout')),30000);frame.onload=()=>{clearTimeout(timeout);resolve();};frame.src='/app?iteration='+i;});
+   const w=frame.contentWindow;await w.s02.wait(()=>w.s02.metrics.navigationToAllDataPaint);
+   const result=await w.s02.exercise();if(result.failures)throw Error('Browser error count '+result.failures);
+   if(i===0)firstObserved=result;if(i>=6)runs.push(result);
+  }
+  const result={environment:{userAgent:navigator.userAgent,width:frame.clientWidth,height:frame.clientHeight,dpr:devicePixelRatio},firstObserved,runs};
+  const saved=await fetch('/results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(result)});if(!saved.ok)throw Error(await saved.text());
+  status.textContent='Completed: 30 valid samples saved. First observed and 5 warmups excluded from distributions.';
+ }catch(error){status.textContent='FAILED: '+error.message;}finally{button.disabled=false;}
+};
+</script>
