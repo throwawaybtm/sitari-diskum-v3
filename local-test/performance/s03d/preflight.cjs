@@ -1,5 +1,6 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path');
+const {isImmutableVersion}=require('./immutable-version.cjs');
 const BASE='d1d02475acba50439835c8fcc5b163828897e9ea';
 const KEYS=['mode','sourceCommit','adminProjectId','publicProjectId','publicLibraryId','publicLibraryVersion','spreadsheetId','folderId','documentIds','claims'];
 const CLAIMS=['dedicatedAccountNoProductionAccess','syntheticOnly','noProductionCredentials','privateTestResources','readOnlyScopes','entryGuardsRemovedInStagingOnly','rpcAllowlistReviewed'];
@@ -8,7 +9,7 @@ function verify(c,forbidden=[]){
  if(!c||Object.keys(c).some(k=>!KEYS.includes(k))||c.mode!=='synthetic-staging'||c.sourceCommit!==BASE)fail();
  const ids=['adminProjectId','publicProjectId','spreadsheetId','folderId'].map(k=>c[k]);
  if(ids.some(id=>typeof id!=='string'||!/^[A-Za-z0-9_-]{3,200}$/.test(id))||new Set(ids).size!==ids.length)fail();
- if(c.publicLibraryId!==c.adminProjectId||!/^\d+$/.test(c.publicLibraryVersion)||Number(c.publicLibraryVersion)<1)fail();
+ if(c.publicLibraryId!==c.adminProjectId||!isImmutableVersion(c.publicLibraryVersion))fail();
  if(!Array.isArray(c.documentIds)||!c.documentIds.length||c.documentIds.some(id=>typeof id!=='string'||!/^[A-Za-z0-9_-]{3,200}$/.test(id)))fail();
  const resources=[...ids,...c.documentIds];if(new Set(resources).size!==resources.length||resources.some(id=>forbidden.includes(id)))fail();
  if(!c.claims||Object.keys(c.claims).length!==CLAIMS.length||CLAIMS.some(k=>c.claims[k]!==true))fail();

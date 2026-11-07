@@ -1,6 +1,7 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process'),vm=require('node:vm'),crypto=require('node:crypto');
 const {knownProductionIds}=require('../s03d/preflight.cjs');
+const {isImmutableVersion}=require('../s03d/immutable-version.cjs');
 const SOURCE='d1d02475acba50439835c8fcc5b163828897e9ea',ROOT=path.resolve(__dirname,'../../..');
 const sha=s=>crypto.createHash('sha256').update(s).digest('hex');
 const cache=new Map();function pinned(file){if(!cache.has(file))cache.set(file,cp.execFileSync('git',['show',SOURCE+':'+file],{encoding:'utf8',maxBuffer:4*1024*1024}));return cache.get(file);}
@@ -20,7 +21,7 @@ function localConfig(){return {mode:'local-synthetic',adminProjectId:'s03d1-admi
 function validate(c){
  const keys=Object.keys(localConfig());if(!c||Object.keys(c).length!==keys.length||Object.keys(c).some(k=>!keys.includes(k)))throw Error('S03D1 config rejected');
  if(!Array.isArray(c.documentIds))throw Error('S03D1 config rejected');const ids=[c.adminProjectId,c.publicProjectId,c.spreadsheetId,...c.documentIds];
- if(!['local-synthetic','future-staging'].includes(c.mode)||!Array.isArray(c.documentIds)||!c.documentIds.length||ids.some(v=>typeof v!=='string'||!/^[-\w]{3,200}$/.test(v))||new Set(ids).size!==ids.length||ids.some(id=>knownProductionIds().includes(id))||c.publicLibraryId!==c.adminProjectId||!/^\d+$/.test(c.publicLibraryVersion)||Number(c.publicLibraryVersion)<1||!/^[-\w.+]+@[-\w.]+$/.test(c.approverEmail))throw Error('S03D1 config rejected');
+ if(!['local-synthetic','future-staging'].includes(c.mode)||!Array.isArray(c.documentIds)||!c.documentIds.length||ids.some(v=>typeof v!=='string'||!/^[-\w]{3,200}$/.test(v))||new Set(ids).size!==ids.length||ids.some(id=>knownProductionIds().includes(id))||c.publicLibraryId!==c.adminProjectId||!isImmutableVersion(c.publicLibraryVersion)||!/^[-\w.+]+@[-\w.]+$/.test(c.approverEmail))throw Error('S03D1 config rejected');
  for(const [key,role]of [['adminUrl','admin'],['publicUrl','public']]){
   const url=new URL(c[key]);if(c.mode==='local-synthetic'){if(c[key]!==`http://127.0.0.1:4176/${role}`)throw Error('S03D1 URL rejected');}
   else if(!/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(c[key])||knownProductionIds().some(id=>c[key].includes(id)))throw Error('S03D1 URL rejected');
@@ -60,7 +61,7 @@ function assemble(input){
   files[role]['appsscript.json']=JSON.stringify(manifest,null,2);
   for(const [name,body]of Object.entries(files[role]))inventory.artifacts[role+'/'+name]=sha(body);
  }
- inventory.tools=Object.fromEntries(['assemble.cjs','runtime.js','guard.html','../s03d/read-probe.js','../s03d/browser-probe.js'].map(file=>[file,sha(fs.readFileSync(path.join(__dirname,file),'utf8'))]));
+ inventory.tools=Object.fromEntries(['assemble.cjs','runtime.js','guard.html','../s03d/read-probe.js','../s03d/browser-probe.js','../s03d/preflight.cjs','../s03d/immutable-version.cjs'].map(file=>[file,sha(fs.readFileSync(path.join(__dirname,file),'utf8'))]));
  return {...files,inventory,config:cfg};
 }
 function write(assembly,target=path.join(ROOT,'outputs/performance-s03d1/assembly')){
