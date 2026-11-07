@@ -1,0 +1,40 @@
+<script data-s03d1-guard>
+(()=>{
+ 'use strict';
+ const cfg=S03D1_CONFIG_JSON,reads=new Set(cfg.reads),native=window.google&&window.google.script&&window.google.script.run;
+ const reject=()=>Error('S03D1 read only');
+ const safe=value=>{
+  const url=new URL(String(value),location.href);
+  if(['data:','blob:'].includes(url.protocol))return true;
+  if([cfg.adminUrl,cfg.publicUrl].some(base=>url.origin+url.pathname===base))return true;
+  const id=/^https:\/\/drive\.google\.com\/file\/d\/([-\w]+)\/(?:view|preview)$/.exec(url.href);
+  return Boolean(id&&cfg.documentIds.includes(id[1]));
+ };
+ const localDocument=url=>{const id=/^https:\/\/drive\.google\.com\/file\/d\/([-\w]+)\/(?:view|preview)$/.exec(String(url));return cfg.local&&id&&cfg.documentIds.includes(id[1])?'/preview/'+id[1]:url;};
+ const originalOpen=window.open.bind(window);window.open=(url,target,...args)=>{if(!safe(url))throw reject();return originalOpen(localDocument(url),target,...args);};
+ document.addEventListener('click',event=>{const link=event.target.closest?.('a[href]');if(link){if(!safe(link.href))event.preventDefault();else link.href=localDocument(link.href);}},true);
+ if(window.Element){const set=window.Element.prototype.setAttribute;window.Element.prototype.setAttribute=function(name,value){if(this.tagName==='IFRAME'&&name==='src'){if(!safe(value))throw reject();value=localDocument(value);}return set.call(this,name,value);};}
+ document.addEventListener('submit',event=>event.preventDefault(),true);
+ const originalFetch=window.fetch.bind(window);
+ window.fetch=(input,options={})=>{
+  const u=new URL(String(input),location.href),match=/^\/api\/([A-Za-z]+)$/.exec(u.pathname);
+  if(u.origin!==location.origin||!match||!reads.has(match[1]))return Promise.reject(reject());
+  return originalFetch(u.href,{...options,headers:{...options.headers,'X-S03D1-Role':cfg.role}});
+ };
+ function runner(ok,fail){return new Proxy(Object.create(null),{get:(_,name)=>{
+  if(name==='withSuccessHandler')return fn=>runner(fn,fail);
+  if(name==='withFailureHandler')return fn=>runner(ok,fn);
+  return (...args)=>{
+   if(!reads.has(name)){if(fail)fail(reject());return;}
+   if(native){native.withSuccessHandler(ok||(()=>{})).withFailureHandler(()=>fail&&fail(reject()))[name](...args);return;}
+   window.fetch('/api/'+name,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(args[0]||{})}).then(r=>r.json()).then(r=>ok&&ok(r)).catch(()=>fail&&fail(reject()));
+  };
+ }});}
+ window.__s03dBridge=runner();
+ if(!window.google)window.google={script:{url:{getLocation:fn=>fn({parameter:Object.fromEntries(new URL(location.href).searchParams)})}}};
+ // CSP is inserted before any original resource. Local mode permits no outbound traffic.
+ const csp=document.createElement('meta');csp.httpEquiv='Content-Security-Policy';
+ csp.content="default-src 'none'; script-src 'self' 'unsafe-inline'"+(cfg.local?'':' https://cdn.tailwindcss.com https://cdn.jsdelivr.net')+"; style-src 'self' 'unsafe-inline'"+(cfg.local?'':' https://fonts.googleapis.com https://cdnjs.cloudflare.com')+"; font-src "+(cfg.local?"'none'":'https://fonts.gstatic.com https://cdnjs.cloudflare.com')+"; img-src data:"+(cfg.local?'':' https://upload.wikimedia.org')+"; connect-src 'self'; frame-src 'self'"+(cfg.local?'':cfg.documentIds.map(id=>' https://drive.google.com/file/d/'+id+'/').join(''))+"; form-action 'none'; base-uri 'none'";
+ document.head.appendChild(csp);
+})();
+</script>

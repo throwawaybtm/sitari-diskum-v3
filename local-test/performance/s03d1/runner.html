@@ -1,0 +1,14 @@
+<!doctype html><meta charset="utf-8"><title>S03D.1 local assembly checks</title>
+<style>body{font:16px Arial}iframe{width:100%;height:650px}pre{white-space:pre-wrap}</style>
+<h1>S03D.1 offline synthetic assembly</h1><p>External resources are blocked. This checks real page scripts and read interactions, not pixel appearance or cloud latency.</p>
+<button id="run">Run all five pages</button><pre id="status">Ready</pre><iframe id="app" title="Staging application"></iframe>
+<script>
+document.getElementById('run').onclick=async()=>{
+ const button=document.getElementById('run'),status=document.getElementById('status'),frame=document.getElementById('app');button.disabled=true;const pages=[];let failures=0;
+ try{for(const path of ['/admin','/admin?page=presensi-admin','/public?page=tld','/public?page=tdd','/public?page=presensi']){
+  status.textContent='Checking '+path;await new Promise((resolve,reject)=>{const id=setTimeout(()=>reject(Error('Page timeout')),20000);frame.onload=()=>{clearTimeout(id);resolve();};frame.src=path+(path.includes('?')?'&':'?')+'check=1';});
+  const w=frame.contentWindow;const start=performance.now();while(!w.s03d1Check){if(performance.now()-start>15000)throw Error('Missing check');await new Promise(r=>setTimeout(r,20));}pages.push(await w.s03d1Check());
+ }const saved=await fetch('/results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pages,failures})});if(!saved.ok)throw Error('Result rejected');status.textContent='PASSED: five pages, '+pages.reduce((a,b)=>a+b,0)+' read/UI checks; no cloud requests permitted.';
+ }catch(e){failures++;status.textContent='FAILED: '+e.message;}finally{button.disabled=false;}
+};
+</script>

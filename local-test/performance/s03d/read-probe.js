@@ -7,7 +7,7 @@ function createReadProbe(config,raw,options) {
   const database=config.spreadsheetId,documents=new Set(config.documentIds),clock=options&&options.clock||(()=>Date.now());
   const tables=new Set(['Data_Tamu','Data_Rapat','Data_Presensi','Kendali_SPPD','Master_Pegawai','Master_OPD','Master_Ruangan','Alur_Kunjungan','Dokumen_Agenda','Foto_Agenda']);
   const labels=new Set(['handler','sheet.open','sheet.metadata','sheet.values','sheet.display','sheet.find','drive.metadata','drive.blob','transform','serialization']);
-  const reads=new Set(['getDashboardSummary','getTamuList','getRapatCalendar','getVisitWorkflow','getAgendaAttendance','getVisitArchiveDocument','getMeetingRoomOptions','getMasterData','getPublicAttendanceCalendar','getPublicAttendanceMasterData','getVisitAttendanceRoster']);
+  const reads=new Set(['getDashboardSummary','getTamuList','getRapatCalendar','getVisitWorkflow','getAgendaAttendance','getVisitArchiveDocument','getAgendaPhotoDocument','getMeetingRoomOptions','getMasterData','getPublicEmployeeCount','getPublicFormDestinations','getPublicAttendanceCalendar','getPublicAttendanceMasterData','getVisitAttendanceRoster']);
   let events=[],depth=0,used=false;
   function guarded(methods){return new Proxy(Object.freeze(methods),{get:(target,key)=>Object.prototype.hasOwnProperty.call(target,key)?target[key]:fail()});}
   function span(label,fn,counts){
@@ -21,7 +21,7 @@ function createReadProbe(config,raw,options) {
   function sheet(value,parent){return value?guarded({getLastRow:()=>span('sheet.metadata',()=>value.getLastRow()),getLastColumn:()=>span('sheet.metadata',()=>value.getLastColumn()),getParent:()=>parent,
     getRange:(row,col,rows,cols)=>{if(![row,col,rows,cols].every(n=>Number.isInteger(n)&&n>0))fail();return range(span('sheet.metadata',()=>value.getRange(row,col,rows,cols)),rows,cols);}}):null;}
   function spreadsheet(value){let wrapped;wrapped=guarded({getId:()=>database,getSpreadsheetTimeZone:()=>span('sheet.metadata',()=>value.getSpreadsheetTimeZone()),getSheetByName:name=>{if(!tables.has(name))fail();return sheet(span('sheet.metadata',()=>value.getSheetByName(name)),wrapped);}});return wrapped;}
-  function blob(value){return guarded({getContentType:()=>span('drive.metadata',()=>value.getContentType()),getBytes:()=>span('drive.blob',()=>value.getBytes())});}
+  function blob(value){if(!['application/pdf','image/png','image/jpeg'].includes(span('drive.metadata',()=>value.getContentType())))fail();return guarded({getContentType:()=>span('drive.metadata',()=>value.getContentType()),getBytes:()=>span('drive.blob',()=>value.getBytes())});}
   const services=guarded({SpreadsheetApp:guarded({openById:id=>{if(id!==database)fail();return spreadsheet(span('sheet.open',()=>raw.SpreadsheetApp.openById(id)));}}),DriveApp:guarded({getFileById:id=>{
     if(!documents.has(id))fail();const file=span('drive.metadata',()=>raw.DriveApp.getFileById(id));
     return guarded({getName:()=>span('drive.metadata',()=>file.getName()),getMimeType:()=>span('drive.metadata',()=>file.getMimeType()),getBlob:()=>blob(span('drive.blob',()=>file.getBlob()))});
