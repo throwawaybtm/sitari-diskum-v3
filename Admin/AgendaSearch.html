@@ -4,8 +4,9 @@ function filterAgendaRecords_(records,query,date) {
   const keywords=String(query||'').toLocaleLowerCase('id-ID').split(',').map(s=>s.trim()).filter(Boolean);
   return records.filter(row=>{
     if(date&&String(row.tanggal_kunjungan||row.tanggal||'').slice(0,10)!==date)return false;
+    if(!keywords.length)return true;
     const haystack=Object.values(row).map(v=>typeof v==='object'?JSON.stringify(v):String(v??'')).join(' ').toLocaleLowerCase('id-ID');
-    return !keywords.length||keywords.some(word=>haystack.includes(word));
+    return keywords.some(word=>haystack.includes(word));
   });
 }
 </script>

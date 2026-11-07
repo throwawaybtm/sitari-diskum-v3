@@ -68,7 +68,7 @@ test('read probes preserve public delegation and document/attendance work counts
   assert.equal(archive.metrics.driveFileReads,1);assert.equal(archive.metrics.opens,2);assert.equal(archive.metrics.rangeReads,5);
   assert.equal(archive.metrics.attendanceRowsFetched,100);
   const ui=createFrontend(),render=ui.measure(env.measure('getTamuList').result.data,env.measure('getRapatCalendar').result.data);
-  assert.equal(render.guestRowsRendered,20);assert.equal(ui.emptySearchCount(20),20);
+  assert.equal(render.guestRowsRendered,20);assert.equal(ui.emptySearchCount(20),0);
 });
 
 test('browser server denies writes and external hosts, and returns synthetic reads only',async()=>{

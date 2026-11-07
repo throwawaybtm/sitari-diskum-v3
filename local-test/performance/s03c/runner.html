@@ -1,0 +1,28 @@
+<!doctype html><meta charset="utf-8"><title>S03C paired frontend measurement</title>
+<style>body{margin:8px;font:14px Arial}iframe{width:100%;height:80vh;border:1px solid #888}pre{white-space:pre-wrap}</style>
+<h1>S03C frontend comparison — 200 visits / agendas</h1>
+<p>Local synthetic data only. 5 warmups, 30 alternating pairs. Phone mode is a 390px iframe, not CPU/network or touch emulation.</p>
+<label><input id="phone" type="checkbox">Phone-width viewport</label>
+<button id="run">Run paired measurements</button><pre id="status">Ready</pre><iframe id="app" title="Admin measurement"></iframe>
+<script>
+document.getElementById('run').onclick=async()=>{
+ const button=document.getElementById('run'),status=document.getElementById('status'),frame=document.getElementById('app'),phone=document.getElementById('phone').checked;
+ frame.style.width=phone?'390px':'100%';button.disabled=true;
+ const runs={before:[],after:[]},firstObserved={};
+ try{
+  for(let i=0;i<36;i++)for(const variant of i%2?['after','before']:['before','after']){
+   if(document.visibilityState!=='visible')throw Error('Runner hidden');status.textContent='Pair '+(i+1)+' / 36 - '+variant+(phone?' - phone width':' - desktop');
+   await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(Error('Navigation timeout')),30000);frame.onload=()=>{clearTimeout(timeout);resolve();};frame.src='/app?variant='+variant+'&iteration='+i;});
+   const w=frame.contentWindow;await w.s02.wait(()=>w.s02.metrics.navigationToAllDataPaint);const result=await w.s02.exercise();
+   if(result.failures||result.rpc.length!==6||result.rpc.filter(r=>r.name==='getDashboardSummary').length!==1)throw Error('Browser/RPC failure');
+   if(result.metrics.guestRowCount!==200||result.metrics.agendaCardCount!==200)throw Error('Incomplete lists');
+   if(i===0)firstObserved[variant]=result;if(i>=6)runs[variant].push(result);
+  }
+  for(const variant of ['before','after']){
+   const result={variant,environment:{userAgent:navigator.userAgent,width:frame.clientWidth,height:frame.clientHeight,dpr:devicePixelRatio},firstObserved:firstObserved[variant],runs:runs[variant]};
+   const saved=await fetch('/results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(result)});if(!saved.ok)throw Error(await saved.text());
+  }
+  status.textContent='Completed: 30 before + 30 after samples saved'+(phone?' - phone width.':' - desktop.');
+ }catch(error){status.textContent='FAILED: '+error.message;}finally{button.disabled=false;}
+};
+</script>

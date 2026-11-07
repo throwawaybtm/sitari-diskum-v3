@@ -34,7 +34,9 @@ test('startup sends all three requests immediately; summary renders independentl
 });
 test('desktop/mobile markup and styling are byte-identical to approved S03A',()=>{
   const before=cp.execFileSync('git',['show',BASE+':Admin/Index.html'],{encoding:'utf8'}),after=fs.readFileSync('Admin/Index.html','utf8');
-  assert.equal(after.replaceAll('getDashboardSummary','getDashboardData').replace(/\r\n/g,'\n'),before.replace(/\r\n/g,'\n'));
+  // S03C changes only script processing; protect every static element/style.
+  const markup=text=>text.replace(/<script\b[^>]*>[^]*?<\/script>/g,'').replace(/\r\n/g,'\n');
+  assert.equal(markup(after),markup(before));
 });
 
 test('each startup endpoint can fail independently and summary revisions protect real out-of-order replies',async()=>{

@@ -1157,7 +1157,16 @@
       }
       const phone=Boolean(typeof window!=='undefined'&&window.matchMedia?.('(max-width: 767.98px), (max-width: 1023.98px) and (hover: none) and (pointer: coarse)').matches);
       const expanded=new Set([...(c.querySelectorAll?.('details[open]')||[])].map(item=>String(item.dataset.agendaId)));
+      // A fresh first-match index for this render only; never approval authority.
+      const visitsByCode=new Map();
+      if(typeof allTamuData!=='undefined')allTamuData.forEach(visit=>{
+        const code=String(visit.kode_kunjungan);
+        if(!visitsByCode.has(code))visitsByCode.set(code,visit);
+      });
       c.innerHTML = meetings.map(r => {
+        const statusInfo=meetingStatusInfo(r),attendance=attendanceAvailability(r);
+        const linked=Boolean(r.kode_kunjungan||String(r.kode_rapat||'').startsWith('VISIT-'));
+        const canRecord=linked&&canAdminRecordAttendance(r,visitsByCode);
         const internal=!r.kode_kunjungan&&!String(r.kode_rapat||'').startsWith('VISIT-'),hasPhotos=Boolean(r.photos&&r.photos.length);
         const photoAction=internal?`<button type="button" data-id="${escapeHtml(r.id)}" onclick="openMeetingPhotos(this.dataset.id)" ${r.status==='Selesai'&&!hasPhotos?'disabled':''} class="px-3.5 py-2 bg-teal-50 text-teal-800 disabled:bg-slate-100 disabled:text-slate-400 rounded-xl text-xs font-bold inline-flex items-center justify-center"><i class="fa-solid ${hasPhotos?'fa-check':'fa-camera'} mr-1.5"></i>${hasPhotos?'Lihat Foto':r.status==='Selesai'?'Foto Tidak Tersedia':'Unggah Foto'}</button>`:'';
         const documentAction=r.notula?`<a href="${escapeHtml(r.notula.url)}" target="_blank" rel="noopener" class="px-3.5 py-2 bg-sky-50 text-sky-800 rounded-xl text-xs font-bold inline-flex items-center justify-center"><i class="fa-solid fa-check mr-1.5"></i>Lihat E-Notula</a>`:`<button type="button" data-id="${escapeHtml(r.id)}" onclick="uploadAgendaNotula(this.dataset.id)" ${r.status==='Selesai'||(internal&&!hasPhotos)?'disabled':''} title="${internal&&!hasPhotos?'Unggah foto rapat terlebih dahulu.':'Unggah E-notula'}" class="px-3.5 py-2 bg-sky-50 text-sky-800 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed rounded-xl text-xs font-bold"><i class="fa-solid fa-file-arrow-up mr-1.5"></i>Unggah E-notula</button>`;
@@ -1167,7 +1176,7 @@
           <div>
             <div class="flex flex-wrap items-center gap-2">
               ${renderMeetingRoomBadge(r.nama_ruangan)}
-              <span class="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold ${meetingStatusInfo(r).colour}">${meetingStatusInfo(r).label}</span>
+              <span class="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold ${statusInfo.colour}">${statusInfo.label}</span>
               <span class="text-xs font-mono font-bold text-slate-700">${escapeHtml(phone?formatMeetingDate(r.tanggal)+(r.jam_mulai&&r.jam_selesai?' '+r.jam_mulai+' - '+r.jam_selesai:''):agendaScheduleLabel(r))}</span>
             </div>
             <h4 class="text-sm font-bold text-slate-900 mt-1">${escapeHtml(r.judul_rapat)}</h4>
@@ -1175,11 +1184,11 @@
             <div class="text-[11px] text-slate-400 mt-2">Penyelenggara: Bidang <strong>${escapeHtml(r.penyelenggara_bidang)}</strong> | Pimpinan: <strong>${escapeHtml(r.pimpinan_rapat)}</strong></div>
           </div>
           <div class="flex flex-wrap gap-2 shrink-0">
-          ${!attendanceAvailability(r).open ? `<button type="button" disabled title="${escapeHtml(attendanceAvailability(r).message)}" class="px-3.5 py-2 bg-slate-100 text-slate-400 cursor-not-allowed text-xs font-bold rounded-xl inline-flex items-center justify-center shrink-0"><i class="fa-solid ${attendanceAvailability(r).reason==='manual'?'fa-qrcode':'fa-circle-check'} mr-1.5"></i> ${attendanceAvailability(r).reason==='manual'?'Presensi sudah diisi':attendanceAvailability(r).reason==='future'?'Presensi belum dibuka':r.status==='Selesai'||r.notula?'Rapat selesai':'Presensi ditutup'}</button>` : `<button data-id="${escapeHtml(r.id)}" onclick="bukaModalPresensi(this.dataset.id)" class="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl transition inline-flex items-center justify-center shrink-0">
+          ${!attendance.open ? `<button type="button" disabled title="${escapeHtml(attendance.message)}" class="px-3.5 py-2 bg-slate-100 text-slate-400 cursor-not-allowed text-xs font-bold rounded-xl inline-flex items-center justify-center shrink-0"><i class="fa-solid ${attendance.reason==='manual'?'fa-qrcode':'fa-circle-check'} mr-1.5"></i> ${attendance.reason==='manual'?'Presensi sudah diisi':attendance.reason==='future'?'Presensi belum dibuka':r.status==='Selesai'||r.notula?'Rapat selesai':'Presensi ditutup'}</button>` : `<button data-id="${escapeHtml(r.id)}" onclick="bukaModalPresensi(this.dataset.id)" class="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl transition inline-flex items-center justify-center shrink-0">
             <i class="fa-solid fa-qrcode mr-1.5"></i> Presensi QR
           </button>`}
           <button type="button" data-id="${escapeHtml(r.id)}" onclick="openAgendaAttendance(this.dataset.id)" class="px-3.5 py-2 bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold rounded-xl inline-flex items-center justify-center"><i class="fa-solid fa-list-check mr-1.5"></i>Lihat Presensi</button>
-          ${r.kode_kunjungan||String(r.kode_rapat||'').startsWith('VISIT-')?`<button type="button" data-id="${escapeHtml(r.id)}" onclick="openManualVisitAttendance(this.dataset.id)" ${!canAdminRecordAttendance(r)?'disabled':''} class="px-3.5 py-2 ${!canAdminRecordAttendance(r)?'bg-slate-100 text-slate-400 cursor-not-allowed':'bg-teal-50 hover:bg-teal-100 text-teal-800'} text-xs font-bold rounded-xl inline-flex items-center justify-center"><i class="fa-solid fa-user-check mr-1.5"></i>Presensi Manual</button>`:''}
+          ${linked?`<button type="button" data-id="${escapeHtml(r.id)}" onclick="openManualVisitAttendance(this.dataset.id)" ${!canRecord?'disabled':''} class="px-3.5 py-2 ${!canRecord?'bg-slate-100 text-slate-400 cursor-not-allowed':'bg-teal-50 hover:bg-teal-100 text-teal-800'} text-xs font-bold rounded-xl inline-flex items-center justify-center"><i class="fa-solid fa-user-check mr-1.5"></i>Presensi Manual</button>`:''}
           ${details}
           </div>
         </div>
@@ -1188,10 +1197,10 @@
 
     window.matchMedia('(max-width: 767.98px), (max-width: 1023.98px) and (hover: none) and (pointer: coarse)').addEventListener('change',()=>renderMeetingsList(allRapatData));
 
-    function canAdminRecordAttendance(meeting) {
+    function canAdminRecordAttendance(meeting, visitsByCode) {
       if(!adminAttendanceAvailability(meeting).open)return false;
       const code=meeting.kode_kunjungan||String(meeting.kode_rapat||'').replace(/^VISIT-/,'');
-      const visit=typeof allTamuData!=='undefined'?allTamuData.find(v=>String(v.kode_kunjungan)===String(code)):null;
+      const visit=visitsByCode?visitsByCode.get(String(code)):typeof allTamuData!=='undefined'?allTamuData.find(v=>String(v.kode_kunjungan)===String(code)):null;
       return !visit||!['Kelola SPPD','Selesai'].includes(visit.status_kunjungan);
     }
 
