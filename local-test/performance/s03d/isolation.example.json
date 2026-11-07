@@ -1,0 +1,20 @@
+{
+  "mode": "synthetic-staging",
+  "sourceCommit": "d1d02475acba50439835c8fcc5b163828897e9ea",
+  "adminProjectId": "",
+  "publicProjectId": "",
+  "publicLibraryId": "",
+  "publicLibraryVersion": "",
+  "spreadsheetId": "",
+  "folderId": "",
+  "documentIds": [],
+  "claims": {
+    "dedicatedAccountNoProductionAccess": false,
+    "syntheticOnly": false,
+    "noProductionCredentials": false,
+    "privateTestResources": false,
+    "readOnlyScopes": false,
+    "entryGuardsRemovedInStagingOnly": false,
+    "rpcAllowlistReviewed": false
+  }
+}
