@@ -34,7 +34,7 @@ test('percentiles use documented nearest-rank rule and reject invalid samples',(
 test('synthetic endpoints reproduce audit work counts and stable payloads',()=>{
   const env=createEnvironment({size:20,profile:'dense',countJoins:true});
   const counts=[];for(const method of ['getDashboardData','getTamuList','getRapatCalendar']){const r=env.measure(method);assert.equal(r.result.success,true);counts.push(r.metrics.rangeReads);}
-  assert.deepEqual(counts,[5,1,5]);assert.equal(env.measure('getRapatCalendar').metrics.documentComparisons,630);
+  assert.deepEqual(counts,[5,1,5]);assert.equal(env.measure('getRapatCalendar').metrics.documentComparisons,0);
   const plain=createEnvironment({size:20,profile:'dense',countJoins:false});
   assert.deepEqual(JSON.parse(JSON.stringify(env.measure('getRapatCalendar').result)),JSON.parse(JSON.stringify(plain.measure('getRapatCalendar').result)));
 });

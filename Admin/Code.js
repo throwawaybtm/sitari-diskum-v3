@@ -475,11 +475,16 @@ function getRapatCalendar() {
   const rows = readMeetingRows_(sheet);
   const docsSheet=ss.getSheetByName('Dokumen_Agenda');
   const docs=docsSheet&&docsSheet.getLastRow()>1?docsSheet.getRange(2,1,docsSheet.getLastRow()-1,3).getValues():[];
+  // Match IDs as strings and retain the first row, including an empty document.
+  const docsByAgendaId=new Map();
+  docs.forEach(doc=>{const key=String(doc[0]);if(!docsByAgendaId.has(key))docsByAgendaId.set(key,doc);});
   const photos=typeof getAgendaPhotosMap_==='function'?getAgendaPhotosMap_(ss):{};
   const attendanceSheet=ss.getSheetByName('Data_Presensi');
   const attendance=attendanceSheet&&attendanceSheet.getLastRow()>1?attendanceSheet.getRange(2,1,attendanceSheet.getLastRow()-1,12).getValues():[];
   const manualAgendaIds=new Set(attendance.filter(row=>row[11]==='Admin').map(row=>String(row[1])));
-  const list = rows.filter(r => r[12] !== 'Dibatalkan').map(r => ({
+  const list = rows.filter(r => r[12] !== 'Dibatalkan').map(r => {
+    const doc=docsByAgendaId.get(String(r[0]));
+    return {
     id: r[0],
     manual_attendance: manualAgendaIds.has(String(r[0])),
     photos: photos[String(r[0])]||[],
@@ -495,9 +500,10 @@ function getRapatCalendar() {
     pimpinan_rapat: r[9],
     jumlah_peserta: r[10],
     agenda: r[11],
-    status: docs.some(d=>String(d[0])===String(r[0]))?'Selesai':r[12],
-    notula: (docs.find(d=>String(d[0])===String(r[0]))||[])[1]?JSON.parse(docs.find(d=>String(d[0])===String(r[0]))[1]):null
-  }));
+    status: doc?'Selesai':r[12],
+    notula: doc&&doc[1]?JSON.parse(doc[1]):null
+    };
+  });
 
   return { success: true, data: list };
 }
