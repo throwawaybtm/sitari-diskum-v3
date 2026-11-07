@@ -368,6 +368,7 @@ function createFixtureStore(now = new Date(), options = {}) {
           }
         };
       },
+      get getDashboardSummary() { const result=this.getDashboardData;delete result.data.loStats;return result; },
       get getTamuList() { return { success: true, data: visitors }; },
       getRapatCalendar: { success: true, data: meetings },
       getSppdList: { success: true, data: sppd },

@@ -819,7 +819,7 @@
       const summaryRequest=options.summary!==false?++dashboardRequestRevision:0;
       const summaryVisitRevision=visitListRevision;
       if(options.summary!==false) {
-      request('getDashboardData', [], res => {
+      request('getDashboardSummary', [], res => {
         if(summaryRequest!==dashboardRequestRevision)return;
         if (res && res.success) {
           const d = res.data || {};
@@ -841,7 +841,7 @@
         }
       }, err => {
         if(summaryRequest!==dashboardRequestRevision)return;
-        console.error('getDashboardData failed:', err);
+        console.error('getDashboardSummary failed:', err);
         renderPanelState(document.getElementById('todayMeetingsList'), 'error', 'Agenda hari ini gagal dimuat. Silakan muat ulang halaman.');
         renderTableState(document.getElementById('recentTamuTableBody'), 7, 'error', 'Kunjungan terbaru gagal dimuat. Silakan muat ulang halaman.');
         showToast('error', 'Dashboard Gagal Dimuat', 'Periksa koneksi lalu muat ulang halaman.');

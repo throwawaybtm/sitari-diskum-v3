@@ -223,6 +223,17 @@ function assignLiaisonOfficer(ss, tujuanBidang) {
 // ==========================================
 
 function getDashboardData() {
+  return readDashboardData_(true);
+}
+
+// Admin startup does not consume LO statistics; retain the legacy full endpoint.
+function getDashboardSummary() {
+  const result=readDashboardData_(false);
+  delete result.data.loStats;
+  return result;
+}
+
+function readDashboardData_(includeLoStats) {
   const ss = getSpreadsheet();
   const today = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'yyyy-MM-dd');
 
@@ -301,7 +312,7 @@ function getDashboardData() {
   }
 
   // Staf LO Stats
-  const sheetPegawai = ss.getSheetByName('Master_Pegawai');
+  const sheetPegawai = includeLoStats ? ss.getSheetByName('Master_Pegawai') : null;
   let loStats = [];
   if (sheetPegawai && sheetPegawai.getLastRow() > 1) {
     const rows = sheetPegawai.getRange(2, 1, sheetPegawai.getLastRow() - 1, sheetPegawai.getLastColumn()).getValues();

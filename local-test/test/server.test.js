@@ -179,6 +179,7 @@ test('serves every read endpoint with successful dummy responses', async () => {
   await withServer(async baseUrl => {
     const functions = [
       'getDashboardData',
+      'getDashboardSummary',
       'getTamuList',
       'getRapatCalendar',
       'getSppdList',

@@ -12,9 +12,10 @@ callBackend=function(name,args,success,failure){
     const end=performance.now(),callbackStart=end;
     try{success(result);}catch(error){probe.failures++;throw error;}
     const item={name,duration:end-start,handlerVmMs:result._s02?.handlerVmMs||0,callbackMs:performance.now()-callbackStart,bytes:result._s02?.payloadBytes||0};probe.rpc.push(item);
-    if(name==='getDashboardData')paint().then(()=>probe.metrics.navigationToSummaryPaint=performance.now());
-    const startup=['getDashboardData','getTamuList','getRapatCalendar'];
-    if(startup.includes(name)&&!probe.allDataScheduled&&startup.every(n=>probe.rpc.some(r=>r.name===n))){
+    const summaryNames=['getDashboardData','getDashboardSummary'],isSummary=summaryNames.includes(name);
+    if(isSummary&&!probe.summaryScheduled){probe.summaryScheduled=true;paint().then(()=>probe.metrics.navigationToSummaryPaint=performance.now());}
+    const startup=['getTamuList','getRapatCalendar'];
+    if((isSummary||startup.includes(name))&&!probe.allDataScheduled&&probe.rpc.some(r=>summaryNames.includes(r.name))&&startup.every(n=>probe.rpc.some(r=>r.name===n))){
       probe.allDataScheduled=true;paint().then(()=>probe.metrics.navigationToAllDataPaint=performance.now());
     }
   },error=>{probe.failures++;if(failure)failure(error);});

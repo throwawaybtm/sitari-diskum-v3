@@ -13,7 +13,7 @@ function setup(){
 test('header refresh waits for all three data loads and suppresses repeated clicks',async()=>{
  const {context:c,requests,toasts,fields}=setup();c.document.getElementById('headerRefreshData');
  const pending=c.refreshHeaderData();assert.equal(fields.headerRefreshData.disabled,true);await c.refreshHeaderData();
- assert.deepEqual(requests.map(r=>r.name),['getDashboardData','getTamuList','getRapatCalendar']);
+ assert.deepEqual(requests.map(r=>r.name),['getDashboardSummary','getTamuList','getRapatCalendar']);
  requests[0].success({success:true,data:{stats:{}}});requests[1].success({success:true,data:[]});await Promise.resolve();assert.equal(fields.headerRefreshData.disabled,true);
  requests[2].success({success:true,data:[]});assert.equal(await pending,true);assert.equal(fields.headerRefreshData.disabled,false);assert.equal(toasts.at(-1)[0],'success');
 });

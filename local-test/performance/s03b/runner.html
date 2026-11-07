@@ -1,0 +1,25 @@
+<!doctype html><meta charset="utf-8"><title>S03B paired startup measurement</title>
+<style>body{margin:8px;font:14px Arial}iframe{width:100%;height:82vh;border:1px solid #888}pre{white-space:pre-wrap}</style>
+<h1>S03B startup comparison — 200 visits / 200 agendas</h1><p>Loopback, read-only synthetic fixtures. Keep visible. Alternating before/after; 30 samples each.</p>
+<button id="run">Run paired baseline and candidate</button><pre id="status">Ready</pre><iframe id="app" title="Unchanged Admin UI"></iframe>
+<script>
+document.getElementById('run').onclick=async()=>{
+ const button=document.getElementById('run'),status=document.getElementById('status'),frame=document.getElementById('app');button.disabled=true;
+ const runs={before:[],after:[]},firstObserved={};
+ try{
+  for(let i=0;i<36;i++)for(const variant of i%2?['after','before']:['before','after']){
+   if(document.visibilityState!=='visible')throw Error('Runner hidden');status.textContent='Pair '+(i+1)+' / 36 — '+variant;
+   await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(Error('Navigation timeout')),30000);frame.onload=()=>{clearTimeout(timeout);resolve();};frame.src='/app?variant='+variant+'&iteration='+i;});
+   const w=frame.contentWindow;await w.s02.wait(()=>w.s02.metrics.navigationToAllDataPaint);const result=await w.s02.exercise();
+   if(result.failures)throw Error('Browser failure');const expected=variant==='before'?'getDashboardData':'getDashboardSummary';
+   if(result.rpc.filter(r=>r.name===expected).length!==1||result.rpc.length!==6)throw Error('Unexpected RPC counts');
+   if(i===0)firstObserved[variant]=result;if(i>=6)runs[variant].push(result);
+  }
+  for(const variant of ['before','after']){
+   const result={variant,environment:{userAgent:navigator.userAgent,width:frame.clientWidth,height:frame.clientHeight,dpr:devicePixelRatio},firstObserved:firstObserved[variant],runs:runs[variant]};
+   const saved=await fetch('/results',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(result)});if(!saved.ok)throw Error(await saved.text());
+  }
+  status.textContent='Completed: 30 valid before + 30 valid after samples saved; first observed and 5 warmups excluded.';
+ }catch(error){status.textContent='FAILED: '+error.message;}finally{button.disabled=false;}
+};
+</script>

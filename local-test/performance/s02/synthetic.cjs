@@ -4,7 +4,7 @@ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const {performance}=require('node:perf_hooks');
 const ROOT=path.resolve(__dirname,'../../..');
 const SOURCES=['Code.js','MeetingRooms.js','AgendaDocuments.js','VisitWorkflow.js','VisitWorkflowStorage.js','VisitArchive.js','PublicApi.js'];
-const READS=new Set(['getDashboardData','getTamuList','getRapatCalendar','getVisitWorkflow','getVisitArchiveDocument','getMeetingRoomOptions','getMasterData']);
+const READS=new Set(['getDashboardData','getDashboardSummary','getTamuList','getRapatCalendar','getVisitWorkflow','getVisitArchiveDocument','getMeetingRoomOptions','getMasterData']);
 function guarded(name,methods={}) {
   return new Proxy(methods,{get(target,key){if(key in target)return target[key];throw Error('blocked service: '+name+'.'+String(key));}});
 }
