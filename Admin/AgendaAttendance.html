@@ -1,0 +1,51 @@
+<style>
+  #agendaAttendanceModal {width:calc(100% - 24px);max-width:48rem;max-height:90dvh;padding:0;margin:auto;border:0;border-radius:20px;color:#1e293b;}
+  #agendaAttendanceModal::backdrop {background:#0f172aaa;backdrop-filter:blur(5px);}
+  #agendaAttendanceModal .attendance-view-head {padding:16px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  #agendaAttendanceModal .attendance-view-body {padding:16px;}
+  #agendaAttendanceModal table {width:100%;table-layout:fixed;border-collapse:collapse;font-size:14px;}
+  #agendaAttendanceModal th {background:#f8fafc;text-align:center;color:#64748b;}
+  #agendaAttendanceModal th,#agendaAttendanceModal td {padding:10px 6px;border-bottom:1px solid #e2e8f0;vertical-align:middle;}
+  #agendaAttendanceModal td:not(:nth-child(2)) {text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums;}
+  #agendaAttendanceModal td:nth-child(2) {overflow-wrap:anywhere;}
+  @media (max-width:767.98px), (max-width:1023.98px) and (hover:none) and (pointer:coarse) {
+    #agendaAttendanceModal {max-height:94dvh;}
+    #agendaAttendanceModal .attendance-view-body {padding:10px;}
+    #agendaAttendanceModal th,#agendaAttendanceModal td {padding:10px 3px;}
+    #agendaAttendanceModal td:nth-child(2) {font-size:16px;}
+    #agendaAttendanceModal button {min-height:44px;min-width:44px;}
+  }
+</style>
+<dialog id="agendaAttendanceModal" aria-labelledby="agendaAttendanceTitle" oncancel="cancelAgendaAttendanceRequest()">
+  <div class="attendance-view-head"><h3 id="agendaAttendanceTitle" class="text-lg font-bold"><i class="fa-solid fa-list-check text-teal-700 mr-2"></i>Presensi Agenda</h3><button type="button" onclick="closeAgendaAttendance()" aria-label="Tutup daftar presensi" class="p-3 rounded-xl bg-slate-100"><i class="fa-solid fa-xmark"></i></button></div>
+  <div class="attendance-view-body">
+    <p id="agendaAttendanceName" class="font-semibold mb-3"></p>
+    <div class="flex items-center justify-between gap-3 mb-3"><p id="agendaAttendanceCount" role="status" class="text-sm text-slate-600"></p><button id="agendaAttendanceRefresh" type="button" onclick="loadAgendaAttendance(agendaAttendanceId)" class="px-3 py-2 rounded-xl bg-teal-50 text-teal-800 text-sm font-semibold"><i class="fa-solid fa-rotate-right mr-1"></i>Refresh</button></div>
+    <p id="agendaAttendanceError" role="alert" class="text-rose-700 mb-3" hidden></p>
+    <table aria-label="Daftar presensi agenda"><colgroup><col style="width:9%"><col style="width:43%"><col style="width:30%"><col style="width:18%"></colgroup><thead><tr><th scope="col">No.</th><th scope="col">Nama</th><th scope="col">Tanggal</th><th scope="col">Jam</th></tr></thead><tbody id="agendaAttendanceRows"></tbody></table>
+  </div>
+</dialog>
+<script>
+  let agendaAttendanceId=null,agendaAttendanceRequest=0;
+  function cancelAgendaAttendanceRequest(){agendaAttendanceRequest++;}
+  function closeAgendaAttendance(){cancelAgendaAttendanceRequest();document.getElementById('agendaAttendanceModal').close();}
+  function openAgendaAttendance(id) {
+    const meeting=allRapatData.find(row=>String(row.id)===String(id));if(!meeting)return;
+    agendaAttendanceId=String(id);document.getElementById('agendaAttendanceName').textContent=meeting.judul_rapat||'';
+    const modal=document.getElementById('agendaAttendanceModal');if(!modal.open)modal.showModal();
+    loadAgendaAttendance(agendaAttendanceId);
+  }
+  async function loadAgendaAttendance(id) {
+    const request=++agendaAttendanceRequest;
+    const body=document.getElementById('agendaAttendanceRows'),count=document.getElementById('agendaAttendanceCount'),error=document.getElementById('agendaAttendanceError'),refresh=document.getElementById('agendaAttendanceRefresh');
+    body.innerHTML='<tr><td colspan="4" class="text-slate-500">Memuat presensi...</td></tr>';count.textContent='Memuat...';error.hidden=true;refresh.disabled=true;
+    try {
+      const data=await visitRpc('getAgendaAttendance',{rapat_id:id});if(request!==agendaAttendanceRequest)return;
+      const rows=Array.isArray(data.attendance)?data.attendance:[];
+      document.getElementById('agendaAttendanceName').textContent=data.agenda.judul_rapat;
+      count.textContent=rows.length+' presensi tercatat';
+      body.innerHTML=rows.length?rows.map(row=>`<tr><td>${escapeHtml(row.no)}</td><td>${escapeHtml(row.nama)}</td><td>${escapeHtml(row.tanggal)}</td><td>${escapeHtml(row.jam)}</td></tr>`).join(''):'<tr><td colspan="4" class="text-slate-500">Belum ada presensi untuk agenda ini.</td></tr>';
+    }catch(problem){if(request!==agendaAttendanceRequest)return;count.textContent='Presensi gagal dimuat';error.textContent=problem.message||'Silakan coba lagi.';error.hidden=false;body.innerHTML='';}
+    finally{if(request===agendaAttendanceRequest)refresh.disabled=false;}
+  }
+</script>

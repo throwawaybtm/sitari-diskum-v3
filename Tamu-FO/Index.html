@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <?!= include('MobileBase'); ?>
+  <title>Pendaftaran Kunjungan Tamu Dalam Daerah</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    @media (min-width: 1024px) {
+      body > .tdd-page { width: 48rem; max-width: 100%; }
+      #foBidangOptions { grid-template-columns: repeat(2, minmax(max-content, 1fr)); }
+    }
+
+    /* Phone readability only; existing desktop rules are preserved. */
+    @media (max-width: 767.98px), (max-width: 1023.98px) and (hover: none) and (pointer: coarse) {
+      /* Hide tracks without disabling wheel, touch or keyboard scrolling. */
+      * {scrollbar-width:none;}
+      *::-webkit-scrollbar {display:none;}
+      body {padding:12px 10px!important;font-size:16px;line-height:1.45;}
+      :is(.tld-page,.tdd-page,.presensi-page) {min-width:0;}
+      :is(.tld-page,.tdd-page,.presensi-page) :is(p,span,label,small,li,input,select,textarea,button,a) {font-size:16px!important;line-height:1.45;}
+      :is(.tld-page,.tdd-page,.presensi-page) :is(p.text-xs,small) {font-size:14px!important;}
+      .tld-page h1,.tdd-page h1,.presensi-page .text-2xl.font-extrabold {font-size:22px!important;line-height:1.4;overflow-wrap:anywhere;}
+      .presensi-page h1 {font-size:16px!important;line-height:1.5;}
+      :is(.tld-page,.tdd-page,.presensi-page) h2 {font-size:20px!important;}
+      :is(.tld-page,.tdd-page,.presensi-page) .grid {grid-template-columns:minmax(0,1fr)!important;gap:12px;}
+      :is(.tld-page,.tdd-page,.presensi-page) .grid > div {grid-column:auto!important;min-width:0;}
+      :is(.tld-page,.tdd-page,.presensi-page) :is(.p-6,.p-8) {padding:14px!important;}
+      :is(.tld-page,.tdd-page,.presensi-page) :is(input,select,textarea) {min-width:0;max-width:100%;font-size:16px!important;}
+      :is(.tld-page,.tdd-page,.presensi-page) :is(input:not([type=checkbox]):not([type=radio]),select,button) {min-height:44px;}
+      :is(.tld-page,.tdd-page,.presensi-page) :is(input[type=date],input[type=time]) {width:100%;}
+      :is(.tld-page,.tdd-page,.presensi-page) :is(input[type=checkbox],input[type=radio]) {width:24px;height:24px;min-width:24px;flex-shrink:0;}
+      :is(.tld-page,.tdd-page,.presensi-page) label {text-transform:none;letter-spacing:normal;}
+      :is(.tld-page,.tdd-page,.presensi-page) :is(button,label.relative) {white-space:normal;overflow-wrap:anywhere;}
+      :is(.tld-page,.tdd-page,.presensi-page) label.relative {min-height:44px;justify-content:center;}
+      :is(.tld-page,.tdd-page,.presensi-page) .text-slate-400 {color:#475569;}
+      :is(.tld-page,.tdd-page,.presensi-page) :is(h3,legend) {font-size:16px!important;line-height:1.5;text-transform:none;}
+      #foBidangOptions p.font-bold,#departmentInfoCards p {font-size:16px!important;}
+      #foBidangOptions label {padding:12px;min-height:52px;align-items:center;}
+      #foBidangOptions label span,#departmentInfoCards span {min-width:0;white-space:normal;overflow-wrap:anywhere;}
+      #foBidangOptions label small {font-size:14px!important;}
+      #formPresensi > .flex {flex-wrap:wrap;}
+      :is(#modalSuksesFo,#modalSuksesLuar) {padding:12px!important;}
+      :is(#modalSuksesFo,#modalSuksesLuar) > div {max-height:94dvh;overflow-y:auto;}
+      :is(#modalSuksesFo,#modalSuksesLuar) :is(p,span,button) {font-size:16px!important;line-height:1.45;}
+      :is(#modalSuksesFo,#modalSuksesLuar) button {min-height:44px;}
+    }
+    @media (max-width: 767.98px), (max-width: 1023.98px) and (hover: none) and (pointer: coarse) {
+      :is(.tld-page,.tdd-page,.presensi-page) form > :not([hidden]) ~ :not([hidden]) {margin-top:12px!important;}
+      :is(.tld-page,.tdd-page,.presensi-page) > .text-center {padding-top:0;padding-bottom:12px;}
+      :is(.tld-page,.tdd-page,.presensi-page) > .text-center .w-14 {width:44px;height:44px;}
+      :is(.tld-page,.tdd-page,.presensi-page) :is(.mb-4,.mb-6) {margin-bottom:12px!important;}
+      #departmentInfoCards {gap:8px;}
+      #departmentInfoCards > div {padding:10px;}
+    }
+    /* Compact phone layout matching TLD; destinations stay directly selectable. */
+    @media (max-width: 767.98px), (max-width: 1023.98px) and (hover: none) and (pointer: coarse) {
+      body {padding:8px!important;}
+      .tdd-page > .text-center {padding-bottom:8px;}
+      .tdd-page > .text-center > .inline-flex {gap:6px;margin-bottom:4px;}
+      .tdd-page > .text-center .w-14 {width:32px;height:32px;border-radius:12px;}
+      .tdd-page > .text-center .w-14 i {font-size:18px;}
+      .tdd-page > .text-center span {font-size:12px!important;line-height:1.3;padding:3px 9px;}
+      .tdd-page > .text-center h1 {font-size:19px!important;line-height:1.3;margin-top:0;}
+      .tdd-page > .text-center p {font-size:13px!important;margin-top:4px;}
+      .tdd-page > .bg-white {padding:12px!important;border-radius:18px;}
+      .tdd-page > .bg-white > .mb-4 {margin-bottom:8px!important;padding-bottom:8px;}
+      .tdd-page h2 {font-size:18px!important;}
+      .tdd-page form > :not([hidden]) ~ :not([hidden]) {margin-top:8px!important;}
+      .tdd-page form .grid {gap:8px;}
+      .tdd-page form :is(input:not([type=checkbox]),textarea) {padding:8px 10px;}
+      .tdd-page form textarea {min-height:60px;}
+      .tdd-page #btnSubmitFo {padding:10px 8px;}
+      #formTamuFo fieldset > legend {margin-bottom:4px;}
+      #foBidangOptions {gap:0!important;border:1px solid #cbd5e1;border-radius:12px;overflow:hidden;}
+      #foBidangOptions label {gap:8px;min-height:52px;padding:8px 10px;border:0;border-radius:0;}
+      #foBidangOptions label + label {border-top:1px solid #e2e8f0;}
+      #foBidangOptions label:has(:checked) {box-shadow:inset 3px 0 #0f766e;}
+      #foBidangOptions label:focus-within {outline:2px solid #0f766e;outline-offset:-2px;}
+      #foBidangOptions label input {width:20px;height:20px;min-width:20px;padding:0;}
+      #foBidangOptions label > div {margin-left:0;}
+      #foBidangOptions p.font-bold {font-size:16px!important;line-height:1.3!important;}
+      #foBidangOptions p + p {font-size:13px!important;line-height:1.35!important;margin-top:2px;}
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-teal-950 to-emerald-950 text-slate-100 min-h-screen flex flex-col justify-between p-4 sm:p-6">
+
+  <div class="tdd-page max-w-[860px] mx-auto w-full">
+  <!-- TOP HEADER KIOSK -->
+  <div class="text-center pt-2 pb-4">
+    <div class="inline-flex flex-wrap items-center justify-center gap-2 mb-2">
+      <div class="inline-flex items-center justify-center w-14 h-14 bg-emerald-500/20 text-emerald-300 rounded-3xl border border-emerald-400/30">
+        <i class="fa-solid fa-user text-2xl"></i>
+      </div>
+      <span class="px-3 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 uppercase tracking-wider">TAMU DALAM DAERAH</span>
+    </div>
+    <h1 class="text-2xl font-extrabold text-white mt-1">Pendaftaran Kunjungan Tamu Dalam Daerah</h1>
+  </div>
+
+  <!-- MAIN KIOSK CARD -->
+  <div class="w-full bg-white text-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8 overflow-hidden">
+    <div class="mb-4 pb-3 border-b border-slate-100">
+      <h2 class="text-base font-bold text-slate-800 flex items-center">
+        <i class="fa-solid fa-file-signature mr-2 text-teal-600"></i> Data Kunjungan
+      </h2>
+      <p class="text-xs text-slate-500 mt-1"><span class="text-rose-600 font-bold">*</span> Wajib diisi</p>
+    </div>
+
+    <form id="formTamuFo" onsubmit="submitFo(event)" class="space-y-5">
+      <div class="grid grid-cols-1 sm:grid-cols-3 items-end gap-3">
+      <div class="sm:col-span-2">
+        <label for="foNama" class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Pengunjung <span class="text-rose-600">*</span></label>
+        <input type="text" id="foNama" name="ketua_nama" required placeholder="Masukkan nama lengkap Anda..."
+          class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-teal-500 outline-none">
+      </div>
+
+      <div>
+        <label for="foJumlah" class="block text-xs font-bold text-slate-700 uppercase mb-1">Total Orang <span class="text-rose-600">*</span></label>
+        <input type="number" id="foJumlah" name="jumlah_orang" value="1" min="1" required
+          class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-teal-500 outline-none">
+      </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 items-end gap-3">
+        <div>
+          <label for="foInstansi" class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Instansi / Asal Pengunjung</label>
+          <input type="text" id="foInstansi" name="instansi" placeholder="Koperasi / UMKM Mandiri"
+            class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-teal-500 outline-none">
+        </div>
+        <div>
+          <label for="foWhatsapp" class="block text-xs font-bold text-slate-700 uppercase mb-1">WhatsApp Narahubung <span class="text-rose-600">*</span></label>
+          <input type="tel" id="foWhatsapp" name="narahubung_hp" required placeholder="08xxxxxxxxxx"
+            class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-teal-500 outline-none">
+        </div>
+      </div>
+
+      <div>
+        <label for="foAlamat" class="block text-xs font-bold text-slate-700 uppercase mb-1">Alamat Instansi / Domisili</label>
+        <input type="text" id="foAlamat" name="alamat" placeholder="Kecamatan / Kelurahan di Kota Batam..."
+          class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-teal-500 outline-none">
+      </div>
+
+      <!-- Tujuan Bidang -->
+      <fieldset class="pt-1">
+        <legend class="block text-xs font-bold text-slate-700 uppercase mb-2">Bidang Tujuan <span class="text-rose-600">*</span></legend>
+        <div id="foBidangOptions" class="grid grid-cols-1 lg:grid-cols-2 gap-3"></div>
+      </fieldset>
+
+      <div>
+        <label for="foAgenda" class="block text-xs font-bold text-slate-700 uppercase mb-1">Agenda <span class="text-rose-600">*</span></label>
+        <textarea id="foAgenda" name="keperluan" required rows="2" placeholder="Jelaskan secara singkat keperluan Anda..."
+          class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-teal-500 outline-none"></textarea>
+      </div>
+
+      <button type="submit" id="btnSubmitFo" class="w-full py-3.5 bg-gradient-to-r from-[#11504a] to-[#143238] hover:brightness-110 text-white rounded-2xl font-bold text-sm shadow-lg transition flex items-center justify-center space-x-2">
+        <i class="fa-solid fa-paper-plane"></i>
+        <span>Kirim Pendaftaran Kunjungan</span>
+      </button>
+    </form>
+  </div>
+  </div>
+
+  <!-- MODAL SUKSES CHECK-IN KIOSK FO -->
+  <div id="modalSuksesFo" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full max-h-[90dvh] overflow-y-auto p-6 text-center space-y-4 shadow-2xl">
+      <div class="w-16 h-16 bg-teal-100 text-teal-700 rounded-full flex items-center justify-center mx-auto text-2xl animate-bounce">
+        <i class="fa-solid fa-id-card-clip"></i>
+      </div>
+      <h3 class="text-xl font-extrabold text-slate-800">Pendaftaran Berhasil!</h3>
+      <p class="text-xs text-slate-500">Data kunjungan Anda telah berhasil diterima.</p>
+
+      <div class="p-4 rounded-2xl bg-teal-50 border border-teal-200 text-left space-y-1.5 text-xs">
+        <div class="flex justify-between">
+          <span class="text-slate-500">Kode Kunjungan:</span>
+          <span id="foResKode" class="font-bold text-teal-900 font-mono"></span>
+        </div>
+        <div class="space-y-1">
+          <span class="text-slate-500">Bidang Tujuan:</span>
+          <span id="foResBidang" class="font-semibold text-slate-800 block break-words"></span>
+        </div>
+        <div class="space-y-1">
+          <span class="text-slate-500">Penerima Tamu:</span>
+          <span id="foResLo" class="font-bold text-teal-800 block break-words"></span>
+        </div>
+      </div>
+
+      <button onclick="location.reload()" class="w-full py-2.5 bg-teal-700 hover:bg-teal-800 text-white rounded-xl text-xs font-bold">
+        Tutup & Kembali ke Layar Awal
+      </button>
+    </div>
+  </div>
+
+  <div class="text-center text-[11px] text-slate-400 py-2">
+    Dinas Koperasi & Usaha Mikro Kota Batam
+  </div>
+
+  <script>
+    const tddDestinations = <?!= JSON.stringify(tddDestinations) ?>;
+    const foBidangOptions = document.getElementById('foBidangOptions');
+    tddDestinations.forEach(item => {
+      const card = document.createElement('label');
+      card.className = 'flex items-center p-3 rounded-xl border-2 border-slate-200 cursor-pointer hover:border-teal-500 transition has-[:checked]:border-teal-600 has-[:checked]:bg-teal-50';
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.name = 'tujuan_bidang';
+      checkbox.value = item.bidang;
+      checkbox.className = 'w-4 h-4 shrink-0 accent-teal-700';
+      const copy = document.createElement('div');
+      copy.className = 'ml-2.5 min-w-0';
+      const name = document.createElement('p');
+      name.className = 'text-xs font-bold text-slate-800';
+      name.textContent = item.bidang;
+      const pic = document.createElement('p');
+      pic.className = 'text-[11px] text-teal-800 mt-1';
+      pic.textContent = 'PIC: ' + item.pic;
+      copy.append(name, pic);
+      card.append(checkbox, copy);
+      foBidangOptions.append(card);
+    });
+    function validateFoBidangSelection() {
+      const boxes = [...foBidangOptions.querySelectorAll('input')];
+      boxes[0].setCustomValidity(boxes.some(box => box.checked) ? '' : 'Pilih minimal satu Bidang Tujuan.');
+    }
+    foBidangOptions.addEventListener('change', validateFoBidangSelection);
+    validateFoBidangSelection();
+
+    async function submitFo(e) {
+      e.preventDefault();
+      validateFoBidangSelection();
+      if (!document.getElementById('formTamuFo').reportValidity()) return;
+      const btn = document.getElementById('btnSubmitFo');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Mengirim Pendaftaran...';
+
+      try {
+      const form = document.getElementById('formTamuFo');
+      const formData = new FormData(form);
+      const payload = {
+        ketua_nama: formData.get('ketua_nama'),
+        jumlah_orang: formData.get('jumlah_orang'),
+        instansi: formData.get('instansi'),
+        narahubung_hp: formData.get('narahubung_hp'),
+        alamat: formData.get('alamat'),
+        tujuan_bidang: formData.getAll('tujuan_bidang'),
+        keperluan: formData.get('keperluan')
+      };
+
+      if (window.google && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(onSuccess)
+          .withFailureHandler(err => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i> Kirim Pendaftaran Kunjungan';
+            alert('Gagal: ' + err.message);
+          })
+          .registerTamuFo(payload);
+      } else {
+        const res = await fetch('/api/registerTamuFo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+        onSuccess(json);
+      }
+      } catch (err) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i> Kirim Pendaftaran Kunjungan';
+        alert('Gagal: ' + err.message);
+      }
+
+      function onSuccess(res) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i> Kirim Pendaftaran Kunjungan';
+        if (res.success) {
+          document.getElementById('foResKode').innerText = res.data.kode_kunjungan;
+          document.getElementById('foResBidang').innerText = res.data.tujuan_bidang;
+          document.getElementById('foResLo').innerText = res.data.lo_nama;
+          document.getElementById('modalSuksesFo').classList.remove('hidden');
+          document.getElementById('modalSuksesFo').classList.add('flex');
+        } else {
+          alert('Gagal: ' + res.error);
+        }
+      }
+    }
+  </script>
+</body>
+</html>

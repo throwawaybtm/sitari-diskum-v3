@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="si-tari-imported-employee-count" content="<?= employeeImportCount ?>">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <?!= include('MobileBase'); ?>
+  <title>Dashboard Presensi</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .category-short {display:none;}
+    :is(#attendanceWindowMessage,#visitRosterMessage):empty {display:none;}
+    @media (min-width: 1024px) {
+      body > .presensi-page { width: 48rem; max-width: 100%; }
+    }
+
+    /* Phone readability only; existing desktop rules are preserved. */
+    @media (max-width: 767.98px), (max-width: 1023.98px) and (hover: none) and (pointer: coarse) {
+      /* Hide tracks without disabling wheel, touch or keyboard scrolling. */
+      * {scrollbar-width:none;}
+      *::-webkit-scrollbar {display:none;}
+      body {padding:12px 10px!important;font-size:16px;line-height:1.45;}
+      :is(.tld-page,.tdd-page,.presensi-page) {min-width:0;}
+      :is(.tld-page,.tdd-page,.presensi-page) :is(p,span,label,small,li,input,select,textarea,button,a) {font-size:16px!important;line-height:1.45;}
+      :is(.tld-page,.tdd-page,.presensi-page) :is(p.text-xs,small) {font-size:14px!important;}
+      .tld-page h1,.tdd-page h1,.presensi-page .text-2xl.font-extrabold {font-size:22px!important;line-height:1.4;overflow-wrap:anywhere;}
+      .presensi-page h1 {font-size:16px!important;line-height:1.5;}
+      :is(.tld-page,.tdd-page,.presensi-page) h2 {font-size:20px!important;}
+      :is(.tld-page,.tdd-page,.presensi-page) .grid {grid-template-columns:minmax(0,1fr)!important;gap:12px;}
+      :is(.tld-page,.tdd-page,.presensi-page) .grid > div {grid-column:auto!important;min-width:0;}
+      :is(.tld-page,.tdd-page,.presensi-page) :is(.p-6,.p-8) {padding:14px!important;}
+      :is(.tld-page,.tdd-page,.presensi-page) :is(input,select,textarea) {min-width:0;max-width:100%;font-size:16px!important;}
+      :is(.tld-page,.tdd-page,.presensi-page) :is(input:not([type=checkbox]):not([type=radio]),select,button) {min-height:44px;}
+      :is(.tld-page,.tdd-page,.presensi-page) :is(input[type=date],input[type=time]) {width:100%;}
+      :is(.tld-page,.tdd-page,.presensi-page) :is(input[type=checkbox],input[type=radio]) {width:24px;height:24px;min-width:24px;flex-shrink:0;}
+      :is(.tld-page,.tdd-page,.presensi-page) label {text-transform:none;letter-spacing:normal;}
+      :is(.tld-page,.tdd-page,.presensi-page) :is(button,label.relative) {white-space:normal;overflow-wrap:anywhere;}
+      :is(.tld-page,.tdd-page,.presensi-page) label.relative {min-height:44px;justify-content:center;}
+      :is(.tld-page,.tdd-page,.presensi-page) .text-slate-400 {color:#475569;}
+      :is(.tld-page,.tdd-page,.presensi-page) :is(h3,legend) {font-size:16px!important;line-height:1.5;text-transform:none;}
+      #foBidangOptions p.font-bold,#departmentInfoCards p {font-size:16px!important;}
+      #foBidangOptions label {padding:12px;min-height:52px;align-items:center;}
+      #foBidangOptions label span,#departmentInfoCards span {min-width:0;white-space:normal;overflow-wrap:anywhere;}
+      #foBidangOptions label small {font-size:14px!important;}
+      #formPresensi > .flex {flex-wrap:wrap;}
+      :is(#modalSuksesFo,#modalSuksesLuar) {padding:12px!important;}
+      :is(#modalSuksesFo,#modalSuksesLuar) > div {max-height:94dvh;overflow-y:auto;}
+      :is(#modalSuksesFo,#modalSuksesLuar) :is(p,span,button) {font-size:16px!important;line-height:1.45;}
+      :is(#modalSuksesFo,#modalSuksesLuar) button {min-height:44px;}
+    }
+    @media (max-width: 767.98px), (max-width: 1023.98px) and (hover: none) and (pointer: coarse) {
+      :is(.tld-page,.tdd-page,.presensi-page) form > :not([hidden]) ~ :not([hidden]) {margin-top:12px!important;}
+      :is(.tld-page,.tdd-page,.presensi-page) > .text-center {padding-top:0;padding-bottom:12px;}
+      :is(.tld-page,.tdd-page,.presensi-page) > .text-center .w-14 {width:44px;height:44px;}
+      :is(.tld-page,.tdd-page,.presensi-page) :is(.mb-4,.mb-6) {margin-bottom:12px!important;}
+      #departmentInfoCards {gap:8px;}
+      #departmentInfoCards > div {padding:10px;}
+    }
+    @media (max-width: 767.98px), (max-width: 1023.98px) and (hover: none) and (pointer: coarse) {
+      .presensi-page #participantCategories {grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px;}
+      #participantCategories > button {display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:56px;padding:6px 4px;border-radius:10px;font-size:14px!important;line-height:1.25;}
+      #participantCategories > button > * {margin:0!important;}
+      #participantCategories .category-full {display:none;}
+      #participantCategories .category-short {display:block;font-size:14px!important;line-height:1.25;}
+      #participantCategories > button > i {font-size:14px;}
+      .presensi-page #employeeDataCard {padding:10px;gap:8px;}
+    }
+  </style>
+</head>
+<body data-admin-attendance="<?= typeof adminAttendance !== 'undefined' && adminAttendance ? 'true' : 'false' ?>" class="bg-gradient-to-br from-slate-900 via-teal-950 to-emerald-950 text-slate-100 min-h-screen py-8 px-4 sm:px-6">
+
+  <div class="presensi-page w-full max-w-[860px] mx-auto">
+    <!-- Header -->
+    <div class="text-center mb-6">
+      <div class="inline-flex flex-wrap items-center justify-center gap-2 mb-2">
+        <div class="inline-flex items-center justify-center w-14 h-14 bg-emerald-500/20 text-emerald-300 rounded-3xl border border-emerald-400/30">
+          <i class="fa-solid fa-chart-column text-2xl"></i>
+        </div>
+        <h1 class="px-3 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 uppercase tracking-wider">Dashboard Presensi</h1>
+      </div>
+      <p class="text-2xl font-extrabold text-white mt-1">Daftar Hadir Rapat Internal</p>
+    </div>
+
+    <!-- Main Card -->
+    <div class="bg-white text-slate-800 rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
+      <!-- Meeting Selector Header -->
+      <div class="p-6 bg-white border-b border-slate-100 space-y-3">
+        <label for="selectRapat" class="block text-xs font-bold uppercase tracking-wider text-slate-700">
+          <i class="fa-solid fa-calendar-days mr-1.5 text-teal-600"></i> Jadwal Rapat <span class="text-rose-600" aria-hidden="true">*</span>
+        </label>
+        <select id="selectRapat" onchange="onPresensiAgendaChange()" form="formPresensi" required class="w-full px-4 py-3 bg-white border border-slate-300 text-slate-800 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-teal-500 outline-none">
+          <option value="">-- Memuat Jadwal Rapat... --</option>
+        </select>
+        <p id="attendanceWindowMessage" role="status" class="text-xs text-slate-500"></p>
+      </div>
+
+      <!-- Kategori Tab: Internal Diskum vs Internal Pemko Batam -->
+      <div class="p-6 space-y-5">
+        <p class="text-xs text-slate-500"><span class="text-rose-600 font-bold">*</span> Wajib diisi</p>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+            Kategori Peserta Rapat <span class="text-rose-600" aria-hidden="true">*</span>
+          </label>
+          <div id="participantCategories" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <button type="button" onclick="setKategoriPeserta('Diskum')" id="btnKatDiskum"
+              class="py-3 px-4 rounded-xl border-2 font-bold text-xs transition flex flex-col items-center justify-center space-y-1 border-blue-600 bg-blue-50 text-blue-900">
+              <i class="fa-solid fa-id-badge text-base"></i>
+              <span class="category-full">Internal Diskum</span>
+              <span class="category-short">Diskum</span>
+            </button>
+
+            <button type="button" onclick="setKategoriPeserta('OPD_Pemko')" id="btnKatPemko"
+              class="py-3 px-4 rounded-xl border-2 font-bold text-xs transition flex flex-col items-center justify-center space-y-1 border-slate-200 bg-white text-slate-700 hover:border-slate-300">
+              <i class="fa-solid fa-landmark text-base"></i>
+              <span class="category-full">Internal Pemko Batam</span>
+              <span class="category-short">Pemko Batam</span>
+            </button>
+            <button type="button" onclick="setKategoriPeserta('Tamu_Luar')" id="btnKatTamu" class="py-3 px-4 rounded-xl border-2 font-bold text-xs border-slate-200 bg-white text-slate-700">
+              <i class="fa-solid fa-plane-arrival text-base block mb-1"></i><span class="category-full">Tamu Luar Daerah</span><span class="category-short">Tamu Luar</span>
+            </button>
+          </div>
+        </div>
+
+        <form id="formPresensi" onsubmit="submitPresensiForm(event)" class="space-y-4">
+          <!-- FORM SUBSECTION 1: INTERNAL DISKUM -->
+          <div id="sectionDiskum" class="space-y-3">
+            <div>
+              <label for="selectBidangDiskum" class="block text-xs font-bold text-slate-700 uppercase mb-1">Bidang / Unit Kerja <span class="text-rose-600" aria-hidden="true">*</span></label>
+              <select id="selectBidangDiskum" required onchange="onBidangDiskumChange()" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none"><option value="">-- Pilih Bidang / Unit Kerja --</option></select>
+            </div>
+            <div>
+              <label for="selectPegawaiDiskum" class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                Pilih Nama Pegawai Diskum <span class="text-rose-600" aria-hidden="true">*</span>
+              </label>
+              <select id="selectPegawaiDiskum" required disabled onchange="onPegawaiChange()"
+                class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                <option value="">-- Pilih bidang / unit kerja terlebih dahulu --</option>
+              </select>
+            </div>
+
+            <div id="employeeDataCard" class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+              <div>
+                <span class="text-slate-400 block font-semibold">NIP / NI PPPK:</span>
+                <span id="displayNip" class="font-mono font-bold text-slate-700">-</span>
+              </div>
+              <div>
+                <span class="text-slate-400 block font-semibold">Jabatan:</span>
+                <span id="displayJabatan" class="font-bold text-slate-700">-</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- FORM SUBSECTION 2: INTERNAL PEMKO BATAM -->
+          <div id="sectionPemko" class="space-y-3 hidden">
+            <div>
+              <label for="selectOpdPemko" class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                Pilih OPD Pemko Batam <span class="text-rose-600" aria-hidden="true">*</span>
+              </label>
+              <select id="selectOpdPemko"
+                class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                <option value="">-- Pilih OPD Pemko Batam --</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="inputNamaPemko" class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Lengkap & Gelar <span class="text-rose-600" aria-hidden="true">*</span></label>
+              <input type="text" id="inputNamaPemko" placeholder="Nama lengkap peserta..."
+                class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">NIP (Opsional)</label>
+                <input type="text" id="inputNipPemko" placeholder="19xxxxxxxxxxxx"
+                  class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Jabatan di OPD</label>
+                <input type="text" id="inputJabatanPemko" placeholder="Contoh: Pranata Komputer / Kabid"
+                  class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+              </div>
+            </div>
+          </div>
+
+          <div id="sectionTamu" class="space-y-3 hidden">
+            <div id="visitRosterField" hidden><label for="selectTamuRombongan" class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Anggota Rombongan <span class="text-rose-600">*</span></label><select id="selectTamuRombongan" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm"><option value="">Pilih nama terdaftar</option></select><p id="visitRosterMessage" class="text-xs text-slate-500 mt-2" aria-live="polite"></p></div>
+            <div id="freeTamuName"><label for="inputNamaTamu" class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Lengkap <span class="text-rose-600">*</span></label><input id="inputNamaTamu" type="text" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm" placeholder="Nama peserta kunjungan"></div>
+            <div><label for="inputInstansiTamu" class="block text-xs font-bold text-slate-700 uppercase mb-1">Instansi Asal <span class="text-rose-600">*</span></label><input id="inputInstansiTamu" type="text" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm" placeholder="Nama instansi asal"></div>
+            <div><label for="inputJabatanTamu" class="block text-xs font-bold text-slate-700 uppercase mb-1">Jabatan</label><input id="inputJabatanTamu" type="text" maxlength="150" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm" placeholder="Jabatan pada instansi asal"></div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">No HP / WhatsApp (Opsional)</label>
+            <input type="text" id="inputHp" placeholder="08xxxxxxxxxx"
+              class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+          </div>
+
+          <div id="adminAttendanceTime" hidden>
+            <label for="inputJamKehadiran" class="block text-xs font-bold text-slate-700 uppercase mb-1">Jam Kehadiran <span class="text-rose-600">*</span></label>
+            <input id="inputJamKehadiran" type="time" lang="en-GB" step="60" disabled class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm" aria-describedby="attendanceTimeDate">
+            <p id="attendanceTimeDate" class="text-sm text-slate-500 mt-1"></p>
+          </div>
+          <button type="submit" id="btnSubmitPresensi" class="w-full py-3.5 bg-gradient-to-r from-[#11504a] to-[#143238] hover:brightness-110 text-white rounded-2xl font-bold text-sm shadow-lg transition flex items-center justify-center space-x-2">
+            <i class="fa-solid fa-paper-plane"></i>
+            <span>Simpan Kehadiran Presensi Digital</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <?!= include('AttendancePolicy'); ?>
+  <script>
+    let masterPegawai = [];
+    let masterOpd = [];
+    let currentKategori = 'Diskum';
+    let presensiMeetings = [];
+    let visitRosterMode = false;
+    let visitRosterData = null;
+    let visitRosterRequest = 0;
+
+    function isAdminAttendance() {return document.body?.dataset?.adminAttendance==='true';}
+    function attendanceFormAvailability(meeting) {return isAdminAttendance()?adminAttendanceAvailability(meeting):attendanceAvailability(meeting);}
+    function updateAdminAttendanceTime(agenda) {
+      const admin=isAdminAttendance(),field=document.getElementById('inputJamKehadiran');
+      document.getElementById('adminAttendanceTime').hidden=!admin;field.disabled=!admin;field.required=admin;
+      if(admin){field.value=agenda?.jam_mulai||'';document.getElementById('attendanceTimeDate').textContent=agenda?'Tanggal agenda: '+formatPresensiMeetingDate(agenda.tanggal)+' WIB':'';}
+    }
+    function formatPresensiMeetingDate(value) {
+      const text = String(value || '');
+      const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
+      return match ? `${match[3]}-${match[2]}-${match[1]}` : (text || '-');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      updateAdminAttendanceTime(null);
+      loadInitialData();
+    });
+
+    function loadInitialData() {
+      // Load rapat
+      callBackend('getRapatCalendar', [], res => {
+        const sel = document.getElementById('selectRapat');
+        sel.replaceChildren();
+        if (res && res.success) {
+          const meetings = Array.isArray(res.data) ? res.data : [];
+          presensiMeetings = meetings;
+          if (meetings.length === 0) {
+            sel.add(new Option('-- Belum ada jadwal rapat --', '', true, true));
+            sel.disabled = true;
+          } else {
+            sel.add(new Option('-- Pilih Jadwal Rapat --', '', true, true));
+            meetings.forEach(r => sel.add(new Option(
+              `${r.judul_rapat || '-'} (${r.nama_ruangan || '-'})`,
+              String(r.id || '')
+            )));
+            function selectAgenda(id) {
+              if(!id)return;
+              const selected = meetings.find(r => String(r.id) === String(id));
+              if (!selected) {sel.replaceChildren(new Option('Agenda pada QR tidak ditemukan', ''));sel.disabled=true;return;}
+              const label=sel.options?Array.from(sel.options).find(o=>String(o.value)===String(id))?.text:selected.judul_rapat;
+              sel.replaceChildren(new Option(label||selected.judul_rapat,String(selected.id)));
+              sel.value = String(selected.id);
+              sel.disabled=true;
+              onPresensiAgendaChange();
+            }
+            if (typeof window !== 'undefined' && window.location) selectAgenda(new URLSearchParams(window.location.search).get('id'));
+            if (typeof google !== 'undefined' && google.script && google.script.url) google.script.url.getLocation(loc => selectAgenda(loc.parameter.id));
+          }
+        } else {
+          sel.add(new Option('-- Jadwal rapat gagal dimuat --', '', true, true));
+          sel.disabled = true;
+        }
+      }, err => {
+        console.error('getRapatCalendar failed:', err);
+        const sel = document.getElementById('selectRapat');
+        sel.replaceChildren(new Option('-- Jadwal rapat gagal dimuat --', '', true, true));
+        sel.disabled = true;
+      });
+
+      callBackend('getMasterData', [], res => {
+        const selPegawai = document.getElementById('selectPegawaiDiskum');
+        const selOpd = document.getElementById('selectOpdPemko');
+        selPegawai.replaceChildren(new Option('-- Pilih Nama Pegawai Diskum --', ''));
+        selOpd.replaceChildren(new Option('-- Pilih OPD Pemko Batam --', ''));
+
+        if (res && res.success) {
+          masterPegawai = Array.isArray(res.data && res.data.pegawai) ? res.data.pegawai : [];
+          masterOpd = Array.isArray(res.data && res.data.opd) ? res.data.opd : [];
+          const department=document.getElementById('selectBidangDiskum');
+          department.replaceChildren(new Option('-- Pilih Bidang / Unit Kerja --',''));
+          const preferred=['Dinas','Sekretariat','Bidang Pemberdayaan dan Pelindungan Koperasi','Bidang Pengawasan Koperasi','Bidang Kewirausahaan','Bidang Pengembangan Usaha Mikro','UPTD Pengelolaan Dana Bergulir','UPTD PLUT KUMKM','UPTD Pemberdayaan dan Pelindungan Koperasi'];
+          const departments=[...new Set(masterPegawai.map(p=>p.bidang).filter(Boolean))].sort((a,b)=>{const i=preferred.indexOf(a),j=preferred.indexOf(b);return (i<0?99:i)-(j<0?99:j)||a.localeCompare(b,'id');});
+          departments.forEach(name=>department.add(new Option(name+' ('+masterPegawai.filter(p=>p.bidang===name).length+')',name)));
+          department.disabled=!departments.length;onBidangDiskumChange();
+          masterOpd.forEach(o => selOpd.add(new Option(o.nama_opd || '-', String(o.id || ''))));
+          if (masterPegawai.length === 0) selPegawai.add(new Option('Belum ada data pegawai', '', true, true));
+          if (masterOpd.length === 0) selOpd.add(new Option('Belum ada data OPD', '', true, true));
+        } else {
+          masterPegawai = [];
+          document.getElementById('selectBidangDiskum').disabled=true;selPegawai.disabled=true;
+          masterOpd = [];
+          selPegawai.replaceChildren(new Option('Data pegawai gagal dimuat', '', true, true));
+          selOpd.replaceChildren(new Option('Data OPD gagal dimuat', '', true, true));
+        }
+      }, err => {
+        console.error('getMasterData failed:', err);
+        masterPegawai = [];
+        document.getElementById('selectBidangDiskum').disabled=true;document.getElementById('selectPegawaiDiskum').disabled=true;
+        masterOpd = [];
+        document.getElementById('selectPegawaiDiskum').replaceChildren(new Option('Data pegawai gagal dimuat', '', true, true));
+        document.getElementById('selectOpdPemko').replaceChildren(new Option('Data OPD gagal dimuat', '', true, true));
+      });
+    }
+
+    function setKategoriPeserta(kat) {
+      if(visitRosterMode)kat='Tamu_Luar';
+      currentKategori = kat;
+      document.getElementById('selectPegawaiDiskum').required = kat === 'Diskum';
+      document.getElementById('selectBidangDiskum').required = kat === 'Diskum';
+      document.getElementById('selectOpdPemko').required = kat === 'OPD_Pemko';
+      document.getElementById('inputNamaPemko').required = kat === 'OPD_Pemko';
+      document.getElementById('inputNamaTamu').required = kat === 'Tamu_Luar' && !visitRosterMode;
+      document.getElementById('selectTamuRombongan').required = kat === 'Tamu_Luar' && visitRosterMode;
+      document.getElementById('inputInstansiTamu').required = kat === 'Tamu_Luar';
+      document.getElementById('sectionTamu').classList[kat === 'Tamu_Luar' ? 'remove' : 'add']('hidden');
+      document.getElementById('btnKatTamu').className = 'py-3 px-4 rounded-xl border-2 font-bold text-xs ' + (kat === 'Tamu_Luar' ? 'border-teal-600 bg-teal-50 text-teal-900' : 'border-slate-200 bg-white text-slate-700');
+      const btnDiskum = document.getElementById('btnKatDiskum');
+      const btnPemko = document.getElementById('btnKatPemko');
+      const secDiskum = document.getElementById('sectionDiskum');
+      const secPemko = document.getElementById('sectionPemko');
+
+      if (kat === 'Diskum') {
+        btnDiskum.className = 'py-3 px-4 rounded-xl border-2 font-bold text-xs transition flex flex-col items-center justify-center space-y-1 border-blue-600 bg-blue-50 text-blue-900';
+        btnPemko.className = 'py-3 px-4 rounded-xl border-2 font-bold text-xs transition flex flex-col items-center justify-center space-y-1 border-slate-200 bg-white text-slate-700 hover:border-slate-300';
+        secDiskum.classList.remove('hidden');
+        secPemko.classList.add('hidden');
+      } else {
+        btnPemko.className = 'py-3 px-4 rounded-xl border-2 font-bold text-xs transition flex flex-col items-center justify-center space-y-1 border-blue-600 bg-blue-50 text-blue-900';
+        btnDiskum.className = 'py-3 px-4 rounded-xl border-2 font-bold text-xs transition flex flex-col items-center justify-center space-y-1 border-slate-200 bg-white text-slate-700 hover:border-slate-300';
+        secDiskum.classList.add('hidden');
+        secPemko.classList.remove('hidden');
+      }
+      if (kat === 'Tamu_Luar') {
+        secDiskum.classList.add('hidden'); secPemko.classList.add('hidden');
+        btnPemko.className = btnDiskum.className;
+      }
+    }
+
+    function onPresensiAgendaChange() {
+      const id=document.getElementById('selectRapat').value;
+      const agenda=presensiMeetings.find(m=>String(m.id)===String(id));
+      updateAdminAttendanceTime(agenda);
+      const request=++visitRosterRequest;
+      visitRosterMode=Boolean(agenda&&(agenda.kode_kunjungan||/^VISIT-|^LOCAL-VISIT-/.test(agenda.kode_rapat||'')));
+      visitRosterData=null;
+      document.getElementById('visitRosterField').hidden=!visitRosterMode;
+      document.getElementById('freeTamuName').hidden=visitRosterMode;
+      document.getElementById('inputInstansiTamu').readOnly=visitRosterMode;
+      document.getElementById('inputInstansiTamu').value='';
+      document.getElementById('btnKatDiskum').disabled=visitRosterMode;
+      document.getElementById('btnKatPemko').disabled=visitRosterMode;
+      document.getElementById('btnSubmitPresensi').disabled=visitRosterMode;
+      setKategoriPeserta(visitRosterMode?'Tamu_Luar':'Diskum');
+      const availability=attendanceFormAvailability(agenda);
+      document.getElementById('attendanceWindowMessage').textContent=availability.open?'':availability.message;
+      document.getElementById('btnSubmitPresensi').disabled=!availability.open||visitRosterMode;
+      if(!availability.open){document.getElementById('selectTamuRombongan').disabled=true;document.getElementById('visitRosterMessage').textContent=availability.message;return;}
+      if(!visitRosterMode)return;
+      const select=document.getElementById('selectTamuRombongan'),message=document.getElementById('visitRosterMessage');
+      select.replaceChildren(new Option('Memuat daftar rombongan...','')); select.disabled=true;
+      message.textContent='Memuat nama dari permohonan kunjungan.';
+      callBackend('getVisitAttendanceRoster',[{rapat_id:id}],res=>{
+        if(request!==visitRosterRequest)return;
+        if(!res||!res.success){message.textContent=res&&res.error||'Daftar rombongan gagal dimuat. Pilih ulang agenda untuk mencoba lagi.';return;}
+        visitRosterData=res.data;
+        select.replaceChildren(new Option('Pilih nama terdaftar',''));
+        res.data.roster.forEach(member=>{const option=new Option(member.nama+' — '+member.peran+(member.attended?' (Sudah hadir)':''),member.id);option.disabled=member.attended;select.add(option);});
+        document.getElementById('inputInstansiTamu').value=res.data.instansi;
+        select.disabled=res.data.locked;
+        document.getElementById('btnSubmitPresensi').disabled=res.data.locked;
+        message.textContent=res.data.locked?'Presensi sudah divalidasi dan tidak dapat diubah.':'';
+      },()=>{if(request===visitRosterRequest)message.textContent='Daftar rombongan gagal dimuat. Pilih ulang agenda untuk mencoba lagi.';});
+    }
+
+    function onBidangDiskumChange() {
+      const bidang=document.getElementById('selectBidangDiskum').value,select=document.getElementById('selectPegawaiDiskum');
+      select.replaceChildren(new Option(bidang?'-- Pilih Nama Pegawai Diskum --':'-- Pilih bidang / unit kerja terlebih dahulu --',''));
+      select.value='';select.disabled=!bidang;
+      const members=masterPegawai.filter(p=>p.bidang===bidang);members.forEach(p=>select.add(new Option(p.nama,String(p.id))));
+      onPegawaiChange();
+    }
+    function onPegawaiChange() {
+      const pId = document.getElementById('selectPegawaiDiskum').value;
+      const found = masterPegawai.find(p => p.id == pId && p.bidang===document.getElementById('selectBidangDiskum').value);
+      if (found) {
+        document.getElementById('displayNip').innerText = found.nip||'-';
+        document.getElementById('displayJabatan').innerText = found.jabatan;
+      } else {
+        document.getElementById('displayNip').innerText = '-';
+        document.getElementById('displayJabatan').innerText = '-';
+      }
+    }
+
+    function submitPresensiForm(e) {
+      e.preventDefault();
+      const selected=presensiMeetings.find(m=>String(m.id)===String(document.getElementById('selectRapat').value));
+      const availability=attendanceFormAvailability(selected);
+      if(!availability.open){alert(availability.message);return;}
+      if (!document.getElementById('formPresensi').reportValidity()) return;
+      const rapatId = document.getElementById('selectRapat').value;
+      if (!rapatId) {
+        alert('Pilih agenda rapat terlebih dahulu.');
+        return;
+      }
+
+      const btn = document.getElementById('btnSubmitPresensi');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Menyimpan...';
+
+      let nama = '', nip = '', jabatan = '', namaOpd = 'Dinas Koperasi & UKM Batam';
+
+      if (currentKategori === 'Diskum') {
+        const pId = document.getElementById('selectPegawaiDiskum').value;
+        const found = masterPegawai.find(p => p.id == pId && p.bidang===document.getElementById('selectBidangDiskum').value);
+        if (!found) {
+          alert('Pilih nama pegawai Diskum.');
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i> Simpan Kehadiran Presensi Digital';
+          return;
+        }
+        nama = found.nama;
+        nip = found.nip;
+        jabatan = found.jabatan;
+      } else if (currentKategori === 'Tamu_Luar') {
+        const member=visitRosterMode&&visitRosterData&&visitRosterData.roster.find(m=>m.id===document.getElementById('selectTamuRombongan').value);
+        nama = visitRosterMode ? (member?member.nama:'') : document.getElementById('inputNamaTamu').value.trim();
+        namaOpd = document.getElementById('inputInstansiTamu').value.trim();
+        jabatan = document.getElementById('inputJabatanTamu').value.trim();
+        if (!nama || !namaOpd) {
+          alert('Isi nama dan instansi asal.'); btn.disabled=false;
+          btn.innerHTML='<i class="fa-solid fa-paper-plane mr-2"></i> Simpan Kehadiran Presensi Digital'; return;
+        }
+      } else {
+        nama = document.getElementById('inputNamaPemko').value.trim();
+        nip = document.getElementById('inputNipPemko').value;
+        jabatan = document.getElementById('inputJabatanPemko').value;
+        const opdId = document.getElementById('selectOpdPemko').value;
+        const foundOpd = masterOpd.find(o => o.id == opdId);
+        namaOpd = foundOpd ? foundOpd.nama_opd : 'OPD Pemko Batam';
+        if (!nama || !opdId) {
+          alert('Pilih nama OPD dan masukkan nama Anda.');
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i> Simpan Kehadiran Presensi Digital';
+          return;
+        }
+      }
+
+      const payload = {
+        rapat_id: rapatId,
+        kategori_peserta: currentKategori,
+        member_id:visitRosterMode?document.getElementById('selectTamuRombongan').value:'',
+        nama: nama,
+        nip: nip,
+        jabatan: jabatan,
+        nama_opd: namaOpd,
+        no_hp: document.getElementById('inputHp').value
+      };
+
+      if(isAdminAttendance())payload.jam_kehadiran=document.getElementById('inputJamKehadiran').value;
+      callBackend(isAdminAttendance()?'submitAdminPresensiRapat':'submitPresensiRapat', [payload], res => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i> Simpan Kehadiran Presensi Digital';
+        if (res.success) {
+          alert(res.message);
+          location.reload();
+        } else {
+          alert('Gagal: ' + res.error);
+        }
+      }, err => {
+        console.error('submitPresensiRapat failed:', err);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i> Simpan Kehadiran Presensi Digital';
+        alert('Presensi gagal disimpan. Periksa koneksi lalu coba lagi.');
+      });
+    }
+
+    function callBackend(fnName, args, onSuccess, onError) {
+      const handleError = onError || (err => console.error(fnName + ' failed:', err));
+      if (window.google && google.script && google.script.run) {
+        const runner = google.script.run.withSuccessHandler(onSuccess).withFailureHandler(handleError);
+        if (!args || args.length === 0) runner[fnName]();
+        else if (args.length === 1) runner[fnName](args[0]);
+        else if (args.length === 2) runner[fnName](args[0], args[1]);
+        else runner[fnName](args[0], args[1], args[2], args[3]);
+      } else {
+        fetch(`/api/${fnName}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(args ? args[0] : {})
+        })
+        .then(r => r.json())
+        .then(onSuccess)
+        .catch(handleError);
+      }
+    }
+  </script>
+</body>
+</html>

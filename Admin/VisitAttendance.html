@@ -1,0 +1,84 @@
+<style>
+  #manualVisitAttendance { position:fixed;inset:0;z-index:125;padding:20px;background:#0f172aa6;backdrop-filter:blur(6px);align-items:center;justify-content:center; }
+  #manualVisitAttendance[hidden] {display:none;}
+  #manualVisitAttendance:not([hidden]) {display:flex;}
+  #manualVisitAttendance .attendance-dialog {background:white;color:#334155;border-radius:24px;width:100%;max-width:640px;max-height:90dvh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 80px #0f172a40;}
+  #manualVisitAttendance .attendance-header {padding:24px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;gap:16px;}
+  #manualVisitAttendance h3 {font-weight:800;font-size:20px;color:#143238;}
+  #manualVisitAttendance .attendance-body {padding:24px;overflow-y:auto;font-size:12px;}
+  #manualVisitAttendance .attendance-person {display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid #f1f5f9;}
+  #manualVisitAttendance .attendance-person input {width:18px;height:18px;accent-color:#0f766e;flex-shrink:0;}
+  #manualVisitAttendance .attendance-footer {padding:18px 24px;border-top:1px solid #e2e8f0;}
+  #manualVisitAttendance .attendance-save {width:100%;padding:14px;border-radius:14px;background:linear-gradient(to right,#11504a,#143238);color:white;font-size:13px;font-weight:800;}
+  #manualVisitAttendance .attendance-save:disabled {background:#e2e8f0;color:#64748b;cursor:not-allowed;}
+</style>
+<div id="manualVisitAttendance" hidden>
+  <div class="attendance-dialog" role="dialog" aria-modal="true" aria-labelledby="manualAttendanceTitle">
+    <div class="attendance-header"><div><h3 id="manualAttendanceTitle"><i class="fa-solid fa-user-check text-teal-700 mr-2"></i>Presensi Manual</h3><p id="manualAttendanceSubtitle" class="text-xs text-slate-500 mt-1"></p></div><button type="button" onclick="closeManualVisitAttendance()" aria-label="Tutup presensi manual" class="w-9 h-9 rounded-xl bg-slate-100 shrink-0"><i class="fa-solid fa-xmark"></i></button></div>
+    <div class="attendance-body"><p id="manualAttendanceHint" class="text-slate-500 mb-3">Pilih ketua atau anggota rombongan yang hadir.</p><p id="manualAttendanceError" role="alert" class="text-rose-700 mb-3" hidden></p><div id="manualAttendanceList"></div></div>
+    <div class="attendance-footer"><button id="manualAttendanceSave" type="button" class="attendance-save" onclick="saveManualVisitAttendance()" disabled><i class="fa-solid fa-floppy-disk mr-2"></i>Simpan Presensi</button></div>
+  </div>
+</div>
+<script>
+  let manualAttendanceData=null,manualAttendanceBusy=false,manualAttendanceFocus=null,manualAttendanceOverflow='';
+  let manualAttendanceLoading=false,manualAttendanceRequest=0;
+  async function openManualVisitAttendance(id) {
+    if(manualAttendanceBusy&&!manualAttendanceLoading)return;
+    const agenda=allRapatData.find(m=>String(m.id)===String(id));
+    if(!canAdminRecordAttendance(agenda))return;
+    const code=agenda&&(agenda.kode_kunjungan||(String(agenda.kode_rapat||'').startsWith('VISIT-')?String(agenda.kode_rapat).slice(6):''));
+    if(!code)return;
+    const request=++manualAttendanceRequest;manualAttendanceBusy=true;manualAttendanceLoading=true;manualAttendanceData=null;
+    const modal=document.getElementById('manualVisitAttendance');
+    if(modal.hidden){manualAttendanceFocus=document.activeElement;manualAttendanceOverflow=document.body.style.overflow;}
+    document.body.style.overflow='hidden';modal.hidden=false;
+    document.getElementById('manualAttendanceSubtitle').textContent=code;
+    document.getElementById('manualAttendanceError').hidden=true;
+    document.getElementById('manualAttendanceList').innerHTML='<p role="status" class="text-center text-slate-500 py-8"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Memuat data presensi...</p>';
+    document.getElementById('manualAttendanceSave').disabled=true;
+    document.querySelector('#manualVisitAttendance .attendance-header button').focus();
+    try {
+      const data=await visitRpc('getVisitWorkflow',{kode_kunjungan:code});
+      if(request!==manualAttendanceRequest)return;
+      manualAttendanceData=data;renderManualVisitAttendance();
+    } catch(error){if(request===manualAttendanceRequest){document.getElementById('manualAttendanceList').innerHTML='';const box=document.getElementById('manualAttendanceError');box.textContent=error.message;box.hidden=false;}}
+    finally {if(request===manualAttendanceRequest){manualAttendanceBusy=false;manualAttendanceLoading=false;}}
+  }
+  function closeManualVisitAttendance() {
+    if(manualAttendanceBusy&&!manualAttendanceLoading)return;
+    ++manualAttendanceRequest;manualAttendanceLoading=false;manualAttendanceBusy=false;
+    document.getElementById('manualVisitAttendance').hidden=true;document.body.style.overflow=manualAttendanceOverflow;
+    if(manualAttendanceFocus&&manualAttendanceFocus.isConnected)manualAttendanceFocus.focus();manualAttendanceData=null;
+  }
+  function renderManualVisitAttendance() {
+    const data=manualAttendanceData,locked=Boolean(data.workflow.arrival||data.workflow.status==='Selesai');
+    document.getElementById('manualAttendanceSubtitle').textContent=data.visit.kode_kunjungan+' · '+data.visit.instansi;
+    document.getElementById('manualAttendanceHint').textContent=locked?'Presensi sudah divalidasi. Data hanya dapat dilihat.':'Pilih ketua atau anggota rombongan yang hadir. Nama yang sudah tercatat tidak perlu diisi ulang.';
+    document.getElementById('manualAttendanceError').hidden=true;
+    document.getElementById('manualAttendanceList').innerHTML=data.roster.map(member=>{const entry=(data.attendance||[]).find(a=>a.member_id===member.id||a.nama===member.nama);return `<div class="attendance-person flex-wrap"><label class="flex items-center gap-3 grow"><input type="checkbox" name="manualVisitMember" value="${escapeHtml(member.id)}" ${member.attended?'checked':''} ${locked||member.attended?'disabled':''} onchange="updateManualAttendanceButton()"><span><strong>${escapeHtml(member.nama)}</strong><span class="block text-xs text-slate-400 mt-1">${escapeHtml(member.peran)}</span></span></label><input type="text" maxlength="150" data-member-job="${escapeHtml(member.id)}" aria-label="Jabatan ${escapeHtml(member.nama)}" placeholder="Jabatan (opsional)" value="${escapeHtml(entry&&entry.jabatan||'')}" class="w-40 max-w-full border border-slate-200 rounded-lg px-2 py-2 text-xs" ${locked||member.attended?'disabled':''}><span class="text-xs ${member.attended?'text-emerald-700':'text-slate-400'}">${member.attended?'Hadir':'Belum hadir'}</span></div>`;}).join('');
+    const button=document.getElementById('manualAttendanceSave');button.disabled=true;button.innerHTML=locked?'<i class="fa-solid fa-lock mr-2"></i>Presensi terkunci':'<i class="fa-solid fa-floppy-disk mr-2"></i>Simpan Presensi';
+  }
+  function updateManualAttendanceButton() {
+    document.getElementById('manualAttendanceSave').disabled=manualAttendanceBusy||!document.querySelector('#manualAttendanceList input:checked:not(:disabled)');
+  }
+  async function saveManualVisitAttendance() {
+    if(manualAttendanceBusy||!manualAttendanceData)return;
+    const ids=[...document.querySelectorAll('#manualAttendanceList input:checked:not(:disabled)')].map(input=>input.value);
+    if(!ids.length)return;
+    manualAttendanceBusy=true;const button=document.getElementById('manualAttendanceSave');button.disabled=true;
+    button.innerHTML='<i class="fa-solid fa-spinner fa-spin mr-2"></i>Menyimpan...';
+    try {
+      const jobs=Object.fromEntries([...document.querySelectorAll('#manualAttendanceList input[data-member-job]')].map(input=>[input.dataset.memberJob,input.value]));
+      manualAttendanceData=await visitRpc('submitManualVisitAttendance',{rapat_id:manualAttendanceData.workflow.booking.id,member_ids:ids,member_jobs:jobs});
+      const meeting=allRapatData.find(item=>String(item.id)===String(manualAttendanceData.workflow.booking.id));
+      if(meeting){meeting.manual_attendance=true;renderMeetingsList(allRapatData);}
+      renderManualVisitAttendance();showToast('success','Presensi Tersimpan','Hasil presensi tersedia pada tab Kedatangan.');
+    } catch(error){const field=document.getElementById('manualAttendanceError');field.textContent=error.message;field.hidden=false;button.innerHTML='<i class="fa-solid fa-floppy-disk mr-2"></i>Simpan Presensi';}
+    finally {manualAttendanceBusy=false;updateManualAttendanceButton();}
+  }
+  document.addEventListener('keydown',event=>{
+    const modal=document.getElementById('manualVisitAttendance');if(modal.hidden)return;
+    if(event.key==='Escape'){event.preventDefault();closeManualVisitAttendance();}
+    if(event.key==='Tab'){const items=[...modal.querySelectorAll('button:not(:disabled),input:not(:disabled)')].filter(el=>el.getClientRects().length);const first=items[0],last=items[items.length-1];if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}}
+  });
+</script>

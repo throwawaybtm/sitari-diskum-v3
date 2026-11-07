@@ -1,0 +1,11 @@
+<script>
+/** Shared client-side search: comma-separated alternatives plus an exact date. */
+function filterAgendaRecords_(records,query,date) {
+  const keywords=String(query||'').toLocaleLowerCase('id-ID').split(',').map(s=>s.trim()).filter(Boolean);
+  return records.filter(row=>{
+    if(date&&String(row.tanggal_kunjungan||row.tanggal||'').slice(0,10)!==date)return false;
+    const haystack=Object.values(row).map(v=>typeof v==='object'?JSON.stringify(v):String(v??'')).join(' ').toLocaleLowerCase('id-ID');
+    return !keywords.length||keywords.some(word=>haystack.includes(word));
+  });
+}
+</script>

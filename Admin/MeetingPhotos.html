@@ -1,0 +1,63 @@
+<style>
+  #meetingPhotosModal::backdrop {background:#0f172aaa;backdrop-filter:blur(5px);}
+  #meetingPhotosModal {width:calc(100% - 24px);max-width:40rem;max-height:90dvh;margin:auto;border:0;padding:0;border-radius:20px;color:#1e293b;}
+  .meeting-camera {display:none;}
+  @media (max-width:767.98px), (max-width:1023.98px) and (hover:none) and (pointer:coarse) {
+    #meetingPhotosModal {max-height:94dvh;font-size:16px;}
+    #meetingPhotosModal button,#meetingPhotosModal a {min-height:44px;}
+    .meeting-camera {display:inline-flex;}
+  }
+</style>
+<dialog id="meetingPhotosModal" aria-labelledby="meetingPhotosTitle">
+  <div class="p-4 bg-white">
+    <div class="flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
+      <h3 id="meetingPhotosTitle" class="font-bold"><i class="fa-solid fa-camera text-teal-700 mr-2"></i>Foto Rapat Internal</h3>
+      <button type="button" aria-label="Tutup foto rapat" onclick="document.getElementById('meetingPhotosModal').close()" class="p-3 rounded-xl bg-slate-100"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <p id="meetingPhotoAgenda" class="font-semibold mt-3 mb-3"></p>
+    <div id="meetingPhotoList" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+    <div id="meetingPhotoUpload" class="mt-4 border-t border-slate-100 pt-3">
+      <p class="text-sm text-slate-600 mb-3">Wajib minimal 1 foto sebelum E-notula. Maksimal 5 MB/foto, 10 MB/unggahan, 10 foto/agenda.</p>
+      <input id="meetingPhotoFiles" type="file" multiple hidden accept="image/jpeg,image/png,image/webp,image/heic,image/heif" onchange="saveMeetingPhotos(this)">
+      <input id="meetingPhotoCamera" type="file" hidden accept="image/*" capture="environment" onchange="saveMeetingPhotos(this)">
+      <div class="flex flex-wrap gap-2">
+        <button type="button" onclick="document.getElementById('meetingPhotoFiles').click()" class="photo-upload-action px-4 py-3 rounded-xl bg-gradient-to-r from-[#11504a] to-[#143238] text-white font-bold"><i class="fa-solid fa-upload mr-2"></i>Pilih File</button>
+        <button type="button" onclick="document.getElementById('meetingPhotoCamera').click()" class="photo-upload-action meeting-camera items-center px-4 py-3 rounded-xl bg-teal-50 text-teal-800 font-bold"><i class="fa-solid fa-camera mr-2"></i>Ambil Gambar</button>
+      </div>
+      <p id="meetingPhotoProgress" role="status" class="mt-2 text-sm text-teal-800"></p>
+    </div>
+  </div>
+</dialog>
+<script>
+  let meetingPhotoAgendaId=null,meetingPhotosBusy=false;
+  function openMeetingPhotos(id) {
+    const meeting=allRapatData.find(row=>String(row.id)===String(id));if(!meeting||meeting.kode_kunjungan||String(meeting.kode_rapat||'').startsWith('VISIT-'))return;
+    meetingPhotoAgendaId=String(id);renderMeetingPhotos();
+    const modal=document.getElementById('meetingPhotosModal');if(!modal.open)modal.showModal();
+  }
+  function renderMeetingPhotos() {
+    const meeting=allRapatData.find(row=>String(row.id)===meetingPhotoAgendaId);if(!meeting)return;
+    document.getElementById('meetingPhotoAgenda').textContent=meeting.judul_rapat;
+    document.getElementById('meetingPhotoList').innerHTML=(meeting.photos||[]).map((photo,index)=>{
+      const id=String(photo.url||'').match(/\/d\/([-\w]+)|[?&]id=([-\w]+)/),thumb=id?'https://drive.google.com/thumbnail?id='+encodeURIComponent(id[1]||id[2])+'&sz=w400':photo.url;
+      return `<div class="border border-slate-200 rounded-xl p-2 min-w-0"><img src="${escapeHtml(thumb)}" alt="${escapeHtml(photo.name)}" loading="lazy" class="aspect-square w-full object-contain rounded-lg bg-slate-50"><p class="text-sm mt-2 break-all">${escapeHtml(photo.name)}</p><div class="grid grid-cols-2 gap-2 mt-2"><a href="${escapeHtml(photo.url)}" target="_blank" rel="noopener" class="p-2 rounded-lg bg-teal-50 text-teal-800 text-center font-semibold">Lihat</a><button type="button" data-index="${index}" onclick="downloadMeetingPhoto(Number(this.dataset.index),this)" class="p-2 rounded-lg bg-sky-50 text-sky-800 font-semibold">Unduh</button></div></div>`;
+    }).join('')||'<p class="text-slate-500">Belum ada foto.</p>';
+    document.getElementById('meetingPhotoUpload').hidden=meeting.status==='Selesai'||Boolean(meeting.notula);
+    document.querySelectorAll('#meetingPhotoUpload button,#meetingPhotoUpload input').forEach(button=>button.disabled=meetingPhotosBusy);
+    document.getElementById('meetingPhotoProgress').textContent=meetingPhotosBusy?'Menyimpan foto…':'';
+  }
+  async function saveMeetingPhotos(input) {
+    if(meetingPhotosBusy)return;
+    const meeting=allRapatData.find(row=>String(row.id)===meetingPhotoAgendaId),files=Array.from(input.files||[]);if(!meeting||!files.length)return;
+    if(files.length>5||files.length+(meeting.photos||[]).length>10||files.some(file=>file.size>5*1024*1024)||files.reduce((sum,file)=>sum+file.size,0)>10*1024*1024||files.some(file=>!String(visitFileMime(file)||'').startsWith('image/'))){input.value='';showToast('error','Foto tidak valid','Pilih 1–5 foto, maksimal 5 MB/foto, 10 MB/unggahan dan 10 foto/agenda.');return;}
+    meetingPhotosBusy=true;renderMeetingPhotos();
+    try {
+      const encoded=[];for(const file of files)encoded.push({name:file.name,data:await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).replace(/^data:[^;]*;base64,/,'data:'+visitFileMime(file)+';base64,'));reader.onerror=()=>reject(new Error('Foto gagal dibaca.'));reader.readAsDataURL(file);})});
+      meeting.photos=await visitRpc('saveAgendaPhotos',{rapat_id:meeting.id,files:encoded});renderMeetingsList(allRapatData);showToast('success','Foto tersimpan','E-notula dapat diunggah untuk menyelesaikan rapat.');
+    }catch(error){showToast('error','Foto gagal disimpan',error.message);}finally{input.value='';meetingPhotosBusy=false;renderMeetingPhotos();}
+  }
+  async function downloadMeetingPhoto(index,button) {
+    const id=meetingPhotoAgendaId;if(button)button.disabled=true;
+    try {const file=await visitRpc('getAgendaPhotoDocument',{rapat_id:id,index});const bytes=Uint8Array.from(atob(file.base64),char=>char.charCodeAt(0));const url=URL.createObjectURL(new Blob([bytes],{type:file.mime})),anchor=document.createElement('a');anchor.href=url;anchor.download=file.name;anchor.click();setTimeout(()=>URL.revokeObjectURL(url),60000);}catch(error){showToast('error','Unduh gagal',error.message);}finally{if(button)button.disabled=false;}
+  }
+</script>

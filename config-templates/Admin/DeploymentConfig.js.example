@@ -1,0 +1,20 @@
+// Configuration for the new deployment only. No sample data is uploaded.
+function configureNewDeployment_() {
+  const properties = PropertiesService.getScriptProperties();
+  const defaults = {
+    ADMIN_DEMO_MODE: 'true',
+    APPROVER_EMAIL: 'APPROVER_EMAIL_PLACEHOLDER',
+    TAMU_FO_URL: 'https://script.google.com/macros/s/AKfycbxFLrXSN3av3V6qjUOJUxEfUU3uWxBdK-fXxQIdaUfXjtnB2ZUx87GWfUIALSDMrlD5/exec',
+    TAMU_LUAR_URL: 'https://script.google.com/macros/s/AKfycbywu_c5VaQuX6hE5Fu1StXiNgLQWA5m1JZAKUdAFU2Nx0Dli8K0qB8CMxkP3fy2YD55Xg/exec'
+  };
+  Object.keys(defaults).forEach(key => {
+    if (!properties.getProperty(key)) properties.setProperty(key, defaults[key]);
+  });
+  // Reuse the former TLD deployment as the consolidated public form app.
+  const publicBase='https://script.google.com/macros/s/AKfycbywu_c5VaQuX6hE5Fu1StXiNgLQWA5m1JZAKUdAFU2Nx0Dli8K0qB8CMxkP3fy2YD55Xg/exec';
+  if(properties.getProperty('PUBLIC_FORMS_MIGRATION_V1')!==publicBase){
+    properties.setProperties({PUBLIC_FORMS_BASE_URL:publicBase,TAMU_FO_URL:publicBase+'?page=tdd',TAMU_LUAR_URL:publicBase+'?page=tld',PUBLIC_FORMS_MIGRATION_V1:publicBase});
+  }
+}
+
+// Deployment configuration maintained for current GAS projects; editor HEAD restored after targeted demo cleanup 02-11-2026.

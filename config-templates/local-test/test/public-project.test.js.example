@@ -1,0 +1,52 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const target='output/public-project-test';
+
+test('public app build pins the core and carries current approved form templates',()=>{
+  assert.ok(fs.existsSync('maintenance/build-public.js'),'public build script exists');
+  require('../../maintenance/build-public').buildPublic({coreVersion:30,targetDir:target,intakeFile:target+'/PublicIntake.js'});
+  const manifest=JSON.parse(fs.readFileSync(target+'/appsscript.json','utf8'));
+  assert.equal(manifest.dependencies.libraries[0].version,'30');
+  assert.equal(manifest.dependencies.libraries[0].userSymbol,'SiTariCore');
+  for(const [source,target] of [['Tamu-Luar/Index.html','Tld.html'],['Tamu-FO/Index.html','Tdd.html'],['Admin/Presensi.html','Presensi.html']]){
+    const expected=fs.readFileSync(source,'utf8').replace(/include\('(AttendancePolicy|MobileBase)'\)/g,"include_('$1')");
+    assert.equal(fs.readFileSync('output/public-project-test/'+target,'utf8'),expected);
+  }
+});
+
+test('public routes cannot serve Admin and preserve the agenda-specific attendance page',()=>{
+  const chosen=[];const core={getPublicFormDestinations:()=>[{bidang:'Unit',pic:'PIC'}],getPublicEmployeeCount:()=>20};
+  const c=vm.createContext({SiTariCore:core,HtmlService:{createTemplateFromFile:name=>{const t={evaluate:()=>({setTitle(){return this;},addMetaTag(){return this;}})};chosen.push({name,t});return t;}}});
+  vm.runInContext(fs.readFileSync(target+'/Code.js','utf8'),c);
+  c.doGet();c.doGet({parameter:{page:'tdd'}});c.doGet({parameter:{page:'presensi',id:'42'}});
+  assert.deepEqual(chosen.map(x=>x.name),['Tld','Tdd','Presensi']);assert.equal(chosen[2].t.rapatId,'42');
+  assert.throws(()=>c.doGet({parameter:{page:'admin'}}),/tidak ditemukan/);
+  assert.throws(()=>c.doGet({parameter:{page:'presensi-admin'}}),/tidak ditemukan/);
+  const names=[...fs.readFileSync(target+'/Code.js','utf8').matchAll(/^function (\w+)\(/gm)].map(m=>m[1]).filter(n=>!n.endsWith('_'));
+  assert.deepEqual(names.sort(),['doGet','registerTamuLuar','registerTamuFo','getMasterData','getRapatCalendar','getVisitAttendanceRoster','submitPresensiRapat'].sort());
+});
+
+test('public RPC delegates only fixed methods to the shared core, preserving payloads',()=>{
+  const calls=[];const core=new Proxy({},{get:(_,name)=>payload=>{calls.push({name,payload});return {success:true};}});
+  const c=vm.createContext({SiTariCore:core});vm.runInContext(fs.readFileSync(target+'/Code.js','utf8'),c);
+  const p={rapat_id:'42',member_id:'ketua'};
+  c.registerTamuLuar(p);c.registerTamuFo(p);c.submitPresensiRapat(p);c.getVisitAttendanceRoster(p);
+  assert.deepEqual(calls.map(x=>x.name),['publicRegisterTamuLuar','publicRegisterTamuFo','submitPresensiRapat','getVisitAttendanceRoster']);
+  assert.ok(calls.every(x=>x.payload===p));
+});
+
+test('consolidated intake uses the core database and one monthly sequence for TLD and TDD',()=>{
+  const source=fs.readFileSync(target+'/PublicIntake.js','utf8');
+  const c=vm.createContext({getSpreadsheet:()=>({core:true})});vm.runInContext(source,c);
+  assert.equal(c.SI_TARI_INTAKE_.database().core,true);
+  assert.equal(c.SI_TARI_INTAKE_.buildVisitCode('TLD','2026-11-01',[]),'TLD-01112026-001');
+  assert.equal(c.SI_TARI_INTAKE_.buildVisitCode('TDD','2026-11-02',['TLD-01112026-001']),'TDD-02112026-002');
+  assert.doesNotMatch(JSON.stringify(c.getPublicFormDestinations('tdd')),/phone|PHONE_NUMBER_PLACEHOLDER/);
+});
+
+test('public attendance metadata excludes workflow documents, PIC contacts and unused employee fields',()=>{
+  const c=vm.createContext({getMasterData:()=>({success:true,data:{pegawai:[{id:1,nama:'Staf',nip:'TEST',jabatan:'Staf',bidang:'Unit',pangkat:'III',phone:'private'}],opd:[{id:1,nama_opd:'OPD',private:'hidden'}],ruangan:[{private:'hidden'}]}}),getRapatCalendar:()=>({success:true,data:[{id:1,judul_rapat:'Agenda',status:'Selesai',notula:{url:'private-document-url'},agenda:'private-notes',manual_attendance:true}]})});
+  vm.runInContext(fs.readFileSync('Admin/PublicApi.js','utf8'),c);
+  const master=c.getPublicAttendanceMasterData();assert.equal(master.data.pegawai[0].nama,'Staf');assert.doesNotMatch(JSON.stringify(master),/private|pangkat|ruangan/);
+  const calendar=c.getPublicAttendanceCalendar();assert.equal(calendar.data[0].notula,true);assert.equal(calendar.data[0].manual_attendance,true);assert.doesNotMatch(JSON.stringify(calendar),/private/);
+});

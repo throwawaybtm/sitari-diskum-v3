@@ -1,0 +1,53 @@
+/** Server-only TLD directory. Only bidang and pic are rendered in the public form. */
+const TLD_DESTINATIONS = [
+  { id: 'sekretariat-umpeg', bidang: 'Sekretariat (Umum dan Kepegawaian)', pic: 'Novirianti, A.Md.', phone: 'PHONE_NUMBER_PLACEHOLDER' },
+  { id: 'sekretariat-perencanaan', bidang: 'Sekretariat (Program dan Perencanaan)', pic: 'Ilhami Kurnia Putri, S.Kom.', phone: 'PHONE_NUMBER_PLACEHOLDER' },
+  { id: 'sekretariat-keuangan', bidang: 'Sekretariat (Keuangan dan Aset)', pic: 'Zuziani, S.E.', phone: 'PHONE_NUMBER_PLACEHOLDER' },
+  { id: 'pemberdayaan-koperasi', bidang: 'Bidang Pemberdayaan dan Perlindungan Koperasi', pic: 'Debbi Shinta, S.E.', phone: 'PHONE_NUMBER_PLACEHOLDER' },
+  { id: 'pengawasan-koperasi', bidang: 'Bidang Pengawasan Koperasi', pic: 'Mery Sefina Simor, S.Kom.', phone: 'PHONE_NUMBER_PLACEHOLDER' },
+  { id: 'pengembangan-mikro', bidang: 'Bidang Pengembangan Usaha Mikro', pic: 'Dewi Astuti, S.E.', phone: 'PHONE_NUMBER_PLACEHOLDER' },
+  { id: 'kewirausahaan', bidang: 'Bidang Kewirausahaan', pic: 'Fitria Lestari Pujiastuti, S.E.', phone: 'PHONE_NUMBER_PLACEHOLDER' },
+  { id: 'plut-kumkm', bidang: 'UPTD PLUT KUMKM', pic: 'Hafidz Qodli Abdillah, S.E.', phone: 'PHONE_NUMBER_PLACEHOLDER' },
+  { id: 'dana-bergulir', bidang: 'UPTD Pengelolaan Dana Bergulir', pic: 'Intan Permata Sari, S.E.', phone: 'PHONE_NUMBER_PLACEHOLDER' }
+];
+
+const TLD_MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+
+function getTldPublicDestinations_() {
+  return TLD_DESTINATIONS.map(item => ({ bidang: item.bidang, pic: item.pic }));
+}
+
+function validateTldUpload_(value) {
+  if (!value) return;
+  const match = /^data:(application\/pdf|image\/(?:jpeg|png|webp|heic|heif));base64,([A-Za-z0-9+/]+={0,2})$/.exec(String(value));
+  if (!match || match[2].length % 4 !== 0) {
+    throw new Error('Dokumen harus berupa PDF atau foto (JPG, PNG, WebP, HEIC).');
+  }
+  const padding = match[2].endsWith('==') ? 2 : match[2].endsWith('=') ? 1 : 0;
+  if ((match[2].length / 4) * 3 - padding > TLD_MAX_UPLOAD_BYTES) {
+    throw new Error('Ukuran setiap dokumen maksimal 5 MB.');
+  }
+}
+
+function validateTldRequiredFields_(payload) {
+  const fields = {
+    instansi: 'Nama instansi', alamat: 'Alamat instansi', ketua_nama: 'Nama ketua rombongan',
+    pengikut_list: 'Daftar anggota rombongan', keperluan: 'Agenda',
+    narahubung_hp: 'WhatsApp narahubung', tanggal_kunjungan: 'Tanggal kunjungan',
+    jam_kunjungan: 'Jam kunjungan', surat_kunjungan_base64: 'Surat permohonan kunjungan',
+    surat_tugas_base64: 'Surat tugas rombongan'
+  };
+  Object.keys(fields).forEach(field => {
+    if (!payload || !String(payload[field] || '').trim()) throw new Error(fields[field] + ' wajib diisi.');
+  });
+  const count = Number(payload.jumlah_orang);
+  if (!Number.isInteger(count) || count < 1) throw new Error('Jumlah orang wajib diisi dengan bilangan bulat minimal 1.');
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(payload.jam_kunjungan)) throw new Error('Jam kunjungan tidak valid.');
+}
+
+function prepareTldVisit_(payload) {
+  validateTldUpload_(payload.surat_kunjungan_base64);
+  validateTldUpload_(payload.surat_tugas_base64);
+  // Assignment is performed by the admin after reviewing the request.
+  return {bidang:'',pic:'',picIds:''};
+}

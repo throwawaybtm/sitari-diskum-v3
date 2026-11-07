@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Pratinjau Pilihan Pegawai Diskum</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;padding:40px 20px;background:linear-gradient(135deg,#0f172a,#062e2b,#022c22);font-family:Arial,sans-serif;color:#143238}
+    main{max-width:768px;margin:auto}.identity{text-align:center;color:#fff;margin-bottom:26px}.identity span{display:inline-block;padding:7px 14px;border:1px solid #378774;border-radius:100px;background:#0b5045;color:#82edd0;font-size:12px;font-weight:bold}.identity h1{font-size:28px;margin:18px 0 8px}.identity p{margin:0;color:#bddbd5;font-size:14px}
+    .surface{background:#fff;border-radius:24px;padding:30px;box-shadow:0 24px 70px #0003}.surface-header{padding-bottom:18px;margin-bottom:24px;border-bottom:1px solid #e5eeea;display:flex;align-items:center;justify-content:space-between;gap:12px}.surface-header h2{font-size:18px;margin:0 0 6px}.surface-header p{font-size:12px;color:#647d77;margin:0}.preview-tag{background:#e9f6f0;color:#11634e;font-size:11px;font-weight:bold;padding:7px 10px;border-radius:9px;white-space:nowrap}
+    .fields{display:grid;gap:22px}label{display:block;font-size:12px;font-weight:bold;margin-bottom:8px;color:#34534b}label b{color:#e11d48}select{width:100%;min-height:48px;padding:12px 14px;border:1px solid #cbdad3;border-radius:12px;background:#fff;color:#173c31;font:14px Arial,sans-serif;outline-offset:3px}select:focus{outline:2px solid #0d9488}select:disabled{background:#f1f5f3;color:#8a9d95;cursor:not-allowed}.hint{margin:8px 0 0;font-size:12px;color:#71877e;line-height:1.5}
+    .details{margin-top:26px;padding:20px;background:#f6faf8;border:1px solid #e0eae4;border-radius:14px;display:grid;grid-template-columns:1fr 1fr;gap:20px}.details dt{font-size:11px;color:#71877e;font-weight:bold;margin-bottom:7px}.details dd{font-size:13px;margin:0;line-height:1.6;overflow-wrap:anywhere}.details .wide{grid-column:1/-1}.details .nip{font-family:Consolas,monospace;letter-spacing:.2px}.selected{color:#0d7660;font-size:12px;line-height:1.6;margin:18px 0 0}.note{font-size:12px;color:#637b70;line-height:1.6;margin:20px 0 0}
+    @media(max-width:540px){body{padding:25px 14px}.identity h1{font-size:24px}.surface{padding:22px}.details{grid-template-columns:1fr;padding:16px}.details .wide{grid-column:auto}select{font-size:16px}.surface-header{align-items:flex-start}.preview-tag{font-size:10px}}
+  </style>
+</head>
+<body>
+  <main>
+    <header class="identity"><span>SI-TARI DISKUM</span><h1>Daftar Hadir Rapat Internal</h1><p>Pilih bidang atau unit kerja, lalu pilih nama pegawai.</p></header>
+    <section class="surface" aria-labelledby="staffPreviewTitle">
+      <div class="surface-header"><div><h2 id="staffPreviewTitle">Nama Pegawai Diskum</h2><p id="directoryCount"></p></div><span class="preview-tag">Pratinjau lokal</span></div>
+      <div class="fields">
+        <div><label for="departmentChoice">Bidang / Unit Kerja <b>*</b></label><select id="departmentChoice"><option value="">— Pilih Bidang / Unit Kerja —</option></select></div>
+        <div><label for="employeeChoice">Nama Pegawai <b>*</b></label><select id="employeeChoice" disabled><option value="">— Pilih bidang / unit kerja terlebih dahulu —</option></select><p id="employeeHint" class="hint" aria-live="polite">Nama pegawai akan muncul setelah bidang atau unit kerja dipilih.</p></div>
+      </div>
+      <dl class="details"><div><dt>NIP / NI PPPK</dt><dd id="staffNip" class="nip">—</dd></div><div><dt>Pangkat / Golongan</dt><dd id="staffGrade">—</dd></div><div class="wide"><dt>Jabatan</dt><dd id="staffJob">—</dd></div></dl>
+      <p id="selectedStaff" class="selected" role="status"></p>
+      <p class="note">Pratinjau ini hanya menampilkan pilihan pegawai. Tidak ada presensi yang dikirim atau data GAS yang diubah.</p>
+    </section>
+  </main>
+  <script>
+    const employeeDirectory=__EMPLOYEE_DIRECTORY_JSON__;
+    const departmentOrder=['Dinas','Sekretariat','Bidang Pemberdayaan dan Pelindungan Koperasi','Bidang Pengawasan Koperasi','Bidang Kewirausahaan','Bidang Pengembangan Usaha Mikro','UPTD Pengelolaan Dana Bergulir','UPTD PLUT KUMKM','UPTD Pemberdayaan dan Pelindungan Koperasi'];
+    const departmentChoice=document.getElementById('departmentChoice'),employeeChoice=document.getElementById('employeeChoice');
+    function departmentEmployees(name){return employeeDirectory.filter(person=>person.bidang===name);}
+    function clearEmployeeDetails(){['staffNip','staffGrade','staffJob'].forEach(id=>document.getElementById(id).textContent='—');document.getElementById('selectedStaff').textContent='';}
+    function selectDepartment(){
+      const department=departmentChoice.value,employees=departmentEmployees(department);clearEmployeeDetails();
+      employeeChoice.replaceChildren(new Option(department?'— Pilih Nama Pegawai —':'— Pilih bidang / unit kerja terlebih dahulu —',''));
+      employeeChoice.disabled=!department;
+      employees.forEach(person=>employeeChoice.add(new Option(person.nama,person.id)));
+      document.getElementById('employeeHint').textContent=department?employees.length+' pegawai di '+department+'.':'Nama pegawai akan muncul setelah bidang atau unit kerja dipilih.';
+    }
+    function selectEmployee(){
+      clearEmployeeDetails();const person=employeeDirectory.find(p=>p.id===employeeChoice.value&&p.bidang===departmentChoice.value);if(!person)return;
+      document.getElementById('staffNip').textContent=person.nip||'—';document.getElementById('staffGrade').textContent=person.pangkat||'—';document.getElementById('staffJob').textContent=person.jabatan;
+      document.getElementById('selectedStaff').textContent=person.nama+' · '+person.bidang;
+    }
+    departmentOrder.filter(name=>departmentEmployees(name).length).forEach(name=>departmentChoice.add(new Option(name+' ('+departmentEmployees(name).length+')',name)));
+    document.getElementById('directoryCount').textContent=employeeDirectory.length+' pegawai · '+departmentOrder.filter(name=>departmentEmployees(name).length).length+' bidang / unit kerja';
+    departmentChoice.addEventListener('change',selectDepartment);employeeChoice.addEventListener('change',selectEmployee);
+  </script>
+</body>
+</html>

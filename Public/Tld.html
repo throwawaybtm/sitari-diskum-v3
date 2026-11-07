@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <?!= include_('MobileBase'); ?>
+  <title>Pendaftaran Kunjungan Tamu Luar Daerah</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .tld-organization > summary {list-style:none;}
+    .tld-organization > summary::-webkit-details-marker {display:none;}
+    .tld-organization > summary > i {display:none;}
+    .camera-option { display: none; }
+    @media (max-width: 767.98px), (max-width: 1023.98px) and (hover: none) and (pointer: coarse) {
+      .camera-option { display: inline-flex; }
+    }
+    @media (min-width: 1024px) {
+      body > .tld-page { width: 48rem; max-width: 100%; }
+    }
+
+    /* Phone readability only; existing desktop rules are preserved. */
+    @media (max-width: 767.98px), (max-width: 1023.98px) and (hover: none) and (pointer: coarse) {
+      /* Hide tracks without disabling wheel, touch or keyboard scrolling. */
+      * {scrollbar-width:none;}
+      *::-webkit-scrollbar {display:none;}
+      body {padding:12px 10px!important;font-size:16px;line-height:1.45;}
+      :is(.tld-page,.tdd-page,.presensi-page) {min-width:0;}
+      :is(.tld-page,.tdd-page,.presensi-page) :is(p,span,label,small,li,input,select,textarea,button,a) {font-size:16px!important;line-height:1.45;}
+      :is(.tld-page,.tdd-page,.presensi-page) :is(p.text-xs,small) {font-size:14px!important;}
+      .tld-page h1,.tdd-page h1,.presensi-page .text-2xl.font-extrabold {font-size:22px!important;line-height:1.4;overflow-wrap:anywhere;}
+      .presensi-page h1 {font-size:16px!important;line-height:1.5;}
+      :is(.tld-page,.tdd-page,.presensi-page) h2 {font-size:20px!important;}
+      :is(.tld-page,.tdd-page,.presensi-page) .grid {grid-template-columns:minmax(0,1fr)!important;gap:12px;}
+      :is(.tld-page,.tdd-page,.presensi-page) .grid > div {grid-column:auto!important;min-width:0;}
+      :is(.tld-page,.tdd-page,.presensi-page) :is(.p-6,.p-8) {padding:14px!important;}
+      :is(.tld-page,.tdd-page,.presensi-page) :is(input,select,textarea) {min-width:0;max-width:100%;font-size:16px!important;}
+      :is(.tld-page,.tdd-page,.presensi-page) :is(input:not([type=checkbox]):not([type=radio]),select,button) {min-height:44px;}
+      :is(.tld-page,.tdd-page,.presensi-page) :is(input[type=date],input[type=time]) {width:100%;}
+      :is(.tld-page,.tdd-page,.presensi-page) :is(input[type=checkbox],input[type=radio]) {width:24px;height:24px;min-width:24px;flex-shrink:0;}
+      :is(.tld-page,.tdd-page,.presensi-page) label {text-transform:none;letter-spacing:normal;}
+      :is(.tld-page,.tdd-page,.presensi-page) :is(button,label.relative) {white-space:normal;overflow-wrap:anywhere;}
+      :is(.tld-page,.tdd-page,.presensi-page) label.relative {min-height:44px;justify-content:center;}
+      :is(.tld-page,.tdd-page,.presensi-page) .text-slate-400 {color:#475569;}
+      :is(.tld-page,.tdd-page,.presensi-page) :is(h3,legend) {font-size:16px!important;line-height:1.5;text-transform:none;}
+      #foBidangOptions p.font-bold,#departmentInfoCards p {font-size:16px!important;}
+      #foBidangOptions label {padding:12px;min-height:52px;align-items:center;}
+      #foBidangOptions label span,#departmentInfoCards span {min-width:0;white-space:normal;overflow-wrap:anywhere;}
+      #foBidangOptions label small {font-size:14px!important;}
+      #formPresensi > .flex {flex-wrap:wrap;}
+      :is(#modalSuksesFo,#modalSuksesLuar) {padding:12px!important;}
+      :is(#modalSuksesFo,#modalSuksesLuar) > div {max-height:94dvh;overflow-y:auto;}
+      :is(#modalSuksesFo,#modalSuksesLuar) :is(p,span,button) {font-size:16px!important;line-height:1.45;}
+      :is(#modalSuksesFo,#modalSuksesLuar) button {min-height:44px;}
+    }
+    @media (max-width: 767.98px), (max-width: 1023.98px) and (hover: none) and (pointer: coarse) {
+      :is(.tld-page,.tdd-page,.presensi-page) form > :not([hidden]) ~ :not([hidden]) {margin-top:12px!important;}
+      :is(.tld-page,.tdd-page,.presensi-page) > .text-center {padding-top:0;padding-bottom:12px;}
+      :is(.tld-page,.tdd-page,.presensi-page) > .text-center .w-14 {width:44px;height:44px;}
+      :is(.tld-page,.tdd-page,.presensi-page) :is(.mb-4,.mb-6) {margin-bottom:12px!important;}
+      #departmentInfoCards {gap:8px;}
+      #departmentInfoCards > div {padding:10px;}
+    }
+    /* Compact phone form; retain readable inputs and comfortable tap targets. */
+    @media (max-width: 767.98px), (max-width: 1023.98px) and (hover: none) and (pointer: coarse) {
+      body {padding:8px!important;}
+      .tld-page > .text-center {padding-bottom:8px;}
+      .tld-page > .text-center > .inline-flex {gap:6px;margin-bottom:4px;}
+      .tld-page > .text-center .w-14 {width:32px;height:32px;border-radius:12px;}
+      .tld-page > .text-center .w-14 i {font-size:18px;}
+      .tld-page > .text-center span {font-size:12px!important;line-height:1.3;padding:3px 9px;}
+      .tld-page > .text-center h1 {font-size:19px!important;line-height:1.3;margin-top:0;}
+      .tld-page > .text-center p {font-size:13px!important;margin-top:4px;}
+      .tld-page > .bg-white {padding:12px!important;border-radius:18px;}
+      .tld-page > .bg-white > .mb-4 {margin-bottom:8px!important;padding-bottom:8px;}
+      .tld-page h2 {font-size:18px!important;}
+      .tld-page form > :not([hidden]) ~ :not([hidden]) {margin-top:8px!important;}
+      .tld-page form .grid {gap:8px;}
+      .tld-page form :is(input:not([type=file]),select,textarea) {padding:8px 10px;}
+      .tld-page form textarea {min-height:60px;}
+      .tld-page form > .pt-3 {padding-top:8px;}
+      .tld-page form .p-3\.5 {padding:10px;}
+      .tld-page #btnSubmitLuar {padding:10px 8px;}
+      .tld-organization > summary {display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;padding:6px 10px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;cursor:pointer;}
+      .tld-organization > summary h3 {margin:0;}
+      .tld-organization > summary > i {display:block;font-size:12px;flex-shrink:0;}
+      .tld-organization[open] > summary > i {transform:rotate(180deg);}
+      .tld-organization > p {margin:8px 0 4px;font-size:14px!important;}
+      #departmentInfoCards {display:block!important;padding:0 4px;}
+      #departmentInfoCards > li {padding:7px 0;border:0;border-bottom:1px solid #e2e8f0;border-radius:0;background:transparent;}
+      #departmentInfoCards > li:last-child {border-bottom:0;}
+      #departmentInfoCards p {font-size:14px!important;font-weight:500;line-height:1.4!important;}
+    }
+    @media (min-width:360px) and (max-width:767.98px), (min-width:768px) and (max-width:1023.98px) and (hover:none) and (pointer:coarse) {
+      .tld-page form .tld-schedule {grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-teal-950 to-emerald-950 text-slate-100 min-h-screen flex flex-col justify-between p-4 sm:p-6">
+
+  <div class="tld-page max-w-[860px] mx-auto w-full">
+    <!-- Header -->
+    <div class="text-center pt-2 pb-4">
+      <div class="inline-flex flex-wrap items-center justify-center gap-2 mb-2">
+        <div class="inline-flex items-center justify-center w-14 h-14 bg-emerald-500/20 text-emerald-300 rounded-3xl border border-emerald-400/30">
+          <i class="fa-solid fa-plane-arrival text-2xl"></i>
+        </div>
+        <span class="px-3 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 uppercase tracking-wider">TAMU LUAR DAERAH</span>
+      </div>
+      <h1 class="text-2xl font-extrabold text-white mt-1">Pendaftaran Kunjungan Tamu Luar Daerah</h1>
+    </div>
+
+    <!-- Form Box -->
+    <div class="bg-white text-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8 overflow-hidden">
+      <div class="mb-4 pb-3 border-b border-slate-100">
+        <h2 class="text-base font-bold text-slate-800 flex items-center">
+          <i class="fa-solid fa-file-signature mr-2 text-teal-600"></i> Data Kunjungan
+        </h2>
+        <p class="text-xs text-slate-500 mt-1"><span class="text-rose-600 font-bold">*</span> Wajib diisi</p>
+      </div>
+
+      <form id="formTamuLuar" onsubmit="submitFormLuar(event)" class="space-y-5">
+        
+        <div>
+          <label for="instansiLuar" class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Instansi Asal <span class="text-rose-600" aria-hidden="true">*</span></label>
+          <input type="text" id="instansiLuar" name="instansi" required placeholder="Contoh: Dinas Koperasi & UKM Kab. Bintan"
+            class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-teal-500 outline-none">
+        </div>
+
+        <div>
+          <label for="alamatLuar" class="block text-xs font-bold text-slate-700 uppercase mb-1">Alamat Instansi <span class="text-rose-600" aria-hidden="true">*</span></label>
+          <input type="text" id="alamatLuar" name="alamat" required placeholder="Alamat atau Kota asal instansi..."
+            class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-teal-500 outline-none">
+        </div>
+
+        <?!= includeOrganizationStructure_() ?>
+
+        <div>
+          <label for="agendaLuar" class="block text-xs font-bold text-slate-700 uppercase mb-1">Agenda <span class="text-rose-600" aria-hidden="true">*</span></label>
+          <textarea id="agendaLuar" name="keperluan" required rows="2" placeholder="Uraikan topik pembahasan atau studi tiru yang direncanakan..."
+            class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-teal-500 outline-none"></textarea>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="sm:col-span-2">
+            <label for="ketuaLuar" class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Ketua Rombongan <span class="text-rose-600" aria-hidden="true">*</span></label>
+            <input type="text" id="ketuaLuar" name="ketua_nama" required placeholder="Nama lengkap ketua rombongan"
+              class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-teal-500 outline-none">
+          </div>
+          <div>
+            <label for="jumlahLuar" class="block text-xs font-bold text-slate-700 uppercase mb-1">Jumlah Orang <span class="text-rose-600" aria-hidden="true">*</span></label>
+            <input type="number" id="jumlahLuar" name="jumlah_orang" value="3" min="1" required
+              class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-teal-500 outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label for="anggotaLuar" class="block text-xs font-bold text-slate-700 uppercase mb-1">Daftar Anggota Rombongan <span class="text-rose-600" aria-hidden="true">*</span></label>
+          <textarea id="anggotaLuar" name="pengikut_list" required rows="2" placeholder="Satu nama anggota per baris (jika sendiri, tulis nama Anda)..."
+            class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-teal-500 outline-none"></textarea>
+        </div>
+
+        <div class="tld-schedule grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label for="inputTglLuar" class="block text-xs font-bold text-slate-700 uppercase mb-1">Tanggal Kunjungan <span class="text-rose-600" aria-hidden="true">*</span></label>
+            <input type="date" lang="en-GB" title="dd-mm-yyyy" name="tanggal_kunjungan" id="inputTglLuar" required
+              class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-teal-500 outline-none">
+          </div>
+          <div>
+            <label for="jamLuar" class="block text-xs font-bold text-slate-700 uppercase mb-1">Jam Kunjungan <span class="text-rose-600" aria-hidden="true">*</span></label>
+            <input type="time" lang="en-GB" title="hh:mm (24 jam)" step="60" id="jamLuar" name="jam_kunjungan" required
+              class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-teal-500 outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label for="whatsappLuar" class="block text-xs font-bold text-slate-700 uppercase mb-1">WhatsApp Narahubung <span class="text-rose-600" aria-hidden="true">*</span></label>
+          <input type="tel" id="whatsappLuar" name="narahubung_hp" required placeholder="08xxxxxxxxxx"
+            class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-teal-500 outline-none">
+        </div>
+
+        <!-- Upload Surat Kunjungan & Surat Tugas -->
+        <div class="pt-3 border-t border-slate-200">
+          <h3 class="block text-xs font-bold text-slate-700 uppercase mb-2">Unggah Dokumen</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50 space-y-1">
+              <label for="fileSuratKunjungan" class="text-xs font-bold text-slate-800 block">Surat Permohonan Kunjungan <span class="text-rose-600" aria-hidden="true">*</span></label>
+              <p class="text-[10px] text-slate-500">PDF / Foto · Maksimal 5 MB per file</p>
+              <div class="flex flex-wrap gap-2 pt-2">
+                <label class="relative inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white border border-slate-300 text-xs font-semibold cursor-pointer focus-within:ring-2 focus-within:ring-teal-500">
+                  <i class="fa-solid fa-folder-open" aria-hidden="true"></i> Pilih File
+                  <input type="file" id="fileSuratKunjungan" required aria-label="Pilih File Surat Permohonan Kunjungan" accept=".pdf,image/jpeg,image/png,image/webp,image/heic,image/heif" onchange="selectDocument(this, 'fileSuratKunjungan')" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                </label>
+                <button type="button" onclick="document.getElementById('cameraSuratKunjungan').click()" class="camera-option items-center gap-1.5 px-3 py-2 rounded-lg bg-teal-50 border border-teal-200 text-teal-800 text-xs font-semibold"><i class="fa-solid fa-camera" aria-hidden="true"></i> Ambil Gambar</button>
+                <input type="file" id="cameraSuratKunjungan" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" capture="environment" onchange="selectDocument(this, 'fileSuratKunjungan')" class="hidden">
+              </div>
+              <p id="fileSuratKunjunganStatus" class="text-[11px] text-slate-600 break-all pt-1" aria-live="polite">Belum ada file dipilih</p>
+            </div>
+            <div class="p-3.5 rounded-2xl border border-slate-200 bg-slate-50 space-y-1">
+              <label for="fileSuratTugas" class="text-xs font-bold text-slate-800 block">Surat Tugas Rombongan <span class="text-rose-600" aria-hidden="true">*</span></label>
+              <p class="text-[10px] text-slate-500">PDF / Foto · Maksimal 5 MB per file</p>
+              <div class="flex flex-wrap gap-2 pt-2">
+                <label class="relative inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white border border-slate-300 text-xs font-semibold cursor-pointer focus-within:ring-2 focus-within:ring-teal-500">
+                  <i class="fa-solid fa-folder-open" aria-hidden="true"></i> Pilih File
+                  <input type="file" id="fileSuratTugas" required aria-label="Pilih File Surat Tugas Rombongan" accept=".pdf,image/jpeg,image/png,image/webp,image/heic,image/heif" onchange="selectDocument(this, 'fileSuratTugas')" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                </label>
+                <button type="button" onclick="document.getElementById('cameraSuratTugas').click()" class="camera-option items-center gap-1.5 px-3 py-2 rounded-lg bg-teal-50 border border-teal-200 text-teal-800 text-xs font-semibold"><i class="fa-solid fa-camera" aria-hidden="true"></i> Ambil Gambar</button>
+                <input type="file" id="cameraSuratTugas" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" capture="environment" onchange="selectDocument(this, 'fileSuratTugas')" class="hidden">
+              </div>
+              <p id="fileSuratTugasStatus" class="text-[11px] text-slate-600 break-all pt-1" aria-live="polite">Belum ada file dipilih</p>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" id="btnSubmitLuar" class="w-full py-3.5 bg-gradient-to-r from-[#11504a] to-[#143238] hover:brightness-110 text-white rounded-2xl font-bold text-sm shadow-lg transition flex items-center justify-center space-x-2">
+          <i class="fa-solid fa-paper-plane"></i>
+          <span>Kirim Pendaftaran Kunjungan</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- MODAL KONFIRMASI -->
+    <div id="modalSukses" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm hidden items-center justify-center p-4">
+      <div class="bg-white rounded-3xl max-w-sm w-full max-h-[90dvh] overflow-y-auto p-6 text-center space-y-4 shadow-2xl">
+        <div class="w-16 h-16 bg-teal-100 text-teal-700 rounded-full flex items-center justify-center mx-auto text-2xl animate-bounce">
+          <i class="fa-solid fa-check"></i>
+        </div>
+        <h3 class="text-xl font-extrabold text-slate-800">Pendaftaran Berhasil!</h3>
+        <p class="text-xs text-slate-500">Data kunjungan Anda telah berhasil diterima.</p>
+
+        <div class="p-4 rounded-2xl bg-teal-50 border border-teal-200 text-left text-xs space-y-1.5">
+          <div class="flex justify-between">
+            <span class="text-slate-500">Kode Kunjungan:</span>
+            <span id="resKode" class="font-mono font-bold text-teal-950"></span>
+          </div>
+          <div class="space-y-1">
+            <span class="text-slate-500">Penerima Tamu:</span>
+            <span id="resLo" class="font-bold text-teal-800 block break-words"></span>
+          </div>
+          <div class="space-y-1">
+            <span class="text-slate-500">Bidang:</span>
+            <span id="resBidang" class="font-semibold text-slate-700 block break-words"></span>
+          </div>
+        </div>
+
+        <button onclick="location.reload()" class="w-full py-2.5 bg-teal-700 hover:bg-teal-800 text-white rounded-xl text-xs font-bold">
+          Selesai / Daftarkan Lagi
+        </button>
+      </div>
+    </div>
+
+    <div class="text-center text-[11px] text-slate-400 py-2">
+      Dinas Koperasi & Usaha Mikro Kota Batam
+    </div>
+  </div>
+
+  <script>
+    const maxUploadBytes = 5 * 1024 * 1024;
+    const selectedDocuments = {};
+    function setupOrganizationDetails() {
+      const details=document.getElementById('tldOrganizationDetails');
+      if(!details)return;
+      const phone=window.matchMedia('(max-width: 767.98px), (max-width: 1023.98px) and (hover: none) and (pointer: coarse)');
+      const sync=event=>{details.open=!event.matches;};
+      sync(phone);
+      if(phone.addEventListener)phone.addEventListener('change',sync);
+      else if(phone.addListener)phone.addListener(sync);
+    }
+    setupOrganizationDetails();
+    const formOpenedAt = new Date();
+    document.getElementById('inputTglLuar').value = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).format(formOpenedAt);
+    document.getElementById('jamLuar').value = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+    }).format(formOpenedAt);
+
+    function documentMimeType(file) {
+      const mime=String(file.type||'').toLowerCase().trim();
+      if(/^(application\/pdf|image\/(jpeg|png|webp|heic|heif))$/.test(mime))return mime;
+      if(mime&&mime!=='application/octet-stream')return '';
+      const extension=String(file.name||'').toLowerCase().split('.').pop();
+      return ({pdf:'application/pdf',jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',heic:'image/heic',heif:'image/heif'})[extension]||'';
+    }
+
+    function documentFileError(file) {
+      if (file.size > maxUploadBytes) return 'Ukuran setiap dokumen maksimal 5 MB.';
+      if (!documentMimeType(file)) {
+        return 'Pilih dokumen PDF atau foto (JPG, PNG, WebP, HEIC).';
+      }
+      return '';
+    }
+
+    function selectDocument(input, fieldId) {
+      const file = input.files[0];
+      if (!file) return;
+      const picker = document.getElementById(fieldId);
+      const status = document.getElementById(fieldId + 'Status');
+      const error = documentFileError(file);
+      if (error) {
+        input.value = '';
+        picker.required = !selectedDocuments[fieldId];
+        status.textContent = error + (selectedDocuments[fieldId] ? ' File sebelumnya: ' + selectedDocuments[fieldId].name : ' Silakan pilih ulang.');
+        status.className = 'text-[11px] text-rose-700 break-all pt-1';
+        return;
+      }
+      selectedDocuments[fieldId] = file;
+      picker.required = false;
+      status.textContent = file.name;
+      status.className = 'text-[11px] text-teal-800 break-all pt-1';
+    }
+
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        if (!file) return resolve('');
+        const error = documentFileError(file);
+        if (error) return reject(new Error(error));
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result).replace(/^data:[^;]*;base64,/, 'data:'+documentMimeType(file)+';base64,'));
+        reader.onerror = () => reject(new Error('File gagal dibaca. Silakan pilih ulang.'));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function submitFormLuar(e) {
+      e.preventDefault();
+      if (!document.getElementById('formTamuLuar').reportValidity()) return;
+      const btn = document.getElementById('btnSubmitLuar');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Mengirim Pendaftaran...';
+
+      try {
+        const form = document.getElementById('formTamuLuar');
+        const formData = new FormData(form);
+        const fileKunjungan = selectedDocuments.fileSuratKunjungan;
+        const fileTugas = selectedDocuments.fileSuratTugas;
+
+        const base64Kunjungan = await fileToBase64(fileKunjungan);
+        const base64Tugas = await fileToBase64(fileTugas);
+
+        const payload = {
+          instansi: formData.get('instansi'),
+          alamat: formData.get('alamat'),
+          jumlah_orang: formData.get('jumlah_orang'),
+          ketua_nama: formData.get('ketua_nama'),
+          pengikut_list: formData.get('pengikut_list'),
+          keperluan: formData.get('keperluan'),
+          tanggal_kunjungan: formData.get('tanggal_kunjungan'),
+          jam_kunjungan: formData.get('jam_kunjungan'),
+          narahubung_hp: formData.get('narahubung_hp'),
+          surat_kunjungan_base64: base64Kunjungan,
+          surat_tugas_base64: base64Tugas
+        };
+
+        if (window.google && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(onSuccess)
+            .withFailureHandler(err => {
+              btn.disabled = false;
+              btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i> Kirim Pendaftaran Kunjungan';
+              alert('Gagal: ' + err.message);
+            })
+            .registerTamuLuar(payload);
+        } else {
+          // Local fallback
+          const res = await fetch('/api/registerTamuLuar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const json = await res.json();
+          onSuccess(json);
+        }
+
+        function onSuccess(res) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i> Kirim Pendaftaran Kunjungan';
+          if (res.success) {
+            document.getElementById('resKode').innerText = res.data.kode_kunjungan;
+            document.getElementById('resLo').innerText = res.data.lo_nama || 'Akan ditentukan oleh admin';
+            document.getElementById('resBidang').innerText = res.data.tujuan_bidang || 'Akan ditentukan oleh admin';
+            document.getElementById('modalSukses').classList.remove('hidden');
+            document.getElementById('modalSukses').classList.add('flex');
+          } else {
+            alert('Gagal: ' + (res.error || 'Terjadi kesalahan'));
+          }
+        }
+      } catch (err) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i> Kirim Pendaftaran Kunjungan';
+        alert('Error: ' + err.message);
+      }
+    }
+  </script>
+</body>
+</html>

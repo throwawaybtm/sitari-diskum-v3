@@ -1,0 +1,367 @@
+<style>
+  #visitWorkflowModal { position:fixed; inset:0; z-index:120; padding:24px; background:rgba(15,23,42,.65); backdrop-filter:blur(6px); align-items:center; justify-content:center; }
+  #visitWorkflowModal:not([hidden]) { display:flex; }
+  #visitWorkflowModal[hidden] { display:none; }
+  #visitWorkflowModal .visit-dialog { background:#fff; color:#334155; border-radius:24px; width:100%; max-width:860px; max-height:90vh; display:flex; flex-direction:column; box-shadow:0 24px 80px #0f172a40; overflow:hidden; }
+  #visitWorkflowModal .visit-modal-head { padding:24px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; gap:16px; }
+  #visitWorkflowModal h3 { font-size:20px; font-weight:800; color:#143238; }
+  #visitWorkflowModal .visit-eyebrow { color:#0d9488; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.1em; margin-bottom:4px; }
+  #visitWorkflowModal .visit-close { width:36px; height:36px; border-radius:10px; background:#f1f5f9; flex-shrink:0; }
+  #visitWorkflowModal .visit-tabs { display:flex; overflow-x:auto; gap:6px; padding:14px 24px; background:#f8fafc; flex-shrink:0; }
+  #visitWorkflowModal .visit-tabs button { padding:10px 12px; white-space:nowrap; border-radius:10px; font-size:10px; font-weight:800; color:#64748b; }
+  #visitWorkflowModal .visit-tabs button[aria-selected="true"] { background:#11504a; color:#fff; }
+  #visitWorkflowModal button:disabled { opacity:.4; cursor:not-allowed; }
+  #visitWorkflowModal .visit-primary:disabled { background:#e2e8f0; color:#64748b; opacity:1; }
+  #visitWorkflowModal input:disabled, #visitWorkflowModal select:disabled { background:#f1f5f9; color:#94a3b8; cursor:not-allowed; }
+  #visitWorkflowModal .visit-content { padding:24px; overflow-y:auto; font-size:12px; }
+  #visitWorkflowModal .visit-panel { display:grid; gap:16px; }
+  #visitWorkflowModal [hidden] {display:none!important;}
+  #visitWorkflowModal .visit-note { padding:14px 16px; background:#ecfdf5; color:#11504a; border-radius:12px; line-height:1.7; }
+  #visitWorkflowModal .visit-detail-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+  #visitWorkflowModal .visit-detail-grid dt, #visitWorkflowModal label { display:block; font-size:10px; font-weight:800; text-transform:uppercase; color:#64748b; margin-bottom:5px; }
+  #visitWorkflowModal dd { white-space:pre-line; overflow-wrap:anywhere; line-height:1.7; }
+  #visitWorkflowModal .visit-file { display:flex; align-items:center; justify-content:center; text-align:center; gap:8px; color:#0f766e; overflow-wrap:anywhere; margin-top:6px; text-decoration:underline; }
+  #visitWorkflowModal .visit-confirm-actions {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:stretch;}
+  #visitWorkflowModal .visit-destination-option {display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #cbd5e1;border-radius:12px;text-transform:none;font-size:12px;}
+  #visitWorkflowModal .visit-destination-option input {width:16px;height:16px;flex-shrink:0;}
+  #visitWorkflowModal .visit-file-row {display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px;border:1px solid #e2e8f0;border-radius:12px;}
+  #visitWorkflowModal .visit-file-row strong {overflow-wrap:anywhere;min-width:0;}
+  #visitWorkflowModal .visit-file-actions {display:flex;gap:8px;flex-shrink:0;}
+  #visitWorkflowModal .visit-document-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+  #visitWorkflowModal .visit-document-card { aspect-ratio:1 / 1; min-width:0; overflow:hidden; border:1px solid #cbd5e1; border-radius:16px; padding:12px; display:flex; flex-direction:column; gap:10px; background:#fff; }
+  #visitWorkflowModal .visit-document-title { font-size:11px; font-weight:800; color:#334155; overflow-wrap:anywhere; }
+  #visitWorkflowModal .visit-document-preview { flex:1; min-height:0; overflow:hidden; display:flex; align-items:center; justify-content:center; border-radius:10px; background:#f8fafc; }
+  #visitWorkflowModal .visit-document-preview img { width:100%; height:100%; object-fit:contain; }
+  #visitWorkflowModal .visit-document-preview iframe { border:0; width:100%; height:100%; }
+  #visitWorkflowModal .visit-preview-fallback { text-align:center; padding:12px; color:#94a3b8; font-size:11px; }
+  #visitWorkflowModal .visit-document-card [hidden] { display:none !important; }
+  #visitWorkflowModal .visit-document-card input { padding:6px; font-size:10px; border-radius:8px; }
+  #visitWorkflowModal .visit-document-card .visit-file { margin:0; font-size:10px; }
+  #visitWorkflowModal input, #visitWorkflowModal select, #visitWorkflowModal textarea { width:100%; padding:12px; border:1px solid #cbd5e1; border-radius:12px; background:white; font-size:12px; color:#334155; }
+  #visitWorkflowModal .visit-primary { width:100%; padding:14px; border-radius:14px; color:#fff; background:linear-gradient(to right,#11504a,#143238); font-size:13px; font-weight:800; }
+  #visitWorkflowModal .visit-secondary { padding:10px 14px; border-radius:10px; color:#11504a; background:#ecfdf5; font-weight:700; }
+  #visitWorkflowModal .visit-error { color:#be123c; background:#fff1f2; padding:12px 24px; font-size:12px; }
+  #visitWorkflowModal table { width:100%; font-size:11px; border-collapse:collapse; }
+  #visitWorkflowModal th, #visitWorkflowModal td { text-align:left; padding:10px; border-bottom:1px solid #e2e8f0; overflow-wrap:anywhere; }
+  #visitWorkflowModal .visit-required { color:#e11d48; }
+  @media(max-width:767.98px) {
+    #visitWorkflowModal { padding:12px; }
+    #visitWorkflowModal .visit-dialog { max-height:92dvh; border-radius:20px; }
+    #visitWorkflowModal .visit-modal-head, #visitWorkflowModal .visit-content { padding:18px; }
+    #visitWorkflowModal .visit-tabs { padding:12px 18px; }
+    #visitWorkflowModal .visit-detail-grid { grid-template-columns:1fr; }
+    #visitWorkflowModal .visit-document-grid { grid-template-columns:minmax(0,1fr); }
+    #visitWorkflowModal .visit-confirm-actions {grid-template-columns:1fr;}
+    #visitWorkflowModal .visit-file-row {align-items:flex-start;flex-direction:column;}
+  }
+</style>
+<div id="visitWorkflowModal" hidden>
+  <div class="visit-dialog" role="dialog" aria-modal="true" aria-labelledby="visitModalTitle">
+    <div class="visit-modal-head">
+      <div><div class="visit-eyebrow"><i id="visitModalIdentityIcon" class="fa-solid fa-plane-arrival mr-1"></i> Pengelolaan Kunjungan</div><h3 id="visitModalTitle">Kunjungan Tamu Luar Daerah</h3><p id="visitModalSubtitle" class="text-xs text-slate-500 mt-1"></p></div>
+      <button type="button" class="visit-close" onclick="closeVisitWorkflow()" aria-label="Tutup modal"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div id="visitModalTabs" class="visit-tabs" role="tablist" aria-label="Tahapan kunjungan"></div>
+    <div id="visitModalError" class="visit-error" role="alert" hidden></div>
+    <div id="visitModalContent" class="visit-content"></div>
+  </div>
+</div>
+<script>
+  let visitModalData = null;
+  let visitModalTab = 0;
+  let visitModalBusy = false;
+  let visitModalLoading = false, visitModalRequest = 0;
+  let visitModalFocus = null;
+  let visitModalBodyOverflow = '';
+  let visitModalLetterUrl = '';
+  let visitPreviewUrls = {};
+  const visitTabNames = ['KONFIRMASI', 'DISPOSISI', 'NOTIFIKASI', 'KEDATANGAN', 'SPPD', 'SELESAI'];
+
+  function visitRpc(name, payload) {
+    return new Promise((resolve, reject) => callBackend(name, [payload], res => {
+      if (res && res.success) resolve(res.data);
+      else reject(new Error(responseMessage(res, 'Perubahan kunjungan gagal disimpan.')));
+    }, reject));
+  }
+  function renderVisitSnapshot(visit, checking) {
+    const message=checking?'Memeriksa data terbaru...':'Data terbaru belum dapat diperiksa. Informasi di bawah berasal dari Buku Tamu.';
+    if(!visit)return checking?'<p role="status" class="text-center text-sm text-slate-500 py-10"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Memuat data kunjungan...</p>':'';
+    const date=String(visit.tanggal_kunjungan||'').replace(/^(\d{4})-(\d{2})-(\d{2})$/,'$3-$2-$1');
+    const details=[['Nama Instansi Asal',visit.instansi],['Alamat Instansi',visit.alamat],['Ketua Rombongan',visit.ketua_nama],['Jumlah Orang',visit.jumlah_orang],['Bidang Tujuan',visit.tujuan_bidang||'Belum ditugaskan'],['Penerima Tamu',visit.lo_nama||'Belum ditugaskan'],['Agenda',visit.keperluan],['WhatsApp Narahubung',visit.narahubung_hp],['Jadwal Permohonan',(date+' '+(visit.jam_kunjungan||'')).trim()],['Daftar Anggota Rombongan',visit.pengikut_list]];
+    return '<div class="visit-note" role="status">'+(checking?'<i class="fa-solid fa-spinner fa-spin mr-2"></i>':'')+message+'</div><dl class="visit-detail-grid">'+details.map(([label,value])=>'<div><dt>'+label+'</dt><dd>'+escapeHtml(value??'-')+'</dd></div>').join('')+'</dl>';
+  }
+  async function openVisitWorkflow(code, options = {}) {
+    if (visitModalBusy && !visitModalLoading) return;
+    const request = ++visitModalRequest;
+    visitModalBusy = true; visitModalLoading = true; visitModalData = null;
+    const modal = document.getElementById('visitWorkflowModal');
+    if (modal.hidden) {
+      visitModalFocus = document.activeElement;
+      visitModalBodyOverflow = document.body.style.overflow;
+    }
+    document.body.style.overflow = 'hidden'; modal.hidden = false;
+    const snapshot=typeof allTamuData!=='undefined'&&Array.isArray(allTamuData)?allTamuData.find(v=>String(v.kode_kunjungan)===String(code)):null;
+    const snapshotLocal=snapshot&&snapshot.tipe_tamu==='dalam_daerah_fo';
+    document.getElementById('visitModalTitle').textContent = snapshot?(snapshotLocal?'Kunjungan Tamu Dalam Daerah':'Kunjungan Tamu Luar Daerah'):'Pengelolaan Kunjungan';
+    document.getElementById('visitModalIdentityIcon').className='fa-solid '+(snapshotLocal?'fa-user':'fa-plane-arrival')+' mr-1';
+    document.getElementById('visitModalSubtitle').textContent = code;
+    document.getElementById('visitModalTabs').innerHTML = snapshot?visitTabNames.map(name=>'<button type="button" role="tab" aria-selected="false" disabled>'+name+'</button>').join(''):'';
+    document.getElementById('visitModalError').hidden = true;
+    document.getElementById('visitModalContent').innerHTML = renderVisitSnapshot(snapshot,true);
+    document.querySelector('#visitWorkflowModal .visit-close').focus();
+    try {
+      const data = await visitRpc('getVisitWorkflow', { kode_kunjungan:code,tab:'current' });
+      if (request !== visitModalRequest) return;
+      if (data.workflow.status === 'Non-SPPD' && !options.readOnly) { closeVisitWorkflow(); return; }
+      data.readOnly=Boolean(options.readOnly);
+      visitModalData = data; visitModalTab = data.limited?data.tab:data.stage;
+      const localVisit=data.visit.tipe_tamu==='dalam_daerah_fo';
+      document.getElementById('visitModalTitle').textContent=localVisit?'Kunjungan Tamu Dalam Daerah':'Kunjungan Tamu Luar Daerah';
+      document.getElementById('visitModalIdentityIcon').className='fa-solid '+(localVisit?'fa-user':'fa-plane-arrival')+' mr-1';
+      renderVisitWorkflow();
+    } catch (err) {
+      if (request !== visitModalRequest) return;
+      document.getElementById('visitModalContent').innerHTML = renderVisitSnapshot(snapshot,false);
+      const box=document.getElementById('visitModalError');box.textContent=err.message;box.hidden=false;
+    }
+    finally { if(request===visitModalRequest){visitModalBusy=false;visitModalLoading=false;} }
+  }
+  function closeVisitWorkflow() {
+    if (visitModalBusy && !visitModalLoading) return;
+    ++visitModalRequest; visitModalLoading=false; visitModalBusy=false;
+    document.getElementById('visitWorkflowModal').hidden = true;
+    document.body.style.overflow = visitModalBodyOverflow;
+    if (visitModalFocus && visitModalFocus.isConnected) visitModalFocus.focus();
+    if (visitModalLetterUrl) URL.revokeObjectURL(visitModalLetterUrl);
+    releaseVisitPreviewUrls();
+    visitModalLetterUrl = ''; visitModalData = null;
+  }
+  async function selectVisitTab(index) {
+    if (visitModalBusy || !visitModalData) return;
+    if (visitModalData.workflow.status !== 'Selesai' && index > visitModalData.stage) return;
+    if(!Number.isInteger(index)||index<0||index>5)return;
+    visitModalTab = index;
+    if(index!==3&&(!visitModalData.limited||visitModalData.loadedTabs.includes(index))){
+      renderVisitWorkflow();document.getElementById('visit-tab-'+index).focus();return;
+    }
+    const request=++visitModalRequest,previous=visitModalData;
+    visitModalBusy=true;visitModalLoading=true;
+    document.getElementById('visitModalError').hidden=true;
+    document.getElementById('visitModalContent').innerHTML='<p role="status" class="text-center text-sm text-slate-500 py-10"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Memuat '+visitTabNames[index]+'...</p>';
+    try{
+      const fresh=await visitRpc('getVisitWorkflow',{kode_kunjungan:previous.visit.kode_kunjungan,tab:index});
+      if(request!==visitModalRequest)return;
+      fresh.readOnly=previous.readOnly;
+      if(fresh.workflow.version===previous.workflow.version){
+        fresh.loadedTabs=[...new Set([...(previous.loadedTabs||[0,1,2,3,4,5]),...fresh.loadedTabs])];
+        if(index!==2)fresh.rooms=previous.rooms;
+        if(index!==3&&index!==4){fresh.attendance=previous.attendance;fresh.roster=previous.roster;}
+        if(index!==5){fresh.notula=previous.notula;fresh.archiveSources=previous.archiveSources;}
+      }
+      visitModalData=fresh;renderVisitWorkflow();document.getElementById('visit-tab-'+index).focus();
+    }catch(error){
+      if(request!==visitModalRequest)return;
+      document.getElementById('visitModalContent').innerHTML='';
+      const box=document.getElementById('visitModalError');box.textContent=error.message;box.hidden=false;
+    }finally{if(request===visitModalRequest){visitModalBusy=false;visitModalLoading=false;}}
+  }
+  function visitFileLink(file, label) {
+    if (!file || !file.url || !/^(https:\/\/|\/local-doc\/)/i.test(file.url)) return '';
+    return `<div class="visit-document-card"><strong class="visit-document-title">${escapeHtml(label || file.name || 'Dokumen')}</strong><div class="visit-document-preview">${visitDocumentPreview(file,label)}</div><a class="visit-file" href="${escapeHtml(file.url)}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i>Buka / unduh dokumen</a></div>`;
+  }
+  function visitUpload(id, label, existing) {
+    return `<div class="visit-document-card"><label for="${id}" class="visit-document-title">${escapeHtml(label)} <span class="visit-required">*</span></label><div id="${id}Preview" class="visit-document-preview">${visitDocumentPreview(existing,label)}</div><input id="${id}" type="file" onchange="previewVisitSelection(this)" accept="application/pdf,image/jpeg,image/png,image/webp,image/heic,image/heif"><p class="text-[10px] text-slate-400">PDF / Foto · Maksimal 5 MB</p><a id="${id}Open" class="visit-file" href="${escapeHtml(existing&&existing.url||'')}" target="_blank" rel="noopener" ${existing&&existing.url?'':'hidden'}>Buka / unduh dokumen</a></div>`;
+  }
+  function visitFileRow(file,index) {
+    if(!file||!file.url||!/^(https:\/\/|\/local-doc\/)/i.test(file.url))return '';
+    return `<div class="visit-file-row"><strong><i class="fa-regular fa-file-lines text-teal-700 mr-2"></i>${escapeHtml(file.name||'Dokumen Kunjungan')}</strong><div class="visit-file-actions"><a class="visit-secondary" href="${escapeHtml(file.url)}" target="_blank" rel="noopener"><i class="fa-solid fa-eye mr-1"></i>View</a><button type="button" class="visit-secondary" onclick="downloadVisitDocument(${index},this)"><i class="fa-solid fa-download mr-1"></i>Download</button></div></div>`;
+  }
+  function visitDocumentPreview(file,label) {
+    const title=escapeHtml(label||file&&file.name||'Dokumen');
+    const placeholder='<span class="visit-preview-fallback"><i class="fa-regular fa-file-image text-3xl block mb-2"></i>'+(file?'Pratinjau tidak tersedia. Gunakan tautan buka dokumen.':'Pratinjau dokumen akan tampil di sini.')+'</span>';
+    if(!file||!file.url)return placeholder;
+    const url=String(file.url);
+    const drive=/^https:\/\/drive\.google\.com\//i.test(url)&&/(?:\/file\/d\/|[?&]id=)([A-Za-z0-9_-]+)/.exec(url);
+    const local=/^\/local-doc\/\d+(?:$|\?)/.test(url)||/^blob:/.test(url);
+    if(drive)return visitPreviewElement('iframe', {src:'https://drive.google.com/file/d/'+drive[1]+'/preview',title:'Pratinjau '+(label||file.name||'Dokumen'),loading:'lazy',allow:'fullscreen'});
+    if(!local)return placeholder;
+    if(/^image\//.test(file.mime||''))return visitPreviewElement('img', {src:url,alt:'Pratinjau '+(label||file.name||'Dokumen'),onerror:'this.hidden=true;this.nextElementSibling.hidden=false'})+'<span class="visit-preview-fallback" hidden>Format foto ini tidak dapat dipratinjau di browser. Gunakan tautan buka dokumen.</span>';
+    return visitPreviewElement('iframe', {src:url,title:'Pratinjau '+(label||file.name||'Dokumen'),loading:'lazy'});
+  }
+  function visitPreviewElement(tag, attributes) {
+    // Build embedded media through the DOM: GAS rewrites literal media tags in inline scripts.
+    const element=document.createElement(tag);
+    Object.keys(attributes).forEach(name=>element.setAttribute(name,attributes[name]));
+    return element.outerHTML;
+  }
+  function releaseVisitPreviewUrls() {
+    Object.values(visitPreviewUrls).forEach(url=>URL.revokeObjectURL(url));visitPreviewUrls={};
+  }
+  function visitFileMime(file) {
+    const mime=String(file.type||'').toLowerCase().trim();
+    if(/^(application\/pdf|image\/(jpeg|png|webp|heic|heif))$/.test(mime))return mime;
+    if(mime&&mime!=='application/octet-stream')return '';
+    const extension=String(file.name||'').toLowerCase().split('.').pop();
+    return ({pdf:'application/pdf',jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',heic:'image/heic',heif:'image/heif'})[extension]||'';
+  }
+
+  function previewVisitSelection(input) {
+    const file=input.files[0];if(!file)return;
+    if(file.size>5*1024*1024||!visitFileMime(file)) {
+      input.value='';showToast('error','Dokumen tidak valid','Pilih PDF / foto maksimal 5 MB per file.');if(input.id==='visitFoto')updateVisitFinishButton();return;
+    }
+    if(visitPreviewUrls[input.id])URL.revokeObjectURL(visitPreviewUrls[input.id]);
+    const mime=visitFileMime(file),preview=file.type===mime?file:new Blob([file],{type:mime});
+    const url=URL.createObjectURL(preview);visitPreviewUrls[input.id]=url;
+    document.getElementById(input.id+'Preview').innerHTML=visitDocumentPreview({url,mime:visitFileMime(file),name:file.name},file.name);
+    const link=document.getElementById(input.id+'Open');link.href=url;link.hidden=false;link.textContent='Buka pratinjau · belum disimpan';
+    if(input.id==='visitFoto')updateVisitFinishButton();
+  }
+  function visitAction(label, action, enabled, icon='fa-check',id='') {
+    return `<button type="button" ${id?'id="'+escapeHtml(id)+'"':''} class="visit-primary" data-visit-mutation onclick="submitVisitAction('${action}')" ${enabled ? '' : 'disabled'}>${icon?`<i class="fa-solid ${icon} mr-2"></i>`:''}${label}</button>`;
+  }
+  function renderVisitBooking(data,notificationsComplete) {
+    const w=data.workflow,v=data.visit,b=w.booking;
+    const canRecord=!data.readOnly&&!b&&data.stage===2&&w.status!=='Selesai';
+    const editable=notificationsComplete&&canRecord;
+    const disabled=editable?'':'disabled';
+    const values=b||{tanggal:v.tanggal_kunjungan,jam_mulai:v.jam_kunjungan,jam_selesai:''};
+    return `<form id="visitBookingForm" class="visit-panel"><p class="text-slate-500">${b?'Jadwal kunjungan telah tersimpan.':notificationsComplete?'Notifikasi selesai. Pilih jadwal ruangan kunjungan.':'Kirim notifikasi untuk penerima tamu sebelum menyimpan jadwal.'}</p>
+      <div><label for="visitRoom">Ruangan <span class="visit-required">*</span></label><select id="visitRoom" required ${disabled}><option value="">Pilih Ruangan</option>${data.rooms.map(r=>`<option value="${escapeHtml(r.id)}" ${b&&String(b.ruangan_id)===String(r.id)?'selected':''}>${escapeHtml(r.nama_ruangan)}${r.kapasitas?' · '+r.kapasitas+' orang':''}</option>`).join('')}</select></div>
+      <div class="visit-detail-grid"><div><label for="visitBookingDate">Tanggal kegiatan <span class="visit-required">*</span></label><input id="visitBookingDate" type="date" lang="en-GB" title="dd-mm-yyyy" value="${escapeHtml(values.tanggal||'')}" required ${disabled}></div>
+      <div id="visitBookingTimes" class="visit-detail-grid" ${w.retrospective?'hidden':''}><div><label for="visitStart">Jam Mulai <span class="visit-required">*</span></label><input id="visitStart" type="time" lang="en-GB" title="hh:mm (24 jam)" step="60" value="${escapeHtml(values.jam_mulai||'')}" required ${disabled}></div><div><label for="visitEnd">Jam Selesai <span class="visit-required">*</span></label><input id="visitEnd" type="time" lang="en-GB" title="hh:mm (24 jam)" step="60" value="${escapeHtml(values.jam_selesai||'')}" required ${disabled}></div></div></div>
+      ${visitAction(b?'Jadwal kunjungan tersimpan':'Simpan Jadwal Kunjungan','book',editable,b?'fa-check':'fa-calendar-plus','visitBookingSubmit')}</form>`;
+  }
+  function renderVisitWorkflow() {
+    releaseVisitPreviewUrls();
+    const data = visitModalData, w = data.workflow, v = data.visit;
+    const readonly = w.status === 'Selesai' || data.readOnly;
+    document.getElementById('visitModalSubtitle').textContent = v.kode_kunjungan + ' · ' + w.status;
+    const tabs=w.status==='Non-SPPD'?['DATA KUNJUNGAN']:visitTabNames;
+    document.getElementById('visitModalTabs').innerHTML = tabs.map((name, i) => `<button type="button" id="visit-tab-${i}" role="tab" aria-controls="visit-panel" aria-selected="${visitModalTab === i}" onclick="selectVisitTab(${i})" ${!readonly && i > data.stage ? 'disabled' : ''}>${name}</button>`).join('');
+    const schedule=w.schedule||{tanggal:v.tanggal_kunjungan,jam:v.jam_kunjungan};
+    const details = [ ['Nama Instansi Asal',v.instansi], ['Alamat Instansi',v.alamat], ['Ketua Rombongan',v.ketua_nama], ['Jumlah Orang',v.jumlah_orang], ['Bidang Tujuan',v.tujuan_bidang], ['Penerima Tamu',v.lo_nama], ['Agenda',v.keperluan], ['WhatsApp Narahubung',v.narahubung_hp], [w.retrospective?'Tanggal Kegiatan':'Jadwal Permohonan',String(schedule.tanggal||'').split('-').reverse().join('-') + (w.retrospective?'':' ' + (schedule.jam || '-'))], ['Daftar Anggota Rombongan',v.pengikut_list] ];
+    let panel = '';
+    if (visitModalTab === 0) {
+      panel = `<div class="visit-note">${w.status==='Non-SPPD'?'Data kunjungan Non-SPPD ditampilkan untuk dilihat tanpa tindakan pengesahan.':w.acknowledged ? 'Permintaan kunjungan telah diketahui oleh admin.' : 'Dengan menekan KONFIRMASI, admin menyatakan telah mengetahui dan memeriksa permintaan kunjungan berikut. Status tetap Menunggu Konfirmasi sampai surat disposisi disimpan.'}</div><dl class="visit-detail-grid">${details.map(([label,value])=>`<div><dt>${label}</dt><dd>${escapeHtml(value ?? '-')}</dd></div>`).join('')}</dl>`
+        + `<div class="visit-document-grid">${visitFileLink({url:v.surat_kunjungan_file},'Surat Permohonan Kunjungan')}${visitFileLink({url:v.surat_tugas_file},'Surat Tugas Rombongan')}</div>`
+        + (w.acknowledged ? `<p class="text-emerald-700">Dikonfirmasi oleh ${escapeHtml(w.acknowledged.actor)}</p>` : '');
+      if(!readonly&&data.stage<=1){
+        panel+=`<form id="visitRescheduleForm" class="visit-panel" hidden><div class="visit-detail-grid"><div><label for="visitNewDate">Tanggal <span class="visit-required">*</span></label><input type="date" lang="en-GB" title="dd-mm-yyyy" id="visitNewDate" required value="${escapeHtml(schedule.tanggal||'')}"></div><div><label for="visitNewTime">Jam <span class="visit-required">*</span></label><input type="time" lang="en-GB" title="hh:mm (24 jam)" step="60" id="visitNewTime" required value="${escapeHtml(schedule.jam||'')}"></div></div>${visitAction('Simpan Perubahan Jadwal','reschedule',true,'fa-floppy-disk')}</form>`;
+        const selected=String(v.tujuan_bidang||'').split(';').map(s=>s.trim());
+        panel+=`<form id="visitDestinationForm" class="visit-panel" hidden><p>Pilih satu atau lebih Bidang Tujuan. Penerima tamu mengikuti PIC masing-masing bidang.</p><div class="visit-detail-grid">${(data.destinations||[]).map(d=>`<label class="visit-destination-option"><input type="checkbox" value="${escapeHtml(d.bidang)}" ${selected.includes(d.bidang)?'checked':''}><span>${escapeHtml(d.bidang)}<small class="block text-teal-700 mt-1">PIC: ${escapeHtml(d.pic)}</small></span></label>`).join('')}</div>${visitAction('Simpan Bidang Tujuan','destinations',true,'fa-floppy-disk')}</form>`;
+        panel+=`<div class="visit-confirm-actions"><button class="visit-secondary" type="button" onclick="document.getElementById('visitRescheduleForm').hidden=!document.getElementById('visitRescheduleForm').hidden"><i class="fa-solid fa-calendar-pen mr-2"></i>Ganti Jadwal</button>`;
+        panel+=`<button class="visit-secondary" type="button" onclick="document.getElementById('visitDestinationForm').hidden=!document.getElementById('visitDestinationForm').hidden"><i class="fa-solid fa-building-user mr-2"></i>Pilih Bidang Tujuan</button>`;
+        panel+=visitAction(w.contactNotification&&w.contactNotification.success?'Notifikasi narahubung dikirim':'Kirim Notifikasi Narahubung','notifyContact',Boolean(String(v.tujuan_bidang||'').trim())&&!(w.contactNotification&&w.contactNotification.success),w.contactNotification&&w.contactNotification.success?'fa-check':'fa-paper-plane')+'</div>';
+        if(!v.tujuan_bidang)panel+='<p class="text-slate-500">Pilih dan simpan Bidang Tujuan sebelum mengirim notifikasi.</p>';
+        if(data.simulated)panel+='<p class="text-slate-500">Pengujian lokal: WhatsApp disimulasikan.</p>';
+        panel+=visitAction(w.acknowledged?'Dikonfirmasi':'KONFIRMASI','confirm',!w.acknowledged&&Boolean(String(v.tujuan_bidang||'').trim()));
+      }
+    } else if (visitModalTab === 1) {
+      panel = `<div class="visit-note">Unggah hasil scan surat disposisi setelah proses disposisi selesai.</div><div class="visit-document-grid">${!readonly&&data.stage===1?visitUpload('visitDisposisi','Scan Surat Disposisi',w.disposisi):visitFileLink(w.disposisi,'Surat Disposisi')}</div>`
+        + (!readonly && data.stage === 1 ? visitAction('SUDAH DISPOSISI','disposisi',false) : '');
+    } else if (visitModalTab === 2) {
+      const recipients = String(v.lo_nama || '').split(';').map(s=>s.trim()).filter(Boolean);
+      const complete = recipients.length > 0 && recipients.every(pic => w.notifications.some(n=>n.pic===pic && n.success));
+      panel = data.simulated ? '<div class="visit-note">Mode pengujian lokal: notifikasi disimulasikan. Tidak ada pesan WhatsApp yang dikirim.</div>' : '';
+      panel += `<ul class="space-y-3">${recipients.map(pic=>{const n=w.notifications.find(n=>n.pic===pic);return `<li class="flex justify-between gap-3"><strong>${escapeHtml(pic)}</strong><span class="${n&&n.success?'text-emerald-700':'text-slate-400'}">${n&&n.success?(n.simulated?'Simulasi berhasil':'Dikirim'):n&&n.error?escapeHtml(n.error):'Belum dikirim'}</span></li>`;}).join('')}</ul>`;
+      panel += visitAction(complete?'Notifikasi dikirim':'Kirim Notifikasi','notify',!readonly && data.stage===2 && !complete,complete?'fa-check':'fa-paper-plane','visitNotifyButton');
+      panel += renderVisitBooking(data,complete);
+    } else if (visitModalTab === 3) {
+      panel = `<div class="visit-note">Presensi dari QR atau input manual admin pada agenda kunjungan di tab Jadwal Rapat ditampilkan sesuai daftar ketua dan anggota rombongan. Periksa hasilnya setelah kunjungan berlangsung.</div>`;
+      if (!readonly && data.stage === 3) panel += '<button type="button" class="visit-secondary" onclick="refreshVisitAttendance()"><i class="fa-solid fa-rotate mr-2"></i>Muat Ulang Presensi</button>';
+      const people=data.roster||[];
+      panel += people.length ? `<table><thead><tr><th>Nama</th><th>Peran</th><th>Jabatan</th><th>Status</th></tr></thead><tbody>${people.map(member=>{const entry=data.attendance.find(a=>a.member_id===member.id||a.nama===member.nama);return `<tr><td data-label="Nama">${escapeHtml(member.nama)}</td><td data-label="Peran">${escapeHtml(member.peran)}</td><td data-label="Jabatan">${escapeHtml(entry&&entry.jabatan||'-')}</td><td data-label="Status" class="${entry?'text-emerald-700':'text-slate-400'}">${entry?'Hadir':'Belum hadir'}</td></tr>`;}).join('')}</tbody></table>` : '<p class="text-slate-400">Daftar rombongan belum tersedia.</p>';
+
+      if (w.arrival) panel += '<p class="text-emerald-700">Kedatangan telah divalidasi.</p>';
+      else if (!readonly && data.stage === 3) panel += visitAction('VALIDASI','arrival',data.attendance.length>0);
+    } else if (visitModalTab === 4) {
+      panel = '<div class="visit-note">Lengkapi foto kegiatan dan catatan singkat. Daftar hadir PDF dibuat otomatis dari presensi agenda saat kunjungan diselesaikan.</div>';
+      if (!readonly && data.stage === 4) {
+        panel += `<div class="visit-document-grid">${visitUpload('visitFoto','Foto Kegiatan',w.files.foto)}${visitFileLink(w.files.absen,'Daftar Hadir')}</div>`
+          + '<button type="button" class="visit-secondary" data-visit-mutation onclick="submitVisitAction(\'evidence\')">Simpan Dokumen Bukti</button>'
+          + `<div><label for="visitNote">Catatan <span class="visit-required">*</span></label><textarea id="visitNote" rows="4" maxlength="300" required placeholder="Catatan singkat hasil rapat atau rangkuman rapat" oninput="updateVisitFinishButton()">${escapeHtml(w.note||'')}</textarea><p id="visitNoteCount" class="text-xs text-slate-400 mt-1">${Array.from(w.note||'').length}/300 karakter</p></div>`
+          + `<p id="visitFinishHint" class="text-xs text-slate-500" role="status">${!data.attendance.length?'Belum ada presensi agenda.':!w.files.foto?'Pilih foto kegiatan dan isi catatan.':'Isi catatan untuk menyelesaikan kunjungan.'}</p>`
+          + visitAction('Siap untuk ditandatangani &amp; Selesai','finish',Boolean(w.files.foto&&w.note&&data.attendance.length),'fa-check');
+      } else panel += `<div class="visit-document-grid">${visitFileLink(w.files.foto,'Foto Kegiatan')}${visitFileLink(w.files.absen,'Daftar Hadir')}</div>`;
+      if(w.files.notulen)panel += `<div class="visit-document-grid">${visitFileLink(w.files.notulen,'E-Notulen lama (arsip)')}</div>`;
+      if(readonly)panel+=`<p class="visit-note">Catatan: ${escapeHtml(w.note||'-')}</p>`;
+    } else {
+      panel = '<div class="visit-note">Kunjungan telah selesai. Seluruh dokumen kunjungan tersedia sebagai arsip digital dan dapat diunduh dalam satu PDF.</div>';
+      panel+=`<p>Catatan: ${escapeHtml(w.note||'-')}</p><button type="button" id="visitArchiveDownload" class="visit-primary" onclick="downloadVisitArchive()"><i class="fa-solid fa-file-pdf mr-2"></i>Unduh Arsip Kunjungan</button><div class="visit-panel">${(data.archiveSources||[]).map((s,index)=>visitFileRow(s,index)).join('')}</div>`;
+    }
+    document.getElementById('visitModalError').hidden = true;
+    document.getElementById('visitModalContent').innerHTML = `<div id="visit-panel" class="visit-panel" role="tabpanel" aria-labelledby="visit-tab-${visitModalTab}">${panel}</div>`;
+    const disposisi = document.getElementById('visitDisposisi');
+    if (disposisi) disposisi.addEventListener('change', () => { document.querySelector('#visit-panel .visit-primary').disabled = !disposisi.files.length; });
+  }
+  function formatVisitTimestamp(value){
+    const text=String(value||'');
+    let m=/^(\d{2})-(\d{2})-(\d{4})(?:[ T](\d{2}):(\d{2}))?/.exec(text);if(m)return m[1]+'-'+m[2]+'-'+m[3]+(m[4]?' '+m[4]+':'+m[5]:'');
+    m=/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::\d{2})?)?$/.exec(text);if(m)return m[3]+'-'+m[2]+'-'+m[1]+(m[4]?' '+m[4]+':'+m[5]:'');
+    const d=new Date(value);if(Number.isNaN(d.getTime()))return value||'-';const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Jakarta',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(d);const g=t=>p.find(x=>x.type===t).value;return g('day')+'-'+g('month')+'-'+g('year')+' '+g('hour')+':'+g('minute');
+  }
+  function updateVisitFinishButton(){
+    const input=document.getElementById('visitNote');if(!input)return;
+    const length=Array.from(input.value).length,photo=visitModalData.workflow.files.foto||document.getElementById('visitFoto')?.files?.length;
+    document.getElementById('visitNoteCount').textContent=length+'/300 karakter';
+    const button=document.querySelector('#visit-panel .visit-primary');button.disabled=!input.value.trim()||length>300||!photo||!visitModalData.attendance.length;
+    const hint=document.getElementById('visitFinishHint');if(hint)hint.textContent=!visitModalData.attendance.length?'Belum ada presensi agenda.':!photo?'Pilih foto kegiatan terlebih dahulu.':!input.value.trim()?'Isi catatan singkat hasil rapat.':length>300?'Catatan maksimal 300 karakter.':'Dokumen dan catatan siap. Klik Selesai untuk mengarsipkan kunjungan.';
+  }
+  function readVisitFile(id) {
+    const input = document.getElementById(id), file = input && input.files[0];
+    if (!file) return Promise.resolve(null);
+    if (file.size > 5*1024*1024 || !visitFileMime(file)) return Promise.reject(new Error('Pilih PDF / foto maksimal 5 MB per file.'));
+    return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve({name:file.name,data:String(r.result).replace(/^data:[^;]*;base64,/, 'data:'+visitFileMime(file)+';base64,')});r.onerror=()=>reject(new Error('File gagal dibaca.'));r.readAsDataURL(file);});
+  }
+  async function submitVisitAction(action) {
+    if (visitModalBusy || !visitModalData || visitModalData.readOnly || ['Selesai','Non-SPPD'].includes(visitModalData.workflow.status)) return;
+    if (action === 'book' && !document.getElementById('visitBookingForm').reportValidity()) return;
+    if (action === 'reschedule' && !document.getElementById('visitRescheduleForm').reportValidity()) return;
+    visitModalBusy = true;
+    const buttons = [...document.querySelectorAll('#visitWorkflowModal button')];
+    const disabled = buttons.map(b=>b.disabled); buttons.forEach(b=>b.disabled=true);
+    const errorBox = document.getElementById('visitModalError'); errorBox.hidden=true;
+    try {
+      const payload = {kode_kunjungan:visitModalData.visit.kode_kunjungan,version:visitModalData.workflow.version,action};
+      const draftNote=document.getElementById('visitNote')?.value;
+      if (action === 'disposisi') payload.file = await readVisitFile('visitDisposisi');
+      if (action === 'evidence') payload.files={foto:await readVisitFile('visitFoto')};
+      if (action === 'finish') {
+        const photo=await readVisitFile('visitFoto');
+        if(photo){visitModalData=await visitRpc('saveVisitWorkflow',{kode_kunjungan:payload.kode_kunjungan,version:payload.version,action:'evidence',files:{foto:photo}});payload.version=visitModalData.workflow.version;}
+        payload.note=draftNote;
+      }
+      if (action === 'reschedule') payload.schedule={tanggal:document.getElementById('visitNewDate').value,jam:document.getElementById('visitNewTime').value};
+      if (action === 'destinations') payload.destinations=[...document.querySelectorAll('#visitDestinationForm input:checked')].map(input=>input.value);
+      if (action === 'book') payload.booking = {ruangan_id:document.getElementById('visitRoom').value,tanggal:document.getElementById('visitBookingDate').value,jam_mulai:document.getElementById('visitStart').value,jam_selesai:document.getElementById('visitEnd').value};
+      visitModalData = await visitRpc('saveVisitWorkflow',payload);
+      visitModalBusy = false;
+      applyVisitUpdate(visitModalData,action);
+      if(action==='evidence'&&draftNote)visitModalData.workflow.note=draftNote;
+      visitModalTab = ['notifyContact','reschedule','destinations'].includes(action)?0:action==='book'?2:visitModalData.stage; renderVisitWorkflow();
+      if (action === 'finish') showToast('success','Kunjungan Selesai','Seluruh dokumen tersedia pada tab SELESAI.');
+      if(action==='notifyContact'||action==='notify'){
+        const results=action==='notifyContact'?[visitModalData.workflow.contactNotification]:visitModalData.workflow.notifications;
+        const success=results.length&&results.every(n=>n&&n.success);
+        showToast(success?'success':'error',success?'Notifikasi dikirim':'Sebagian notifikasi gagal',visitModalData.simulated?'Simulasi lokal berhasil. Tidak ada WhatsApp dikirim.':success?'Pesan diterima Fonnte untuk dikirim melalui WhatsApp.':'Periksa hasil setiap penerima sebelum mencoba kembali.');
+      }
+    } catch (error) {
+      buttons.forEach((b,i)=>b.disabled=disabled[i]);
+      errorBox.textContent=error.message || 'Proses gagal. Silakan coba lagi.';errorBox.hidden=false;
+    } finally { buttons.forEach((b,i)=>{if(b.isConnected)b.disabled=disabled[i];});visitModalBusy=false; }
+  }
+  async function refreshVisitAttendance() {
+    if (visitModalBusy) return;
+    visitModalBusy=true;
+    try { visitModalData=await visitRpc('getVisitWorkflow',{kode_kunjungan:visitModalData.visit.kode_kunjungan});renderVisitWorkflow(); }
+    catch(error) { const box=document.getElementById('visitModalError');box.textContent=error.message;box.hidden=false; }
+    finally { visitModalBusy=false; }
+  }
+  document.addEventListener('keydown',event=>{
+    const modal=document.getElementById('visitWorkflowModal');if(modal.hidden)return;
+    if(event.key==='Escape') { event.preventDefault();closeVisitWorkflow(); }
+    if(event.key==='Tab') { const items=[...modal.querySelectorAll('button:not(:disabled),a[href],input:not(:disabled),select:not(:disabled)')].filter(el=>el.getClientRects().length); const first=items[0],last=items[items.length-1];if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();} }
+    if(visitModalData && event.target.getAttribute('role')==='tab' && ['ArrowRight','ArrowLeft','Home','End'].includes(event.key)) {event.preventDefault();const max=visitModalData.workflow.status==='Selesai'?5:visitModalData.stage;const index=event.key==='Home'?0:event.key==='End'?max:(visitModalTab+(event.key==='ArrowRight'?1:-1)+max+1)%(max+1);selectVisitTab(index);}
+  });
+</script>

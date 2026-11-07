@@ -1,0 +1,83 @@
+'use strict';
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const { once } = require('node:events');
+const { createLocalTestServer } = require('../server');
+const { completeTddPayload } = require('./tdd-test-data');
+
+function loadFo() {
+  const context = vm.createContext({});
+  for (const file of ['Destinations.js', 'Code.js']) {
+    vm.runInContext(fs.readFileSync(path.join(__dirname, '../../Tamu-FO', file), 'utf8'), context);
+  }
+  return context;
+}
+
+test('TDD directory matches all TLD destinations, PICs and private contacts', () => {
+  const fo = loadFo();
+  const luar = vm.createContext({});
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../../Tamu-Luar/Destinations.js'), 'utf8'), luar);
+  assert.equal(vm.runInContext('JSON.stringify(TDD_DESTINATIONS)', fo), vm.runInContext('JSON.stringify(TLD_DESTINATIONS)', luar));
+  assert.equal(fo.getTddPublicDestinations_().length, 9);
+  assert.ok(fo.getTddPublicDestinations_().every(item => Object.keys(item).sort().join(',') === 'bidang,pic'));
+  const selected = fo.prepareTddVisit_(completeTddPayload({ tujuan_bidang: ['Bidang Pengawasan Koperasi', 'UPTD PLUT KUMKM', 'UPTD PLUT KUMKM'] }));
+  assert.equal(selected.pic, 'Mery Sefina Simor, S.Kom.; Hafidz Qodli Abdillah, S.E.');
+  assert.throws(() => fo.prepareTddVisit_(completeTddPayload({ tujuan_bidang: [] })), /minimal satu/);
+  assert.throws(() => fo.prepareTddVisit_(completeTddPayload({ tujuan_bidang: ['unknown'] })), /tersedia/);
+  assert.throws(() => fo.prepareTddVisit_(completeTddPayload({ jumlah_orang: 0 })), /minimal 1/);
+  assert.throws(() => fo.prepareTddVisit_(completeTddPayload({ ketua_nama: '   ' })), /wajib/);
+});
+
+test('GAS TDD records only headcount, server arrival and Non-SPPD, ignoring removed client fields', () => {
+  const context = loadFo();
+  const rows = [];
+  const touched = [];
+  const sheet = { getLastRow: () => 1, appendRow: row => rows.push(row) };
+  context.LockService = { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) };
+  context.Utilities = { formatDate: (date, timezone, format) => ({
+    'yyyy-MM-dd': '2026-10-26', 'HH:mm': '20:45', 'yyyy-MM-dd HH:mm:ss': '2026-10-26 20:45:00'
+  })[format] };
+  context.getSharedSpreadsheet_ = () => ({ getSheetByName: name => { touched.push(name); return sheet; } });
+  const response = context.registerTamuFo(completeTddPayload({
+    bawa_sppd: 1, pengikut_list: 'ignore me', tanggal_kunjungan: '2030-01-01', jam_kunjungan: '01:00'
+  }));
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0][5], 1);
+  assert.equal(rows[0][7], '');
+  assert.equal(rows[0][13], '20:45');
+  assert.equal(rows[0][18], 0);
+  assert.equal(response.data.kode_kunjungan, 'TDD-26102026-001');
+  assert.equal(response.data.lo_nama, 'Mery Sefina Simor, S.Kom.');
+  assert.ok(!touched.includes('Kendali_SPPD'));
+});
+
+test('local TDD keeps the compact form and submits multiple recipients without removed fields', async () => {
+  const server = createLocalTestServer({ now: new Date('2026-10-26T13:45:00Z') });
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  const base = 'http://127.0.0.1:' + server.address().port;
+  const post = async (name, data) => (await fetch(base + '/api/' + name, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
+  })).json();
+  try {
+    const html = await (await fetch(base + '/tamu-fo')).text();
+    assert.match(html, /Pendaftaran Kunjungan Tamu Dalam Daerah/);
+    assert.match(html, /tdd-page max-w-\[860px\]/);
+    assert.doesNotMatch(html, /<\?|name="pengikut_list"|name="bawa_sppd"|type="date"|type="time"|type="file"|PHONE_NUMBER_PLACEHOLDER/);
+    for (const match of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) new vm.Script(match[1]);
+    const result = await post('registerTamuFo', completeTddPayload({
+      tujuan_bidang: ['Bidang Pengawasan Koperasi', 'UPTD PLUT KUMKM'], bawa_sppd: 1, pengikut_list: 'ignored'
+    }));
+    assert.equal(result.success, true);
+    const list = await post('getTamuList', {});
+    assert.equal(list.data[0].lo_nama, 'Mery Sefina Simor, S.Kom.; Hafidz Qodli Abdillah, S.E.');
+    assert.equal(list.data[0].bawa_sppd, false);
+    assert.equal(list.data[0].pengikut_list, '');
+    assert.equal(list.data[0].jam_kunjungan, '20:45');
+    assert.equal((await post('registerTamuFo', {})).success, false);
+    assert.equal((await post('getTamuList', {})).data.length, 21);
+  } finally { server.close(); await once(server, 'close'); }
+});

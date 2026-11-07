@@ -1,0 +1,13 @@
+/** Server-only TLD directory. Only bidang and pic are rendered in the public form. */
+const VISIT_PIC_CONTACTS = [
+  { id: 'sekretariat-umpeg', bidang: 'Sekretariat (Umum dan Kepegawaian)', pic: 'Novirianti, A.Md.', phone: 'PHONE_NUMBER_PLACEHOLDER' },
+  { id: 'sekretariat-perencanaan', bidang: 'Sekretariat (Program dan Perencanaan)', pic: 'Ilhami Kurnia Putri, S.Kom.', phone: 'PHONE_NUMBER_PLACEHOLDER' },
+  { id: 'sekretariat-keuangan', bidang: 'Sekretariat (Keuangan dan Aset)', pic: 'Zuziani, S.E.', phone: 'PHONE_NUMBER_PLACEHOLDER' },
+  { id: 'pemberdayaan-koperasi', bidang: 'Bidang Pemberdayaan dan Perlindungan Koperasi', pic: 'Debbi Shinta, S.E.', phone: 'PHONE_NUMBER_PLACEHOLDER' },
+  { id: 'pengawasan-koperasi', bidang: 'Bidang Pengawasan Koperasi', pic: 'Mery Sefina Simor, S.Kom.', phone: 'PHONE_NUMBER_PLACEHOLDER' },
+  { id: 'pengembangan-mikro', bidang: 'Bidang Pengembangan Usaha Mikro', pic: 'Dewi Astuti, S.E.', phone: 'PHONE_NUMBER_PLACEHOLDER' },
+  { id: 'kewirausahaan', bidang: 'Bidang Kewirausahaan', pic: 'Fitria Lestari Pujiastuti, S.E.', phone: 'PHONE_NUMBER_PLACEHOLDER' },
+  { id: 'plut-kumkm', bidang: 'UPTD PLUT KUMKM', pic: 'Hafidz Qodli Abdillah, S.E.', phone: 'PHONE_NUMBER_PLACEHOLDER' },
+  { id: 'dana-bergulir', bidang: 'UPTD Pengelolaan Dana Bergulir', pic: 'Intan Permata Sari, S.E.', phone: 'PHONE_NUMBER_PLACEHOLDER' }
+];
+

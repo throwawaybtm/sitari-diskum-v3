@@ -1,0 +1,109 @@
+<style>
+  #bookingCalendar {width:calc(100% - 24px);max-width:38rem;max-height:90dvh;padding:0;margin:auto;border:0;border-radius:20px;background:#fff;color:#1e293b;}
+  #bookingCalendar::backdrop {background:#0f172aaa;backdrop-filter:blur(5px);}
+  #bookingCalendar .booking-calendar-head {display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid #e2e8f0;margin-bottom:12px;}
+  #bookingCalendar .booking-calendar-head button {width:44px!important;flex:0 0 44px;min-height:44px;border-radius:12px;background:#f1f5f9;}
+  #bookingCalendar .booking-calendar-body {max-width:560px;margin:auto;padding:0 12px 12px;}
+  #bookingCalendar .calendar-controls {display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0 10px;}
+  #bookingCalendar .calendar-controls button {padding:8px 12px;border-radius:10px;background:#f0fdfa;color:#115e59;min-width:40px;min-height:40px;}
+  #bookingCalendar .calendar-controls > button {width:40px!important;flex:0 0 40px;}
+  #bookingCalendar .calendar-controls > div {flex:1;min-width:0;text-align:center;}
+  #bookingCalendar .calendar-controls > div > button {width:auto!important;white-space:nowrap;display:inline-block!important;}
+  #bookingCalendarMonth {text-align:center;font-size:16px;font-weight:700;}
+  #bookingCalendar .calendar-week,#bookingCalendarDays {display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;}
+  #bookingCalendar .calendar-week {text-align:center;font-size:12px;color:#64748b;margin-bottom:6px;}
+  #bookingCalendarDays button {min-width:0;min-height:52px;border-radius:10px;border:1px solid #f1f5f9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:14px;}
+  #bookingCalendarDays button:hover {outline:2px solid #0d9488;outline-offset:-2px;}
+  #bookingCalendarDays button.has-bookings {background:#ccfbf1;color:#115e59;border-color:#99f6e4;font-weight:700;}
+  #bookingCalendarDays button[aria-current=date] {box-shadow:inset 0 0 0 2px #0f766e;}
+  #bookingCalendarDays .booking-count {font-size:10px!important;line-height:1.2;white-space:nowrap;}
+  #bookingCalendarStatus {font-size:12px;color:#64748b;text-align:center;margin-top:8px;}
+  #bookingDateModal {width:calc(100% - 24px);max-width:48rem;max-height:90dvh;padding:0;margin:auto;border:0;border-radius:20px;color:#1e293b;}
+  #bookingDateModal::backdrop {background:#0f172aaa;backdrop-filter:blur(5px);}
+  #bookingDateModal .booking-date-head {padding:16px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  #bookingDateModal .booking-date-head button {width:44px!important;flex:0 0 44px;min-height:44px;border-radius:12px;background:#f1f5f9;}
+  #bookingDateModal table {width:100%;table-layout:fixed;border-collapse:collapse;font-size:14px;}
+  #bookingDateModal th {background:#f8fafc;color:#64748b;text-align:left;font-size:12px;}
+  #bookingDateModal th,#bookingDateModal td {padding:12px 10px;border-bottom:1px solid #e2e8f0;vertical-align:top;overflow-wrap:anywhere;}
+  #bookingDateModal .booking-time {font-size:12px!important;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  #bookingDateModal .booking-type {display:inline-block;font-size:10px!important;font-weight:700;padding:3px 7px;border-radius:6px;margin-bottom:4px;}
+  @media (max-width:767.98px), (max-width:1023.98px) and (hover:none) and (pointer:coarse) {
+    #section-calendar #meetingPrimaryActions {display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));grid-row:2;grid-column:1 / -1;gap:6px;}
+    #section-calendar #meetingPrimaryActions > :is(button,a) {grid-area:auto;width:100%;min-width:0;min-height:52px!important;padding:6px!important;font-size:14px!important;line-height:1.2;}
+    #section-calendar #meetingPrimaryActions > :not([hidden]) ~ :not([hidden]) {margin-left:0;}
+    #section-calendar #meetingsListContainer {grid-row:4;}
+    #bookingCalendarDays button {min-height:46px;}
+    #bookingDateModal th,#bookingDateModal td {padding:10px 6px;}
+    #bookingDateModal .booking-time {font-size:11px!important;}
+  }
+</style>
+<dialog id="bookingCalendar" aria-labelledby="bookingCalendarTitle">
+  <div class="booking-calendar-head"><h3 id="bookingCalendarTitle" class="text-base font-bold"><i class="fa-solid fa-calendar-days text-teal-700 mr-2" aria-hidden="true"></i>Kalender Agenda</h3><button type="button" onclick="document.getElementById('bookingCalendar').close()" aria-label="Tutup kalender agenda"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
+  <div class="booking-calendar-body">
+    <div class="calendar-controls"><button type="button" onclick="shiftBookingCalendarMonth(-1)" aria-label="Bulan sebelumnya"><i class="fa-solid fa-chevron-left"></i></button><div><h3 id="bookingCalendarMonth"></h3><button type="button" onclick="resetBookingCalendarMonth()" style="font-size:11px;min-height:28px;padding:3px 8px;display:block;margin:4px auto 0;">Bulan ini</button></div><button type="button" onclick="shiftBookingCalendarMonth(1)" aria-label="Bulan berikutnya"><i class="fa-solid fa-chevron-right"></i></button></div>
+    <div class="calendar-week" aria-hidden="true"><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span>Min</span></div>
+    <div id="bookingCalendarDays" role="group" aria-label="Pilih tanggal agenda"></div>
+    <p id="bookingCalendarStatus" role="status"></p>
+  </div>
+</dialog>
+<dialog id="bookingDateModal" aria-labelledby="bookingDateTitle">
+  <div class="booking-date-head"><h3 id="bookingDateTitle" class="text-base font-bold"></h3><button type="button" onclick="document.getElementById('bookingDateModal').close()" aria-label="Tutup agenda tanggal"><i class="fa-solid fa-xmark"></i></button></div>
+  <table aria-label="Agenda pada tanggal terpilih"><colgroup><col style="width:32%"><col style="width:30%"><col style="width:38%"></colgroup><thead><tr><th scope="col">Ruangan</th><th scope="col">Jam (WIB)</th><th scope="col">Agenda</th></tr></thead><tbody id="bookingDateRows"></tbody></table>
+</dialog>
+<script>
+  let bookingCalendarState='loading',bookingSelectedDate='';
+  const bookingToday=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  let bookingCalendarYear=Number(bookingToday.slice(0,4)),bookingCalendarMonth=Number(bookingToday.slice(5,7))-1;
+  function openBookingCalendar() {
+    renderBookingCalendar();const modal=document.getElementById('bookingCalendar');if(!modal.open)modal.showModal();
+  }
+  function bookingsOnDate(date,meetings=allRapatData) {
+    return meetings.filter(row=>row.tanggal===date&&row.status!=='Dibatalkan').slice().sort((a,b)=>String(a.jam_mulai||'').localeCompare(String(b.jam_mulai||''))||String(a.nama_ruangan||'').localeCompare(String(b.nama_ruangan||'')));
+  }
+  function bookingAgendaType(meeting) {
+    const code=String(meeting.kode_kunjungan||String(meeting.kode_rapat||'').replace(/^VISIT-/,''));
+    if(/^TDD-/i.test(code))return 'TDD';
+    if(/^TLD-/i.test(code))return 'TLD';
+    const visit=typeof allTamuData!=='undefined'?allTamuData.find(row=>String(row.kode_kunjungan)===code):null;
+    if(visit)return visit.tipe_tamu==='dalam_daerah_fo'?'TDD':'TLD';
+    return meeting.kode_kunjungan||String(meeting.kode_rapat||'').startsWith('VISIT-')?'TLD':'INTERNAL';
+  }
+  function setBookingCalendarState(state) {
+    bookingCalendarState=state;renderBookingCalendar();
+    if(bookingSelectedDate&&document.getElementById('bookingDateModal').open)renderBookingDate();
+  }
+  function setBookingCalendarMonth(year,month) {
+    const value=new Date(Date.UTC(year,month,1));bookingCalendarYear=value.getUTCFullYear();bookingCalendarMonth=value.getUTCMonth();renderBookingCalendar();
+  }
+  function shiftBookingCalendarMonth(offset) {setBookingCalendarMonth(bookingCalendarYear,bookingCalendarMonth+offset);}
+  function resetBookingCalendarMonth() {setBookingCalendarMonth(Number(bookingToday.slice(0,4)),Number(bookingToday.slice(5,7))-1);}
+  function renderBookingCalendar() {
+    const days=document.getElementById('bookingCalendarDays');if(!days)return;
+    const first=new Date(Date.UTC(bookingCalendarYear,bookingCalendarMonth,1));
+    document.getElementById('bookingCalendarMonth').textContent=new Intl.DateTimeFormat('id-ID',{month:'long',year:'numeric',timeZone:'UTC'}).format(first);
+    const prefix=bookingCalendarYear+'-'+String(bookingCalendarMonth+1).padStart(2,'0')+'-';
+    let html='<span aria-hidden="true"></span>'.repeat((first.getUTCDay()+6)%7);
+    const length=new Date(Date.UTC(bookingCalendarYear,bookingCalendarMonth+1,0)).getUTCDate();
+    for(let day=1;day<=length;day++) {
+      const date=prefix+String(day).padStart(2,'0'),count=bookingCalendarState==='ready'?bookingsOnDate(date).length:0;
+      html+=`<button type="button" data-date="${date}" onclick="openBookingDate(this.dataset.date)" class="${count?'has-bookings':''}" ${date===bookingToday?'aria-current="date"':''} aria-label="${date.split('-').reverse().join('-')}, ${bookingCalendarState==='ready'?count+' agenda':'data belum tersedia'}"><span>${day}</span>${count?`<span class="booking-count">${count} agenda</span>`:''}</button>`;
+    }
+    days.innerHTML=html;
+    document.getElementById('bookingCalendarStatus').textContent=bookingCalendarState==='loading'?'Memuat agenda…':bookingCalendarState==='error'?'Agenda gagal dimuat. Silakan muat ulang halaman.':'Tanggal berwarna memiliki agenda.';
+  }
+  function openBookingDate(date) {
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(Date.parse(date))||new Date(date).toISOString().slice(0,10)!==date)return;
+    bookingSelectedDate=date;renderBookingDate();const modal=document.getElementById('bookingDateModal');if(!modal.open)modal.showModal();
+  }
+  function renderBookingDate() {
+    document.getElementById('bookingDateTitle').textContent='Agenda '+bookingSelectedDate.split('-').reverse().join('-');
+    const rows=document.getElementById('bookingDateRows'),items=bookingsOnDate(bookingSelectedDate);
+    if(bookingCalendarState!=='ready'||!items.length) {
+      rows.innerHTML=`<tr><td colspan="3" class="text-center text-slate-500">${bookingCalendarState==='loading'?'Memuat agenda…':bookingCalendarState==='error'?'Agenda gagal dimuat. Silakan muat ulang halaman.':'Belum ada agenda pada tanggal ini.'}</td></tr>`;return;
+    }
+    rows.innerHTML=items.map(row=>{
+      const type=bookingAgendaType(row),colour=type==='INTERNAL'?'bg-blue-100 text-blue-800':type==='TDD'?'bg-cyan-100 text-cyan-800':'bg-teal-100 text-teal-800';
+      return `<tr><td>${escapeHtml(getMeetingRoomInfo(row.nama_ruangan).name)}</td><td><span class="booking-time">${escapeHtml(row.jam_mulai||'-')} – ${escapeHtml(row.jam_selesai||'-')}</span></td><td><span class="booking-type ${colour}">${type}</span><div>${escapeHtml(row.judul_rapat||'-')}</div></td></tr>`;
+    }).join('');
+  }
+</script>

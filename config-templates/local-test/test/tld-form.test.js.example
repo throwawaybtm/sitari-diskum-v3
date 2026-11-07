@@ -1,0 +1,198 @@
+'use strict';
+
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const { once } = require('node:events');
+const { createLocalTestServer } = require('../server');
+const { completeTldPayload } = require('./tld-test-data');
+
+function loadTld() {
+  const context = vm.createContext({});
+  for (const file of ['Destinations.js', 'Code.js']) {
+    vm.runInContext(fs.readFileSync(path.join(__dirname, '../../Tamu-Luar', file), 'utf8'), context);
+  }
+  return context;
+}
+
+test('organisation details starts collapsed on phones and is visible again on desktop',()=>{
+  const html=fs.readFileSync('Tamu-Luar/Index.html','utf8');
+  const source=html.match(/    function setupOrganizationDetails\([^]*?\n    \}/)?.[0];
+  assert.ok(source,'responsive organisation disclosure initializer exists');
+  for(const phone of [true,false]){
+    const details={open:true};let listener;
+    const c=vm.createContext({document:{getElementById:()=>details},window:{matchMedia:()=>({matches:phone,addEventListener:(event,fn)=>{assert.equal(event,'change');listener=fn;}})}});
+    vm.runInContext(source,c);c.setupOrganizationDetails();
+    assert.equal(details.open,!phone);
+    details.open=true; // Native details remains manually expandable on a phone.
+    listener({matches:false});assert.equal(details.open,true);
+    listener({matches:true});assert.equal(details.open,false);
+  }
+});
+
+test('phone file-provider uploads normalize missing/generic MIME and remain accepted by GAS',async()=>{
+  const html=fs.readFileSync('Tamu-Luar/Index.html','utf8');
+  const c=vm.createContext({maxUploadBytes:5*1024*1024,FileReader:class{
+    readAsDataURL(){this.result='data:application/octet-stream;base64,JVBERg==';this.onload();}
+  }});
+  for(const name of ['documentMimeType','documentFileError','fileToBase64']){
+    const source=html.match(new RegExp('    function '+name+'\\([^]*?\\n    \\}'))?.[0];if(source)vm.runInContext(source,c);
+  }
+  const gas=loadTld();
+  for(const [name,type,mime]of [['surat.PDF','','application/pdf'],['camera.HEIC','','image/heic'],['foto.jpeg','','image/jpeg'],['scan.pdf','application/octet-stream','application/pdf']]){
+    const file={name,type,size:10};assert.equal(c.documentFileError(file),'',name);
+    const uri=await c.fileToBase64(file);assert.ok(uri.startsWith('data:'+mime+';base64,'),name);
+    assert.doesNotThrow(()=>gas.validateTldUpload_(uri));
+  }
+  for(const file of [{name:'invalid.html',type:'',size:10},{name:'fake.pdf',type:'text/html',size:10},{name:'large.pdf',type:'',size:6*1024*1024}])assert.notEqual(c.documentFileError(file),'');
+});
+
+test('TLD directory provides nine public PIC cards without phone numbers', () => {
+  const context = loadTld();
+  const options = context.getTldPublicDestinations_();
+  assert.equal(options.length, 9);
+  assert.equal(options[0].pic, 'Novirianti, A.Md.');
+  assert.equal(options[8].pic, 'Intan Permata Sari, S.E.');
+  assert.ok(options.every(option => Object.keys(option).sort().join(',') === 'bidang,pic'));
+});
+
+test('public TLD registration leaves destinations empty even with submitted choices',()=>{
+  const context=loadTld();const result=context.prepareTldVisit_({tujuan_bidang:['Bidang Pengawasan Koperasi']});
+  assert.equal(result.bidang,'');assert.equal(result.pic,'');assert.equal(result.picIds,'');
+  assert.equal(context.prepareTldVisit_({}).bidang,'');
+});
+
+test('TLD accepts PDF/photos up to 5 MiB and rejects larger or unsupported documents', () => {
+  const context = loadTld();
+  const max = 5 * 1024 * 1024;
+  context.validateTldUpload_('');
+  context.validateTldUpload_('data:application/pdf;base64,' + Buffer.alloc(max).toString('base64'));
+  context.validateTldUpload_('data:image/jpeg;base64,' + Buffer.from('photo').toString('base64'));
+  assert.throws(() => context.validateTldUpload_('data:application/pdf;base64,' + Buffer.alloc(max + 1).toString('base64')), /5 MB/);
+  assert.throws(() => context.validateTldUpload_('data:text/html;base64,PGgxPg=='), /PDF/);
+});
+
+test('GAS registration saves all selected fields and PICs in the shared row', () => {
+  const context = loadTld();
+  const options = context.getTldPublicDestinations_();
+  const rows = [];
+  const sheet = { getLastRow: () => 1, appendRow: row => rows.push(row) };
+  context.LockService = { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) };
+  context.Utilities = { formatDate: () => '2026-10-26 10:00:00' };
+  context.getSharedSpreadsheet_ = () => ({ getSheetByName: () => sheet });
+  context.saveBase64ToDrive_ = () => 'https://example.invalid/local-file';
+  const result = context.registerTamuLuar(completeTldPayload({
+    instansi: 'Uji', ketua_nama: 'Penguji', narahubung_hp: '080000000000',
+    tujuan_bidang: [options[0].bidang, options[5].bidang], keperluan: 'Uji multi pilihan',
+    tanggal_kunjungan: '2026-10-26', bawa_sppd: 0
+  }));
+  assert.equal(rows.length, 2, 'TLD creates both a visit and its SPPD record');
+  assert.equal(rows[0][18], 1, 'stale checkbox values cannot bypass the TLD workflow');
+  assert.equal(rows[0][19], 'Menunggu Konfirmasi');
+  assert.equal(rows[0][8], result.data.tujuan_bidang);
+  assert.equal(rows[0][17], '');
+  assert.equal(result.data.lo_nama, rows[0][17]);
+  assert.doesNotMatch(JSON.stringify(result), /phone|PHONE_NUMBER_PLACEHOLDER/);
+});
+
+test('local TLD serves the new page, omits PIC contacts, and accepts two documents above the old total limit', async () => {
+  const server = createLocalTestServer();
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  const baseUrl = 'http://127.0.0.1:' + server.address().port;
+  try {
+    const html = await (await fetch(baseUrl + '/tamu-luar')).text();
+    assert.match(html, /Pendaftaran Kunjungan Tamu Luar Daerah/);
+    assert.match(html, /id="departmentInfoCards"/);
+    assert.match(html, /Kepala Dinas/);
+    assert.match(html, /Sub Bagian Perencanaan Program/);
+    assert.match(html, /UPT Pengelolaan Dana Bergulir/);
+    assert.match(html, /UPT PLUT KUMKM/);
+    assert.doesNotMatch(html, /Kelompok Jabatan Fungsional|name="tujuan_bidang"/);
+    assert.doesNotMatch(html, /<\?|PHONE_NUMBER_PLACEHOLDER|PHONE_NUMBER_PLACEHOLDER|Kunjungan Online/);
+    const file = 'data:application/pdf;base64,' + Buffer.alloc(600 * 1024).toString('base64');
+    const response = await fetch(baseUrl + '/api/registerTamuLuar', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(completeTldPayload({ surat_kunjungan_base64: file, surat_tugas_base64: file }))
+    });
+    const payload = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(payload.success, true);
+    assert.equal(payload.data.lo_nama, '');
+  } finally {
+    server.close();
+    await once(server, 'close');
+  }
+});
+
+test('Admin renders selected destinations as distinct badges with multiple receivers', () => {
+  const html = fs.readFileSync(path.join(__dirname, '../../Admin/Index.html'), 'utf8');
+  const body = { innerHTML: '' };
+  const context = vm.createContext({
+    document: { getElementById: id => id === 'tamuTableBody' ? body : {}, querySelectorAll: () => [] },
+    escapeHtml: value => String(value || '').replace(/</g, '&lt;'),
+    formatVisitDateCompact: value => value
+  });
+  context.filterAgendaRecords_=require('../agenda-search').filter;
+  vm.runInContext("const tamuTableState = { key: null, direction: 'asc' };", context);
+  for (const name of ['renderBidangBadges', 'getVisitStatus', 'renderVisitStatus', 'getSortedTamu', 'updateTamuSortHeadings', 'renderVisitRow', 'renderTamuTable']) {
+    const source = html.match(new RegExp('    function ' + name + '\\([^]*?\\n    \\}'))[0];
+    vm.runInContext(source, context);
+  }
+  context.renderTamuTable([{
+    tujuan_bidang: 'Bidang Pengawasan Koperasi; Bidang Pengembangan Usaha Mikro; Sekretariat (Keuangan dan Aset)',
+    lo_nama: 'Mery Sefina Simor, S.Kom.; Dewi Astuti, S.E.; Zuziani, S.E.'
+  }]);
+  assert.match(body.innerHTML, /bg-teal-100/);
+  assert.match(body.innerHTML, /bg-blue-100/);
+  assert.match(body.innerHTML, /bg-fuchsia-100/);
+  assert.match(body.innerHTML, /Mery Sefina Simor, S.Kom.<br>Dewi Astuti, S\.E\.;?/);
+});
+
+test('TLD requires every data field and both documents without an SPPD checkbox', () => {
+  const context = loadTld();
+  const payload = completeTldPayload();
+  context.validateTldRequiredFields_(payload);
+  for (const field of ['instansi', 'alamat', 'ketua_nama', 'pengikut_list', 'keperluan', 'narahubung_hp',
+    'tanggal_kunjungan', 'jam_kunjungan', 'jumlah_orang', 'surat_kunjungan_base64', 'surat_tugas_base64']) {
+    assert.throws(() => context.validateTldRequiredFields_({ ...payload, [field]: '' }), /wajib/, field);
+  }
+  assert.throws(() => context.validateTldRequiredFields_({ ...payload, alamat: '   ' }), /wajib/);
+  assert.throws(() => context.validateTldRequiredFields_({ ...payload, jumlah_orang: 0 }), /minimal 1/);
+  assert.throws(() => context.validateTldRequiredFields_({ ...payload, jam_kunjungan: '25:00' }), /tidak valid/);
+});
+
+test('file picker and camera fill the same required document without losing a previous valid selection', () => {
+  const html = fs.readFileSync(path.join(__dirname, '../../Tamu-Luar/Index.html'), 'utf8');
+  const fields = {
+    fileSuratKunjungan: { required: true }, fileSuratKunjunganStatus: {},
+    fileSuratTugas: { required: true }, fileSuratTugasStatus: {}
+  };
+  const selectedDocuments = {};
+  const context = vm.createContext({
+    document: { getElementById: id => fields[id] }, selectedDocuments,
+    maxUploadBytes: 5 * 1024 * 1024
+  });
+  for (const name of ['documentMimeType', 'documentFileError', 'selectDocument']) {
+    vm.runInContext(html.match(new RegExp('    function ' + name + '\\([^]*?\\n    \\}'))[0], context);
+  }
+  const pdf = { name: 'surat.pdf', type: 'application/pdf', size: 100 };
+  const photo = { name: 'camera.jpg', type: 'image/jpeg', size: 200 };
+  context.selectDocument({ files: [pdf] }, 'fileSuratKunjungan');
+  assert.equal(selectedDocuments.fileSuratKunjungan, pdf);
+  assert.equal(fields.fileSuratKunjungan.required, false);
+  assert.equal(fields.fileSuratTugas.required, true);
+  context.selectDocument({ files: [photo] }, 'fileSuratKunjungan');
+  assert.equal(selectedDocuments.fileSuratKunjungan, photo);
+  assert.equal(fields.fileSuratKunjunganStatus.textContent, 'camera.jpg');
+  context.selectDocument({ files: [] }, 'fileSuratKunjungan');
+  assert.equal(selectedDocuments.fileSuratKunjungan, photo, 'cancelling keeps the prior document');
+  context.selectDocument({ files: [{ ...photo, size: 6 * 1024 * 1024 }] }, 'fileSuratKunjungan');
+  assert.equal(selectedDocuments.fileSuratKunjungan, photo);
+  assert.match(fields.fileSuratKunjunganStatus.textContent, /5 MB/);
+  context.selectDocument({ files: [{ name: 'invalid.html', type: 'text/html', size: 20 }] }, 'fileSuratTugas');
+  assert.equal(fields.fileSuratTugas.required, true);
+  assert.equal(selectedDocuments.fileSuratTugas, undefined);
+});

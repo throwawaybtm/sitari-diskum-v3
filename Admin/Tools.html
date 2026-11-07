@@ -1,0 +1,63 @@
+<div id="guestQrModal" hidden style="position:fixed;inset:0;z-index:130;background:#0f172aaa;backdrop-filter:blur(6px);padding:20px;align-items:center;justify-content:center">
+  <div role="dialog" aria-modal="true" aria-labelledby="guestQrTitle" class="bg-white rounded-3xl p-6 w-full max-w-sm text-center shadow-xl">
+    <div class="flex items-center justify-between gap-4"><h3 id="guestQrTitle" class="text-base font-bold text-slate-800"></h3><button id="guestQrClose" type="button" onclick="closeGuestQr()" aria-label="Tutup QR" class="rounded-xl p-2 bg-slate-100"><i class="fa-solid fa-xmark"></i></button></div>
+    <img id="guestQrImage" class="w-60 h-60 mx-auto my-5" alt="QR formulir tamu">
+    <p class="text-xs text-slate-500 mb-4">Pindai QR untuk membuka formulir pendaftaran.</p>
+    <button type="button" onclick="printCardQr(lastGuestQrType)" class="w-full rounded-xl py-3 bg-gradient-to-r from-[#11504a] to-[#143238] text-white text-xs font-bold"><i class="fa-solid fa-print mr-2"></i>Cetak QR</button>
+  </div>
+</div>
+<script>
+  let lastGuestQrType='fo',guestQrReturnFocus=null,guestQrBodyOverflow='',monthlyReportBusy=false;
+  function openGuestQr(type) {
+    const url=type==='fo'?TAMU_FO_URL:TAMU_LUAR_URL;if(!url){showToast('error','URL belum tersedia','Atur tautan formulir pada konfigurasi Admin.');return;}
+    lastGuestQrType=type;guestQrReturnFocus=document.activeElement;guestQrBodyOverflow=document.body.style.overflow;
+    document.getElementById('guestQrTitle').textContent=type==='fo'?'QR Tamu Dalam Daerah':'QR Tamu Luar Daerah';
+    document.getElementById('guestQrImage').src=QR_SERVICE_BASE+'?size=300x300&data='+encodeURIComponent(url);
+    document.getElementById('guestQrModal').hidden=false;document.getElementById('guestQrModal').style.display='flex';document.body.style.overflow='hidden';document.getElementById('guestQrClose').focus();
+  }
+  function closeGuestQr(){const modal=document.getElementById('guestQrModal');if(modal.hidden)return;modal.hidden=true;modal.style.display='none';document.body.style.overflow=guestQrBodyOverflow;if(guestQrReturnFocus?.isConnected)guestQrReturnFocus.focus();}
+  function monthlyGuestRows(records,month) {
+    if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month||''))return [];
+    return records.filter(v=>String(v.tanggal_kunjungan||'').slice(0,7)===month).slice().sort((a,b)=>String(a.tanggal_kunjungan+' '+a.jam_kunjungan).localeCompare(String(b.tanggal_kunjungan+' '+b.jam_kunjungan))).map((v,i)=>({no:i+1,nama:v.ketua_nama||'-',agenda:v.keperluan||'-'}));
+  }
+  function monthlyReportMonthLabel(month){return /^(\d{4})-(\d{2})$/.test(month||'')?month.slice(5)+'-'+month.slice(0,4):'-';}
+  function renderMonthlyReport() {
+    const input=document.getElementById('reportMonth'),body=document.getElementById('monthlyReportRows');if(!input||!body)return;
+    const rows=monthlyGuestRows(allTamuData,input.value);
+    document.getElementById('monthlyReportCount').textContent=rows.length+' kunjungan · '+monthlyReportMonthLabel(input.value);
+    body.innerHTML=rows.length?rows.map(r=>`<tr class="border-b border-slate-100"><td class="px-4 py-3 text-center">${r.no}</td><td class="px-4 py-3 font-semibold">${escapeHtml(r.nama)}</td><td class="px-4 py-3">${escapeHtml(r.agenda)}</td></tr>`).join(''):'<tr><td colspan="3" class="text-center text-slate-400 p-6">Tidak ada kunjungan pada bulan ini.</td></tr>';
+    ['monthlyPdf','monthlyImage'].forEach(id=>{document.getElementById(id).disabled=monthlyReportBusy||!rows.length;});
+  }
+  function buildMonthlyReportCanvases(rows,month) {
+    const pages=[],width=1240,height=1754,left=40,cols=[60,380,720];let canvas,ctx,y;
+    function page(){canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;ctx=canvas.getContext('2d');if(!ctx)throw new Error('Ekspor gambar tidak tersedia pada browser ini.');ctx.fillStyle='#fff';ctx.fillRect(0,0,width,height);ctx.fillStyle='#143238';ctx.font='bold 32px Arial';ctx.fillText('Laporan Tamu Bulanan',left,62);ctx.font='20px Arial';ctx.fillText('SI-TARI DISKUM · '+monthlyReportMonthLabel(month),left,98);ctx.fillStyle='#11504a';ctx.fillRect(left,125,1160,52);ctx.fillStyle='#fff';ctx.font='bold 20px Arial';['No.','Nama Ketua Rombongan','Agenda'].forEach((title,i)=>ctx.fillText(title,left+cols.slice(0,i).reduce((a,b)=>a+b,0)+12,158));y=177;pages.push(canvas);}
+    function wrap(text,max){const lines=[];let line='';for(const char of String(text)){if(char==='\n'||ctx.measureText(line+char).width>max){lines.push(line);line=char==='\n'?'':char;}else line+=char;}lines.push(line);return lines;}
+    page();ctx.font='20px Arial';
+    for(const row of rows){ctx.font='20px Arial';const name=wrap(row.nama,356),agenda=wrap(row.agenda,696),lineCount=Math.max(name.length,agenda.length),rowHeight=lineCount*28+24;
+      // Very long agendas continue on another page rather than being cropped.
+      let offset=0;while(offset<lineCount){if(y+52>1660){page();ctx.font='20px Arial';}const fit=Math.max(1,Math.min(lineCount-offset,Math.floor((1660-y-24)/28))),h=fit*28+24;
+        ctx.fillStyle=row.no%2?'#f8fafc':'#fff';ctx.fillRect(left,y,1160,h);ctx.strokeStyle='#dbe4e8';let x=left;
+        [String(offset? '':row.no),name.slice(offset,offset+fit),agenda.slice(offset,offset+fit)].forEach((value,i)=>{ctx.strokeRect(x,y,cols[i],h);ctx.fillStyle='#243b44';(Array.isArray(value)?value:[value]).forEach((line,j)=>ctx.fillText(line,x+12,y+30+j*28));x+=cols[i];});y+=h;offset+=fit;
+      }
+    }
+    pages.forEach((p,i)=>{const c=p.getContext('2d');c.fillStyle='#64748b';c.font='18px Arial';c.fillText(rows.length+' kunjungan',40,1715);c.fillText((i+1)+' / '+pages.length,1120,1715);});return pages;
+  }
+  async function exportMonthlyReport(type) {
+    if(monthlyReportBusy)return;const month=document.getElementById('reportMonth').value,rows=monthlyGuestRows(allTamuData,month);if(!rows.length)return;
+    monthlyReportBusy=true;renderMonthlyReport();
+    try{
+      const pages=buildMonthlyReportCanvases(rows,month),name='Laporan_Tamu_'+monthlyReportMonthLabel(month);
+      if(type==='pdf'){
+        if(typeof jspdf==='undefined')throw new Error('Pustaka PDF belum termuat.');const pdf=new jspdf.jsPDF({unit:'pt',format:'a4'});
+        pages.forEach((canvas,i)=>{if(i)pdf.addPage();pdf.addImage(canvas.toDataURL('image/png'),'PNG',18,18,559.28,791.89);});pdf.save(name+'.pdf');
+      }else{
+        let images=pages;
+        if(pages.length>1&&pages.length*1754<=16000){const joined=document.createElement('canvas');joined.width=1240;joined.height=pages.length*1754;const ctx=joined.getContext('2d');pages.forEach((p,i)=>ctx.drawImage(p,0,i*1754));images=[joined];}
+        images.forEach((canvas,i)=>{const a=document.createElement('a');a.href=canvas.toDataURL('image/png');a.download=name+(images.length>1?'_'+(i+1):'')+'.png';a.click();});
+        if(images.length>1)showToast('success','Ekspor gambar','Laporan panjang dibagi menjadi '+images.length+' gambar agar seluruh isi tetap terbaca.');
+      }
+    }catch(error){showToast('error','Ekspor gagal',error.message);}finally{monthlyReportBusy=false;renderMonthlyReport();}
+  }
+  document.addEventListener('DOMContentLoaded',()=>{const input=document.getElementById('reportMonth');if(input){input.value=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()).slice(0,7);renderMonthlyReport();}});
+  document.addEventListener('keydown',event=>{const modal=document.getElementById('guestQrModal');if(!modal||modal.hidden)return;if(event.key==='Escape')closeGuestQr();if(event.key==='Tab'){const buttons=modal.querySelectorAll('button'),first=buttons[0],last=buttons[buttons.length-1];if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}}});
+</script>

@@ -1,0 +1,53 @@
+# Private credentials and environment values
+.env
+.env.*
+!.env.example
+**/.clasprc*
+**/*credentials*.json
+**/*service-account*.json
+**/*service_account*.json
+*.pem
+*.key
+**/maintenance-access.json
+**/access.json
+
+# Real staff records, PIC contacts and personal deployment defaults
+Admin/DeploymentConfig.js
+Admin/EmployeeDirectory.js
+Admin/VisitPicContacts.js
+Admin/PublicIntake.js
+Tamu-Luar/Destinations.js
+Tamu-FO/Destinations.js
+local-test/previews/employee-directory.json
+
+# Local/runtime artifacts and historical copies
+node_modules/
+*.log
+/.superpowers/
+/.tmp*/
+/backups/
+/output/
+/outputs/
+/docs/validation/
+
+# Keep current deployment routing, not historical source snapshots
+/deployments/*
+!/deployments/2026-11-01/
+/deployments/2026-11-01/*
+!/deployments/2026-11-01/projects.json
+
+# Keep build tooling, not maintenance endpoints or live data receipts
+/maintenance/*
+!/maintenance/build-public.js
+!/maintenance/build-legacy-tdd.js
+!/maintenance/templates/
+
+# Tests that repeat private PIC contact literals (placeholder copies are versioned)
+local-test/test/public-project.test.js
+local-test/test/tdd-form.test.js
+local-test/test/tld-form.test.js
+
+# Generated local test output
+/local-test/latest-test-results.txt
+/local-test/presensi-check.txt
+/local-test/tld-check.txt

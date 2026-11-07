@@ -1,0 +1,13 @@
+'use strict';
+const fs=require('node:fs'),path=require('node:path');
+const root=path.resolve(__dirname,'..'),out=path.join(root,'deployments/2026-11-01/legacy-tdd-notice');
+fs.mkdirSync(out,{recursive:true});
+const registry=JSON.parse(fs.readFileSync(path.join(root,'deployments/2026-11-01/projects.json'),'utf8').replace(/^\uFEFF/,''));
+const target='https://script.google.com/macros/s/'+(registry.Public||registry['Tamu-Luar']).deployment+'/exec?page=tdd';
+const sourceClasp=path.join(root,'Tamu-FO/.clasp.json');
+if(fs.existsSync(sourceClasp)) fs.copyFileSync(sourceClasp,path.join(out,'.clasp.json'));
+if(!fs.existsSync(path.join(out,'.clasp.json'))) throw new Error('Missing legacy TDD clasp configuration');
+fs.copyFileSync(path.join(root,'Tamu-FO/appsscript.json'),path.join(out,'appsscript.json'));
+const html='<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Form Tamu Dalam Daerah</title><style>body{margin:0;padding:24px;background:linear-gradient(135deg,#0f172a,#042f2e);font:16px/1.5 system-ui;color:#143238;min-height:100vh;box-sizing:border-box;display:grid;place-items:center}main{background:white;border-radius:20px;padding:24px;max-width:420px}a{display:block;background:#11504a;color:white;text-decoration:none;text-align:center;padding:14px;border-radius:12px;font-weight:700}</style></head><body><main><h1>Form Tamu Dalam Daerah</h1><p>Formulir tersedia di halaman SI-TARI yang baru.</p><a target="_top" href="'+target+'">Buka Form Tamu Dalam Daerah</a></main></body></html>';
+fs.writeFileSync(path.join(out,'Code.js'),'/** Retired TDD URL: compatibility notice only; no database or approval RPCs. */\nfunction doGet(){return HtmlService.createHtmlOutput('+JSON.stringify(html)+').setTitle(\'Form Tamu Dalam Daerah\').addMetaTag(\'viewport\',\'width=device-width, initial-scale=1\');}\n');
+console.log('Prepared legacy TDD migration notice.');

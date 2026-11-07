@@ -1,0 +1,2 @@
+/** Private employee directory template. Restore the authorized 70-record dataset locally before running the existing importer. */
+const DISKUM_EMPLOYEE_DIRECTORY = [];

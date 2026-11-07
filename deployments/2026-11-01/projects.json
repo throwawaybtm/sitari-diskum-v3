@@ -1,0 +1,27 @@
+{
+  "Admin": {
+    "old": "1KDJUkzgKiqKO2qEQB3eF-APv6_lQOvDRQ5Y4P62JrPBrvpGIP7mLdub3",
+    "id": "1jrzdwzt6xg-J1WcgY23FHET5eqJqOCZBcjcRmk3DUE5faGEYQyyJsob0",
+    "deployment": "AKfycbzvEIvbSDllKZDtqigiOrqqwXhP4h_e5FrDGcXUWjbVIzvihihBiBh7XjZBovCpvqHBTQ",
+    "version": 45,
+    "source": "Admin"
+  },
+  "Public": {
+    "old": "1hRDT2ehC4IOdakD-6x0kdbDhD84A-acHqoPoQDv45sS7SmacXf87VENj",
+    "id": "1DSFVKlyIspith7axwc8wdKdL5kc1BqU6OMfSt3Dj9GRMDNDZPvwRQv5w",
+    "deployment": "AKfycbywu_c5VaQuX6hE5Fu1StXiNgLQWA5m1JZAKUdAFU2Nx0Dli8K0qB8CMxkP3fy2YD55Xg",
+    "version": 15,
+    "coreVersion": 37,
+    "source": "Public"
+  },
+  "legacy": {
+    "Tamu-FO": {
+      "old": "155RMdbLAo63_rmrA51wnkkMVI2sdcmMHWqfVix8JVImar8PczOF3PbG2",
+      "id": "1M0KqebQOlZlBZG-FXNPTJSNO5qcWbOUzw2Bl9YZdl_P7WHMZjD8E1nTu",
+      "deployment": "AKfycbxFLrXSN3av3V6qjUOJUxEfUU3uWxBdK-fXxQIdaUfXjtnB2ZUx87GWfUIALSDMrlD5",
+      "version": 7,
+      "source": "deployments/2026-11-01/legacy-tdd-notice",
+      "role": "migration-notice"
+    }
+  }
+}
