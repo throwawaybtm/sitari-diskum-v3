@@ -1,31 +1,44 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <?!= include('MobileBase'); ?>
   <title>SI-TARI DISKUM</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js" integrity="sha384-qovJwSBbRDPP5cEjCp8S0UP66wrvnjaa60XMOGzTNanrThcrGfXfnZkvgY8N1KT3" crossorigin="anonymous"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js" integrity="sha384-weMABwrltA6jWR8DDe9Jp5blk+tZQh7ugpCsF3JwSA53WZM9/14PjS5LAJNHNjAI" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js"
+    integrity="sha384-qovJwSBbRDPP5cEjCp8S0UP66wrvnjaa60XMOGzTNanrThcrGfXfnZkvgY8N1KT3"
+    crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"
+    integrity="sha384-weMABwrltA6jWR8DDe9Jp5blk+tZQh7ugpCsF3JwSA53WZM9/14PjS5LAJNHNjAI"
+    crossorigin="anonymous"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <?!= include('Stylesheet'); ?>
 </head>
+
 <body class="bg-slate-100/70 text-slate-800 antialiased min-h-screen flex flex-col">
 
   <!-- TOP HEADER UTAMA -->
-  <header class="app-header bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 text-white shadow-xl sticky top-0 z-40">
+  <header
+    class="app-header bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 text-white shadow-xl sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="header-main-row flex items-center justify-between h-20">
         <!-- Logo & Branding -->
         <div class="brand-area flex items-center space-x-4">
-          <div class="brand-logo w-12 h-12 bg-white/10 rounded-2xl p-1.5 flex items-center justify-center border border-white/20 shadow-inner backdrop-blur-md">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Lambang_Kota_Batam.png/250px-Lambang_Kota_Batam.png" alt="Lambang Kota Batam" class="w-full h-full object-contain">
+          <div
+            class="brand-logo w-12 h-12 bg-white/10 rounded-2xl p-1.5 flex items-center justify-center border border-white/20 shadow-inner backdrop-blur-md">
+            <img
+              src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Lambang_Kota_Batam.png/250px-Lambang_Kota_Batam.png"
+              alt="Lambang Kota Batam" class="w-full h-full object-contain">
           </div>
           <div class="brand-copy">
             <div class="header-title-row flex items-center space-x-2">
               <h1 class="text-xl font-extrabold tracking-tight text-white leading-tight">SI-TARI DISKUM</h1>
-              <button id="headerRefreshData" type="button" onclick="refreshHeaderData()" aria-label="Refresh data" title="Refresh data" class="header-refresh-button"><i id="headerRefreshIcon" class="fa-solid fa-rotate-right" aria-hidden="true"></i><span class="header-refresh-label">Refresh Data</span></button>
+              <button id="headerRefreshData" type="button" onclick="refreshHeaderData()" aria-label="Refresh data"
+                title="Refresh data" class="header-refresh-button"><i id="headerRefreshIcon"
+                  class="fa-solid fa-rotate-right" aria-hidden="true"></i><span class="header-refresh-label">Refresh
+                  Data</span></button>
             </div>
             <p class="text-xs text-emerald-100/90 font-medium">Sistem Informasi Tamu &amp; Rapat Internal Dinas Koperasi dan Usaha Mikro</p>
           </div>
@@ -40,23 +53,29 @@
         </div>
 
         <div class="mobile-header-clock md:hidden text-right">
-          <div id="mobileLiveClock" class="text-xs font-bold tracking-wide font-mono text-emerald-200">--:--:-- WIB</div>
+          <div id="mobileLiveClock" class="text-xs font-bold tracking-wide font-mono text-emerald-200">--:--:-- WIB
+          </div>
           <div id="mobileLiveDate" class="text-[9px] text-emerald-100/80">Memuat...</div>
         </div>
       </div>
 
       <!-- MAIN NAVIGATION TABS -->
-      <nav class="desktop-main-nav flex space-x-1 border-t border-white/10 overflow-x-auto py-2 text-xs sm:text-sm font-semibold scrollbar-none">
-        <button onclick="switchTab('dashboard')" id="tab-dashboard" class="nav-tab active-tab flex items-center px-4 py-2 rounded-xl transition whitespace-nowrap">
+      <nav
+        class="desktop-main-nav flex space-x-1 border-t border-white/10 overflow-x-auto py-2 text-xs sm:text-sm font-semibold scrollbar-none">
+        <button onclick="switchTab('dashboard')" id="tab-dashboard"
+          class="nav-tab active-tab flex items-center px-4 py-2 rounded-xl transition whitespace-nowrap">
           <i class="fa-solid fa-chart-pie mr-2 text-emerald-600"></i> Dashboard
         </button>
-        <button onclick="switchTab('tamu')" id="tab-tamu" class="nav-tab flex items-center px-4 py-2 rounded-xl transition whitespace-nowrap">
+        <button onclick="switchTab('tamu')" id="tab-tamu"
+          class="nav-tab flex items-center px-4 py-2 rounded-xl transition whitespace-nowrap">
           <i class="fa-solid fa-users mr-2"></i> Buku Tamu
         </button>
-        <button onclick="switchTab('calendar')" id="tab-calendar" class="nav-tab flex items-center px-4 py-2 rounded-xl transition whitespace-nowrap">
+        <button onclick="switchTab('calendar')" id="tab-calendar"
+          class="nav-tab flex items-center px-4 py-2 rounded-xl transition whitespace-nowrap">
           <i class="fa-solid fa-calendar-days mr-2"></i> Jadwal Rapat
         </button>
-        <button onclick="switchTab('qrcode')" id="tab-qrcode" class="nav-tab flex items-center px-4 py-2 rounded-xl transition whitespace-nowrap">
+        <button onclick="switchTab('qrcode')" id="tab-qrcode"
+          class="nav-tab flex items-center px-4 py-2 rounded-xl transition whitespace-nowrap">
           <i class="fa-solid fa-qrcode mr-2"></i> Lainnya
         </button>
       </nav>
@@ -100,7 +119,7 @@
     <!-- TAB 1: DASHBOARD -->
     <!-- ============================================== -->
     <section id="section-dashboard" class="flex flex-col gap-6">
-      
+
       <!-- KPI METRIC CARDS -->
       <div id="kpiGrid" class="order-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Card 1: Tamu Hari Ini -->
@@ -114,7 +133,8 @@
           <div class="mt-2">
             <h3 id="statTamuHariIni" class="text-2xl font-extrabold text-slate-800">—</h3>
             <p class="text-xs text-slate-500 mt-1 flex items-center">
-              Total <span id="statTotalTamu" class="font-bold text-slate-700 mx-1">—</span> <span class="kpi-copy">kunjungan terdata</span>
+              Total <span id="statTotalTamu" class="font-bold text-slate-700 mx-1">—</span> <span
+                class="kpi-copy">kunjungan terdata</span>
             </p>
           </div>
         </div>
@@ -154,8 +174,11 @@
         </div>
 
         <!-- Card 4: SPPD Lock Alert -->
-        <div class="relative bg-gradient-to-br from-amber-500/10 to-rose-500/10 border border-amber-300 rounded-3xl p-5 shadow-xs">
-          <button type="button" onclick="openSppdVisits()" class="absolute inset-0 z-10 w-full h-full rounded-3xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-700"><span class="sr-only">Lihat kunjungan Kelola SPPD di Buku Tamu</span></button>
+        <div
+          class="relative bg-gradient-to-br from-amber-500/10 to-rose-500/10 border border-amber-300 rounded-3xl p-5 shadow-xs">
+          <button type="button" onclick="openSppdVisits()"
+            class="absolute inset-0 z-10 w-full h-full rounded-3xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-700"><span
+              class="sr-only">Lihat kunjungan Kelola SPPD di Buku Tamu</span></button>
           <div class="flex items-center justify-between">
             <span class="text-xs font-bold uppercase tracking-wider text-amber-900 flex items-center">
               <i class="fa-solid fa-lock mr-1.5 text-amber-600"></i> Kendali SPPD
@@ -186,7 +209,8 @@
               </h3>
               <p class="text-xs text-slate-500 mt-0.5">Pemakaian ruangan saat ini</p>
             </div>
-            <button onclick="switchTab('calendar')" class="text-xs text-blue-600 font-bold hover:underline">Semua</button>
+            <button onclick="switchTab('calendar')"
+              class="text-xs text-blue-600 font-bold hover:underline">Semua</button>
           </div>
 
           <div id="todayMeetingsList" class="mt-4 space-y-3">
@@ -224,7 +248,10 @@
               </tr>
             </thead>
             <tbody id="recentTamuTableBody" class="divide-y divide-slate-100">
-              <tr><td colspan="7" class="px-4 py-8 text-center text-sm text-slate-400"><i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Memuat kunjungan terbaru...</td></tr>
+              <tr>
+                <td colspan="7" class="px-4 py-8 text-center text-sm text-slate-400"><i
+                    class="fa-solid fa-spinner fa-spin mr-1.5"></i> Memuat kunjungan terbaru...</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -237,7 +264,8 @@
     <!-- ============================================== -->
     <section id="section-tamu" class="space-y-6 hidden">
       <div class="bg-white rounded-3xl p-6 shadow-xs border border-slate-200/80">
-        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-5 border-b border-slate-100">
+        <div
+          class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-5 border-b border-slate-100">
           <div>
             <h2 class="text-xl font-bold text-slate-800 flex items-center">
               <i class="fa-solid fa-users mr-2.5 text-emerald-700"></i> Buku Tamu
@@ -246,37 +274,103 @@
           </div>
 
           <div class="flex flex-wrap items-center gap-2">
-            <div class="flex flex-wrap items-center gap-2"><input id="visitSearch" type="search" aria-label="Cari buku tamu" placeholder="Cari kata kunci, atau kata lain" oninput="renderTamuTable(allTamuData)" class="w-48 max-w-full rounded-full border border-slate-200 px-3 py-2 text-xs"><input id="visitSearchDate" type="date" lang="en-GB" title="dd-mm-yyyy" aria-label="Tanggal kunjungan" onchange="renderTamuTable(allTamuData)" class="rounded-full border border-slate-200 px-3 py-2 text-xs"></div>
-            <button onclick="openFormTamuLuarTab()" aria-label="Form Tamu Luar Daerah" class="px-3.5 py-2 bg-gradient-to-r from-[#11504a] to-[#143238] hover:brightness-110 text-white rounded-xl text-xs font-semibold transition flex items-center">
-              <i class="fa-solid fa-plane-arrival mr-1.5"></i> <span class="guest-form-full hidden md:inline">Form Tamu Luar Daerah</span><span class="guest-form-short md:hidden">Form TLD</span>
+            <div class="flex flex-wrap items-center gap-2"><input id="visitSearch" type="search"
+                aria-label="Cari buku tamu" placeholder="Cari kata kunci, atau kata lain"
+                oninput="renderTamuTable(allTamuData)"
+                class="w-48 max-w-full rounded-full border border-slate-200 px-3 py-2 text-xs"><input
+                id="visitSearchDate" type="date" lang="en-GB" title="dd-mm-yyyy" aria-label="Tanggal kunjungan"
+                onchange="renderTamuTable(allTamuData)" class="rounded-full border border-slate-200 px-3 py-2 text-xs">
+            </div>
+            <button onclick="openFormTamuLuarTab()" aria-label="Form Tamu Luar Daerah"
+              class="px-3.5 py-2 bg-gradient-to-r from-[#11504a] to-[#143238] hover:brightness-110 text-white rounded-xl text-xs font-semibold transition flex items-center">
+              <i class="fa-solid fa-plane-arrival mr-1.5"></i> <span class="guest-form-full hidden md:inline">Form Tamu
+                Luar Daerah</span><span class="guest-form-short md:hidden">Form TLD</span>
             </button>
-            <button onclick="openFormTamuFoTab()" aria-label="Form Tamu Dalam Daerah" class="px-3.5 py-2 bg-gradient-to-r from-[#11504a] to-[#143238] hover:brightness-110 text-white rounded-xl text-xs font-semibold transition flex items-center">
-              <i class="fa-solid fa-user mr-1.5"></i> <span class="guest-form-full hidden md:inline">Form Tamu Dalam Daerah</span><span class="guest-form-short md:hidden">Form TDD</span>
-          </button>
+            <button onclick="openFormTamuFoTab()" aria-label="Form Tamu Dalam Daerah"
+              class="px-3.5 py-2 bg-gradient-to-r from-[#11504a] to-[#143238] hover:brightness-110 text-white rounded-xl text-xs font-semibold transition flex items-center">
+              <i class="fa-solid fa-user mr-1.5"></i> <span class="guest-form-full hidden md:inline">Form Tamu Dalam
+                Daerah</span><span class="guest-form-short md:hidden">Form TDD</span>
+            </button>
           </div>
         </div>
 
-        <div id="visitStatusFilter" data-status="" class="hidden mt-3 flex items-center justify-between gap-2 rounded-xl bg-orange-50 px-3 py-1 text-sm text-orange-900" role="status"><span>Kelola SPPD</span><button type="button" onclick="clearVisitStatusFilter()" class="px-2 py-2 text-xs font-bold text-teal-800">Semua kunjungan</button></div>
+        <div id="visitStatusFilter" data-status=""
+          class="hidden mt-3 flex items-center justify-between gap-2 rounded-xl bg-orange-50 px-3 py-1 text-sm text-orange-900"
+          role="status"><span>Kelola SPPD</span><button type="button" onclick="clearVisitStatusFilter()"
+            class="px-2 py-2 text-xs font-bold text-teal-800">Semua kunjungan</button></div>
         <div class="mobile-sort-controls hidden mt-4" aria-label="Urutan buku tamu">
-          <div><label for="mobileTamuSort">Urutkan berdasarkan</label><select id="mobileTamuSort" onchange="setMobileTamuSort(this.value,document.getElementById('mobileTamuDirection').value)" class="w-full rounded-xl border border-slate-300 px-3 py-3"><option value="">Urutan awal</option><option value="waktu">Tanggal</option><option value="instansi">Instansi</option><option value="tamu">Tamu</option><option value="bidang">Bidang</option><option value="penerima">Penerima</option><option value="status">Status</option></select></div>
-          <div><label for="mobileTamuDirection">Arah urutan</label><select id="mobileTamuDirection" onchange="setMobileTamuSort(document.getElementById('mobileTamuSort').value,this.value)" class="w-full rounded-xl border border-slate-300 px-3 py-3"><option value="asc">A-Z / Lama</option><option value="desc">Z-A / Baru</option></select></div>
+          <div><label for="mobileTamuSort">Urutkan berdasarkan</label><select id="mobileTamuSort"
+              onchange="setMobileTamuSort(this.value,document.getElementById('mobileTamuDirection').value)"
+              class="w-full rounded-xl border border-slate-300 px-3 py-3">
+              <option value="">Urutan awal</option>
+              <option value="waktu">Tanggal</option>
+              <option value="instansi">Instansi</option>
+              <option value="tamu">Tamu</option>
+              <option value="bidang">Bidang</option>
+              <option value="penerima">Penerima</option>
+              <option value="status">Status</option>
+            </select></div>
+          <div><label for="mobileTamuDirection">Arah urutan</label><select id="mobileTamuDirection"
+              onchange="setMobileTamuSort(document.getElementById('mobileTamuSort').value,this.value)"
+              class="w-full rounded-xl border border-slate-300 px-3 py-3">
+              <option value="asc">A-Z / Lama</option>
+              <option value="desc">Z-A / Baru</option>
+            </select></div>
         </div>
         <!-- Tabel Daftar Tamu -->
         <div id="tamuTableWrapper" class="mobile-card-table overflow-x-auto mt-4">
           <table class="w-full text-left text-xs">
             <thead class="bg-slate-50 text-slate-500 uppercase font-bold">
               <tr>
-                <th scope="col" data-tamu-sort="waktu" aria-sort="none" class="px-4 py-3 rounded-l-xl"><button type="button" onclick="sortTamuTable('waktu')">ID &amp; Waktu <span class="tamu-sort-icon" aria-hidden="true"><svg class="sort-up" viewBox="0 0 16 10"><path d="M2 8 L8 2 L14 8"/></svg><svg class="sort-down" viewBox="0 0 16 10"><path d="M2 2 L8 8 L14 2"/></svg></span></button></th>
-                <th scope="col" data-tamu-sort="instansi" aria-sort="none" class="px-4 py-3"><button type="button" onclick="sortTamuTable('instansi')">Asal Instansi / Pengunjung <span class="tamu-sort-icon" aria-hidden="true"><svg class="sort-up" viewBox="0 0 16 10"><path d="M2 8 L8 2 L14 8"/></svg><svg class="sort-down" viewBox="0 0 16 10"><path d="M2 2 L8 8 L14 2"/></svg></span></button></th>
-                <th scope="col" data-tamu-sort="tamu" aria-sort="none" class="px-4 py-3"><button type="button" onclick="sortTamuTable('tamu')">Detail Tamu &amp; Kontak <span class="tamu-sort-icon" aria-hidden="true"><svg class="sort-up" viewBox="0 0 16 10"><path d="M2 8 L8 2 L14 8"/></svg><svg class="sort-down" viewBox="0 0 16 10"><path d="M2 2 L8 8 L14 2"/></svg></span></button></th>
-                <th scope="col" data-tamu-sort="bidang" aria-sort="none" class="px-4 py-3"><button type="button" onclick="sortTamuTable('bidang')">Bidang Tujuan &amp; Agenda <span class="tamu-sort-icon" aria-hidden="true"><svg class="sort-up" viewBox="0 0 16 10"><path d="M2 8 L8 2 L14 8"/></svg><svg class="sort-down" viewBox="0 0 16 10"><path d="M2 2 L8 8 L14 2"/></svg></span></button></th>
-                <th scope="col" data-tamu-sort="penerima" aria-sort="none" class="px-4 py-3"><button type="button" onclick="sortTamuTable('penerima')">Penerima Tamu <span class="tamu-sort-icon" aria-hidden="true"><svg class="sort-up" viewBox="0 0 16 10"><path d="M2 8 L8 2 L14 8"/></svg><svg class="sort-down" viewBox="0 0 16 10"><path d="M2 2 L8 8 L14 2"/></svg></span></button></th>
-                <th scope="col" data-tamu-sort="status" aria-sort="none" class="px-4 py-3"><button type="button" onclick="sortTamuTable('status')">Status <span class="tamu-sort-icon" aria-hidden="true"><svg class="sort-up" viewBox="0 0 16 10"><path d="M2 8 L8 2 L14 8"/></svg><svg class="sort-down" viewBox="0 0 16 10"><path d="M2 2 L8 8 L14 2"/></svg></span></button></th>
+                <th scope="col" data-tamu-sort="waktu" aria-sort="none" class="px-4 py-3 rounded-l-xl"><button
+                    type="button" onclick="sortTamuTable('waktu')">ID &amp; Waktu <span class="tamu-sort-icon"
+                      aria-hidden="true"><svg class="sort-up" viewBox="0 0 16 10">
+                        <path d="M2 8 L8 2 L14 8" />
+                      </svg><svg class="sort-down" viewBox="0 0 16 10">
+                        <path d="M2 2 L8 8 L14 2" />
+                      </svg></span></button></th>
+                <th scope="col" data-tamu-sort="instansi" aria-sort="none" class="px-4 py-3"><button type="button"
+                    onclick="sortTamuTable('instansi')">Asal Instansi / Pengunjung <span class="tamu-sort-icon"
+                      aria-hidden="true"><svg class="sort-up" viewBox="0 0 16 10">
+                        <path d="M2 8 L8 2 L14 8" />
+                      </svg><svg class="sort-down" viewBox="0 0 16 10">
+                        <path d="M2 2 L8 8 L14 2" />
+                      </svg></span></button></th>
+                <th scope="col" data-tamu-sort="tamu" aria-sort="none" class="px-4 py-3"><button type="button"
+                    onclick="sortTamuTable('tamu')">Detail Tamu &amp; Kontak <span class="tamu-sort-icon"
+                      aria-hidden="true"><svg class="sort-up" viewBox="0 0 16 10">
+                        <path d="M2 8 L8 2 L14 8" />
+                      </svg><svg class="sort-down" viewBox="0 0 16 10">
+                        <path d="M2 2 L8 8 L14 2" />
+                      </svg></span></button></th>
+                <th scope="col" data-tamu-sort="bidang" aria-sort="none" class="px-4 py-3"><button type="button"
+                    onclick="sortTamuTable('bidang')">Bidang Tujuan &amp; Agenda <span class="tamu-sort-icon"
+                      aria-hidden="true"><svg class="sort-up" viewBox="0 0 16 10">
+                        <path d="M2 8 L8 2 L14 8" />
+                      </svg><svg class="sort-down" viewBox="0 0 16 10">
+                        <path d="M2 2 L8 8 L14 2" />
+                      </svg></span></button></th>
+                <th scope="col" data-tamu-sort="penerima" aria-sort="none" class="px-4 py-3"><button type="button"
+                    onclick="sortTamuTable('penerima')">Penerima Tamu <span class="tamu-sort-icon"
+                      aria-hidden="true"><svg class="sort-up" viewBox="0 0 16 10">
+                        <path d="M2 8 L8 2 L14 8" />
+                      </svg><svg class="sort-down" viewBox="0 0 16 10">
+                        <path d="M2 2 L8 8 L14 2" />
+                      </svg></span></button></th>
+                <th scope="col" data-tamu-sort="status" aria-sort="none" class="px-4 py-3"><button type="button"
+                    onclick="sortTamuTable('status')">Status <span class="tamu-sort-icon" aria-hidden="true"><svg
+                        class="sort-up" viewBox="0 0 16 10">
+                        <path d="M2 8 L8 2 L14 8" />
+                      </svg><svg class="sort-down" viewBox="0 0 16 10">
+                        <path d="M2 2 L8 8 L14 2" />
+                      </svg></span></button></th>
                 <th class="px-4 py-3 rounded-r-xl text-center">Aksi</th>
               </tr>
             </thead>
             <tbody id="tamuTableBody" class="divide-y divide-slate-100">
-              <tr><td colspan="7" class="px-4 py-8 text-center text-sm text-slate-400">Memuat data kunjungan...</td></tr>
+              <tr>
+                <td colspan="7" class="px-4 py-8 text-center text-sm text-slate-400">Memuat data kunjungan...</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -289,7 +383,8 @@
     <!-- ============================================== -->
     <section id="section-calendar" class="space-y-6 hidden">
       <div class="bg-white rounded-3xl p-6 shadow-xs border border-slate-200/80">
-        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-5 border-b border-slate-100">
+        <div
+          class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-5 border-b border-slate-100">
           <div>
             <div class="flex items-center space-x-2">
               <h2 class="text-xl font-bold text-slate-800 flex items-center">
@@ -299,8 +394,12 @@
           </div>
 
           <div id="meetingPrimaryActions" class="flex items-center space-x-2 w-full md:w-auto">
-            <button id="bookingCalendarLauncher" type="button" onclick="openBookingCalendar()" aria-haspopup="dialog" aria-controls="bookingCalendar" class="w-40 px-3.5 py-2.5 min-h-10 bg-gradient-to-r from-teal-800 via-sky-800 to-blue-900 hover:brightness-110 text-white rounded-xl text-xs font-bold transition inline-flex items-center justify-center shrink-0"><i class="fa-solid fa-calendar-days mr-1.5" aria-hidden="true"></i>Kalender Agenda</button>
-            <a href="<?= typeof adminAppUrl !== 'undefined' ? adminAppUrl : '' ?>?page=presensi-admin" target="_top" class="w-40 px-3.5 py-2.5 min-h-10 bg-gradient-to-r from-teal-800 via-sky-800 to-blue-900 hover:brightness-110 text-white rounded-xl text-xs font-bold transition inline-flex items-center justify-center shrink-0">
+            <button id="bookingCalendarLauncher" type="button" onclick="openBookingCalendar()" aria-haspopup="dialog"
+              aria-controls="bookingCalendar"
+              class="w-40 px-3.5 py-2.5 min-h-10 bg-gradient-to-r from-teal-800 via-sky-800 to-blue-900 hover:brightness-110 text-white rounded-xl text-xs font-bold transition inline-flex items-center justify-center shrink-0"><i
+                class="fa-solid fa-calendar-days mr-1.5" aria-hidden="true"></i>Kalender Agenda</button>
+            <a href="<?= typeof adminAppUrl !== 'undefined' ? adminAppUrl : '' ?>?page=presensi-admin" target="_top"
+              class="w-40 px-3.5 py-2.5 min-h-10 bg-gradient-to-r from-teal-800 via-sky-800 to-blue-900 hover:brightness-110 text-white rounded-xl text-xs font-bold transition inline-flex items-center justify-center shrink-0">
               <i class="fa-solid fa-chart-column mr-1.5"></i> Isi presensi
             </a>
             <button onclick="bukaModalRapat()" class="w-40 px-3.5 py-2.5 min-h-10 bg-gradient-to-r from-teal-800 via-sky-800 to-blue-900 hover:brightness-110 text-white rounded-xl text-xs font-bold transition inline-flex items-center justify-center shrink-0"><i class="fa-solid fa-calendar-plus mr-1.5"></i>Jadwalkan Rapat</button>
@@ -317,7 +416,13 @@
             <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center">
               <i class="fa-solid fa-list-ul mr-2 text-slate-400"></i> Agenda Rapat Internal
             </h3>
-            <div class="flex flex-wrap gap-2 items-center"><input id="meetingSearch" type="search" aria-label="Cari agenda rapat" placeholder="Cari kata kunci, atau kata lain" oninput="renderMeetingsList(allRapatData)" class="w-48 max-w-full rounded-full border border-slate-200 px-3 py-2 text-xs"><input id="meetingSearchDate" type="date" lang="en-GB" title="dd-mm-yyyy" aria-label="Tanggal agenda" onchange="renderMeetingsList(allRapatData)" class="rounded-full border border-slate-200 px-3 py-2 text-xs"></div>
+            <div class="flex flex-wrap gap-2 items-center"><input id="meetingSearch" type="search"
+                aria-label="Cari agenda rapat" placeholder="Cari kata kunci, atau kata lain"
+                oninput="renderMeetingsList(allRapatData)"
+                class="w-48 max-w-full rounded-full border border-slate-200 px-3 py-2 text-xs"><input
+                id="meetingSearchDate" type="date" lang="en-GB" title="dd-mm-yyyy" aria-label="Tanggal agenda"
+                onchange="renderMeetingsList(allRapatData)"
+                class="rounded-full border border-slate-200 px-3 py-2 text-xs"></div>
           </div>
           <div id="meetingsListContainer" class="space-y-3">
             <div class="p-4 rounded-2xl border border-slate-200 bg-white text-center text-xs text-slate-400">
@@ -333,23 +438,68 @@
     <!-- ============================================== -->
     <section id="section-qrcode" class="space-y-6 hidden">
       <div class="bg-white rounded-3xl p-6 shadow-xs border border-slate-200/80">
-        <h2 class="text-xl font-bold text-slate-800"><i class="fa-solid fa-qrcode mr-2 text-emerald-700"></i>QR Formulir Tamu</h2>
+        <h2 class="text-xl font-bold text-slate-800"><i class="fa-solid fa-qrcode mr-2 text-emerald-700"></i>QR Formulir
+          Tamu</h2>
         <p class="text-xs text-slate-500 mt-1">Lihat atau cetak QR untuk membuka formulir pendaftaran.</p>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
-          <div class="flex flex-wrap items-center justify-between gap-3 p-4 border border-slate-200 rounded-2xl"><strong class="text-sm text-slate-800"><i class="fa-solid fa-user text-teal-700 mr-2"></i>Tamu Dalam Daerah</strong><div class="flex gap-2"><button type="button" onclick="openGuestQr('fo')" class="px-3 py-2 bg-teal-50 text-teal-800 rounded-xl text-xs font-bold">Lihat QR</button><button onclick="openFormTamuFoTab()" class="px-3 py-2 bg-slate-100 rounded-xl text-xs">Buka Form</button></div></div>
-          <div class="flex flex-wrap items-center justify-between gap-3 p-4 border border-slate-200 rounded-2xl"><strong class="text-sm text-slate-800"><i class="fa-solid fa-plane-arrival text-teal-700 mr-2"></i>Tamu Luar Daerah</strong><div class="flex gap-2"><button type="button" onclick="openGuestQr('luar')" class="px-3 py-2 bg-teal-50 text-teal-800 rounded-xl text-xs font-bold">Lihat QR</button><button onclick="openFormTamuLuarTab()" class="px-3 py-2 bg-slate-100 rounded-xl text-xs">Buka Form</button></div></div>
+          <div class="flex flex-wrap items-center justify-between gap-3 p-4 border border-slate-200 rounded-2xl"><strong
+              class="text-sm text-slate-800"><i class="fa-solid fa-user text-teal-700 mr-2"></i>Tamu Dalam
+              Daerah</strong>
+            <div class="flex gap-2"><button type="button" onclick="openGuestQr('fo')"
+                class="px-3 py-2 bg-teal-50 text-teal-800 rounded-xl text-xs font-bold">Lihat QR</button><button
+                onclick="openFormTamuFoTab()" class="px-3 py-2 bg-slate-100 rounded-xl text-xs">Buka Form</button></div>
+          </div>
+          <div class="flex flex-wrap items-center justify-between gap-3 p-4 border border-slate-200 rounded-2xl"><strong
+              class="text-sm text-slate-800"><i class="fa-solid fa-plane-arrival text-teal-700 mr-2"></i>Tamu Luar
+              Daerah</strong>
+            <div class="flex gap-2"><button type="button" onclick="openGuestQr('luar')"
+                class="px-3 py-2 bg-teal-50 text-teal-800 rounded-xl text-xs font-bold">Lihat QR</button><button
+                onclick="openFormTamuLuarTab()" class="px-3 py-2 bg-slate-100 rounded-xl text-xs">Buka Form</button>
+            </div>
+          </div>
         </div>
       </div>
       <div id="monthlyReportCard" class="bg-white rounded-3xl p-6 shadow-xs border border-slate-200/80">
-        <div class="flex flex-wrap items-center justify-between gap-4"><div><h2 class="text-xl font-bold text-slate-800"><i class="fa-solid fa-file-lines mr-2 text-emerald-700"></i>Laporan Tamu Bulanan</h2><p id="monthlyReportCount" class="text-xs text-slate-500 mt-1"></p></div><div class="flex flex-wrap items-center gap-2"><label for="reportMonth" class="text-xs font-semibold text-slate-600">Bulan</label><input type="month" id="reportMonth" onchange="renderMonthlyReport()" class="rounded-xl border border-slate-200 px-3 py-2 text-xs"><button type="button" id="monthlyPdf" onclick="exportMonthlyReport('pdf')" disabled class="px-3 py-2 rounded-xl bg-gradient-to-r from-[#11504a] to-[#143238] text-white text-xs font-bold disabled:opacity-40"><i class="fa-solid fa-file-pdf mr-1"></i>PDF</button><button type="button" id="monthlyImage" onclick="exportMonthlyReport('image')" disabled class="px-3 py-2 rounded-xl bg-teal-50 text-teal-800 text-xs font-bold disabled:opacity-40"><i class="fa-solid fa-image mr-1"></i>Image (PNG)</button></div></div>
-        <div class="mt-4 max-h-[28rem] overflow-auto rounded-2xl border border-slate-100"><table class="w-full text-xs text-left"><thead class="bg-slate-50 text-slate-600 sticky top-0"><tr><th class="px-4 py-3 w-16 text-center">No.</th><th class="px-4 py-3 w-1/3">Nama Ketua Rombongan</th><th class="px-4 py-3">Agenda</th></tr></thead><tbody id="monthlyReportRows"><tr><td colspan="3" class="p-6 text-center text-slate-400">Memuat data kunjungan...</td></tr></tbody></table></div>
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-bold text-slate-800"><i
+                class="fa-solid fa-file-lines mr-2 text-emerald-700"></i>Laporan Tamu Bulanan</h2>
+            <p id="monthlyReportCount" class="text-xs text-slate-500 mt-1"></p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2"><label for="reportMonth"
+              class="text-xs font-semibold text-slate-600">Bulan</label><input type="month" id="reportMonth"
+              onchange="renderMonthlyReport()" class="rounded-xl border border-slate-200 px-3 py-2 text-xs"><button
+              type="button" id="monthlyPdf" onclick="exportMonthlyReport('pdf')" disabled
+              class="px-3 py-2 rounded-xl bg-gradient-to-r from-[#11504a] to-[#143238] text-white text-xs font-bold disabled:opacity-40"><i
+                class="fa-solid fa-file-pdf mr-1"></i>PDF</button><button type="button" id="monthlyImage"
+              onclick="exportMonthlyReport('image')" disabled
+              class="px-3 py-2 rounded-xl bg-teal-50 text-teal-800 text-xs font-bold disabled:opacity-40"><i
+                class="fa-solid fa-image mr-1"></i>Image (PNG)</button></div>
+        </div>
+        <div class="mt-4 max-h-[28rem] overflow-auto rounded-2xl border border-slate-100">
+          <table class="w-full text-xs text-left">
+            <thead class="bg-slate-50 text-slate-600 sticky top-0">
+              <tr>
+                <th class="px-4 py-3 w-16 text-center">No.</th>
+                <th class="px-4 py-3 w-1/3">Nama Ketua Rombongan</th>
+                <th class="px-4 py-3">Agenda</th>
+              </tr>
+            </thead>
+            <tbody id="monthlyReportRows">
+              <tr>
+                <td colspan="3" class="p-6 text-center text-slate-400">Memuat data kunjungan...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
 
   </main>
 
   <nav class="mobile-bottom-nav md:hidden" aria-label="Navigasi utama seluler">
-    <button onclick="switchTab('dashboard')" id="mobile-tab-dashboard" class="mobile-nav-tab active-mobile-tab" aria-label="Dashboard">
+    <button onclick="switchTab('dashboard')" id="mobile-tab-dashboard" class="mobile-nav-tab active-mobile-tab"
+      aria-label="Dashboard">
       <i class="fa-solid fa-chart-pie"></i><span>Dashboard</span>
     </button>
     <button onclick="switchTab('tamu')" id="mobile-tab-tamu" class="mobile-nav-tab" aria-label="Buku Tamu">
@@ -364,7 +514,8 @@
   </nav>
 
   <!-- MODAL: KENDALI VALIDASI SPPD -->
-  <div id="modalKendaliSppd" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
+  <div id="modalKendaliSppd"
+    class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8">
       <div class="px-6 py-4 bg-gradient-to-r from-amber-800 to-amber-900 text-white flex items-center justify-between">
         <div>
@@ -373,7 +524,8 @@
           </h3>
           <p id="modalSppdSubtitle" class="text-xs text-amber-100">Memuat data...</p>
         </div>
-        <button onclick="closeModalKendaliSppd()" class="text-white/80 hover:text-white text-lg"><i class="fa-solid fa-times"></i></button>
+        <button onclick="closeModalKendaliSppd()" class="text-white/80 hover:text-white text-lg"><i
+            class="fa-solid fa-times"></i></button>
       </div>
 
       <div class="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
@@ -403,35 +555,46 @@
         <!-- FORM UNGGAH BUKTI -->
         <div class="space-y-3">
           <h4 class="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center">
-            <i class="fa-solid fa-cloud-arrow-up mr-2 text-emerald-600"></i> Langkah 1: Unggah 3 Dokumen Bukti (Google Drive)
+            <i class="fa-solid fa-cloud-arrow-up mr-2 text-emerald-600"></i> Langkah 1: Unggah 3 Dokumen Bukti (Google
+            Drive)
           </h4>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div class="p-3.5 rounded-2xl border border-slate-200 bg-white space-y-2">
               <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-800 flex items-center"><i class="fa-solid fa-camera mr-1 text-emerald-600"></i> Foto Kegiatan</span>
-                <span id="badgeBuktiFoto" class="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-rose-100 text-rose-700">Belum</span>
+                <span class="text-xs font-bold text-slate-800 flex items-center"><i
+                    class="fa-solid fa-camera mr-1 text-emerald-600"></i> Foto Kegiatan</span>
+                <span id="badgeBuktiFoto"
+                  class="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-rose-100 text-rose-700">Belum</span>
               </div>
               <div id="linkBuktiFoto" class="hidden text-[10px] text-blue-600 truncate"></div>
-              <input type="file" id="inputFoto" accept="image/*" class="text-[11px] w-full file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[10px] file:bg-emerald-50 file:text-emerald-700">
+              <input type="file" id="inputFoto" accept="image/*"
+                class="text-[11px] w-full file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[10px] file:bg-emerald-50 file:text-emerald-700">
             </div>
             <div class="p-3.5 rounded-2xl border border-slate-200 bg-white space-y-2">
               <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-800 flex items-center"><i class="fa-solid fa-list-check mr-1 text-teal-600"></i> Daftar Hadir</span>
-                <span id="badgeBuktiAbsen" class="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-rose-100 text-rose-700">Belum</span>
+                <span class="text-xs font-bold text-slate-800 flex items-center"><i
+                    class="fa-solid fa-list-check mr-1 text-teal-600"></i> Daftar Hadir</span>
+                <span id="badgeBuktiAbsen"
+                  class="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-rose-100 text-rose-700">Belum</span>
               </div>
               <div id="linkBuktiAbsen" class="hidden text-[10px] text-blue-600 truncate"></div>
-              <input type="file" id="inputAbsen" accept=".pdf,image/*" class="text-[11px] w-full file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[10px] file:bg-teal-50 file:text-teal-700">
+              <input type="file" id="inputAbsen" accept=".pdf,image/*"
+                class="text-[11px] w-full file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[10px] file:bg-teal-50 file:text-teal-700">
             </div>
             <div class="p-3.5 rounded-2xl border border-slate-200 bg-white space-y-2">
               <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-800 flex items-center"><i class="fa-solid fa-file-lines mr-1 text-blue-600"></i> E-Notulen</span>
-                <span id="badgeBuktiNotulen" class="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-rose-100 text-rose-700">Belum</span>
+                <span class="text-xs font-bold text-slate-800 flex items-center"><i
+                    class="fa-solid fa-file-lines mr-1 text-blue-600"></i> E-Notulen</span>
+                <span id="badgeBuktiNotulen"
+                  class="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-rose-100 text-rose-700">Belum</span>
               </div>
               <div id="linkBuktiNotulen" class="hidden text-[10px] text-blue-600 truncate"></div>
-              <input type="file" id="inputNotulen" accept=".pdf,image/*,.doc,.docx" class="text-[11px] w-full file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[10px] file:bg-blue-50 file:text-blue-700">
+              <input type="file" id="inputNotulen" accept=".pdf,image/*,.doc,.docx"
+                class="text-[11px] w-full file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[10px] file:bg-blue-50 file:text-blue-700">
             </div>
           </div>
-          <button onclick="submitUploadBukti()" id="btnUploadBukti" class="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition flex items-center justify-center">
+          <button onclick="submitUploadBukti()" id="btnUploadBukti"
+            class="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition flex items-center justify-center">
             <i class="fa-solid fa-cloud-arrow-up mr-2"></i> Simpan Dokumen Bukti ke Google Drive
           </button>
         </div>
@@ -441,7 +604,8 @@
           <h4 class="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center">
             <i class="fa-solid fa-signature mr-2 text-amber-600"></i> Alur Tanda Tangan Digital Resmi
           </h4>
-          <div class="p-4 rounded-2xl border border-slate-200 bg-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div
+            class="p-4 rounded-2xl border border-slate-200 bg-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
               <h5 class="text-xs font-bold text-slate-800">Langkah 2: Validasi Pejabat Teknis Penerima</h5>
               <p class="text-[11px] text-slate-500">Kepala Bidang Koperasi atau Kepala Bidang Usaha Mikro</p>
@@ -452,7 +616,8 @@
               <i class="fa-solid fa-lock mr-1.5"></i> Tanda Tangan Pejabat (Terkunci)
             </button>
           </div>
-          <div class="p-4 rounded-2xl border border-slate-200 bg-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div
+            class="p-4 rounded-2xl border border-slate-200 bg-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
               <h5 class="text-xs font-bold text-slate-800">Langkah 3: Pengesahan Kasubag Umpeg</h5>
               <p class="text-[11px] text-slate-500">Pengesahan administratif akhir lembar kendali SPPD</p>
@@ -470,19 +635,22 @@
             class="px-4 py-2.5 rounded-xl text-xs font-bold border border-slate-200 text-slate-400 cursor-not-allowed flex items-center">
             <i class="fa-solid fa-print mr-2"></i> Cetak Lembar Pengesahan SPPD
           </button>
-          <button onclick="closeModalKendaliSppd()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl">
+          <button onclick="closeModalKendaliSppd()"
+            class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl">
             Tutup
           </button>
         </div>
       </div>
-      </div>
     </div>
+  </div>
   </div>
 
   <!-- IFRAME MODAL FOR EXTERNAL FORMS -->
-  <div id="iframeModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-[100] p-4">
+  <div id="iframeModal"
+    class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-[100] p-4">
     <div class="bg-white rounded-2xl w-full max-w-4xl h-[90vh] overflow-hidden shadow-2xl flex flex-col relative">
-      <button onclick="closeIframeModal()" class="absolute top-4 right-4 w-10 h-10 bg-black/10 hover:bg-black/20 rounded-full flex items-center justify-center text-slate-800 transition z-10">
+      <button onclick="closeIframeModal()"
+        class="absolute top-4 right-4 w-10 h-10 bg-black/10 hover:bg-black/20 rounded-full flex items-center justify-center text-slate-800 transition z-10">
         <i class="fa-solid fa-xmark text-xl"></i>
       </button>
       <div id="iframeLoading" class="absolute inset-0 flex items-center justify-center bg-white z-0">
@@ -491,7 +659,8 @@
           <span class="text-sm font-bold">Memuat Halaman...</span>
         </div>
       </div>
-      <iframe id="iframeModalContent" class="w-full flex-1 border-0 relative z-1" onload="document.getElementById('iframeLoading').classList.add('hidden');"></iframe>
+      <iframe id="iframeModalContent" class="w-full flex-1 border-0 relative z-1"
+        onload="document.getElementById('iframeLoading').classList.add('hidden');"></iframe>
     </div>
   </div>
 
@@ -506,7 +675,8 @@
   <?!= include('VisitAttendance'); ?>
 
   <!-- MODAL PRESENSI QR -->
-  <div id="modalPresensiQr" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md hidden items-center justify-center z-[110] p-4">
+  <div id="modalPresensiQr"
+    class="fixed inset-0 bg-slate-900/80 backdrop-blur-md hidden items-center justify-center z-[110] p-4">
     <div class="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl relative flex flex-col">
       <div class="p-6 text-center">
         <h3 id="presensiTitle" class="text-xl font-bold text-slate-900 mb-1">Rapat</h3>
@@ -517,74 +687,312 @@
         <p class="text-xs font-bold text-slate-400 mt-6 uppercase tracking-widest">Arahkan Kamera HP ke QR Code</p>
       </div>
       <div class="p-4 bg-slate-50 border-t border-slate-100 text-center">
-        <button onclick="tutupModalPresensi()" class="px-6 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-sm font-bold transition">Tutup Layar Presensi</button>
+        <button onclick="tutupModalPresensi()"
+          class="px-6 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-sm font-bold transition">Tutup
+          Layar Presensi</button>
       </div>
     </div>
   </div>
 
   <!-- MODAL JADWAL RAPAT (DARK THEME) -->
-  <div id="modalJadwalRapat" class="fixed inset-0 bg-gradient-to-br from-slate-900 via-teal-950 to-emerald-950 hidden items-center justify-center z-50 p-4">
+  <div id="modalJadwalRapat"
+    class="fixed inset-0 bg-gradient-to-br from-slate-900 via-teal-950 to-emerald-950 hidden items-center justify-center z-50 p-4">
     <div class="meeting-page w-full max-w-2xl overflow-hidden">
       <div class="meeting-page-header relative px-6 py-4 flex justify-center items-center text-white">
         <div class="text-center">
-          <div class="flex items-center justify-center gap-2 mb-2"><span class="inline-flex items-center justify-center w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 text-emerald-300"><i class="fa-solid fa-calendar-plus"></i></span><span class="meeting-page-pill px-3 py-0.5 rounded-full text-xs font-bold bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 uppercase">Jadwal Rapat</span></div>
-          <h3 class="text-lg font-extrabold">Buat Agenda Rapat Baru</h3>
+          <div class="flex items-center justify-center gap-2 mb-2"><span
+              class="inline-flex items-center justify-center w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 text-emerald-300"><i
+                class="fa-solid fa-calendar-plus"></i></span><span id="modalRapatPill"
+              class="meeting-page-pill px-3 py-0.5 rounded-full text-xs font-bold bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 uppercase">Jadwal
+              Rapat</span></div>
+          <h3 id="modalRapatTitle" class="text-lg font-extrabold">Buat Agenda Rapat Baru</h3>
         </div>
-        <button type="button" aria-label="Tutup form jadwal rapat" onclick="tutupModalRapat()" class="absolute right-2 top-2 w-11 h-11 flex items-center justify-center text-emerald-200 hover:text-white transition">
+        <button type="button" aria-label="Tutup form jadwal rapat" onclick="tutupModalRapat()"
+          class="absolute right-2 top-2 w-11 h-11 flex items-center justify-center text-emerald-200 hover:text-white transition">
           <i class="fa-solid fa-xmark text-xl"></i>
         </button>
       </div>
-      <div class="meeting-form-card bg-white text-slate-800 rounded-3xl shadow-xl p-6">
+      <div class="meeting-form-card bg-white text-slate-800 rounded-3xl shadow-xl p-6 max-h-[82dvh] overflow-y-auto">
+        <div id="meetingEditLockBanner" hidden
+          class="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-900 flex items-center gap-2">
+          <i class="fa-solid fa-lock text-amber-700" aria-hidden="true"></i>
+          <span>Agenda rapat ini sudah dikunci. Data rapat dan lampiran bersifat hanya-baca; foto dan E-notula tetap
+            dapat dilihat atau diunduh.</span>
+        </div>
         <p class="text-xs text-slate-500 mb-4"><span class="text-rose-600 font-bold">*</span> Wajib diisi</p>
         <form id="formJadwalRapat" onsubmit="submitJadwalRapat(event)" class="space-y-4">
           <div>
-            <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wide mb-1">Judul Agenda Rapat <span class="text-rose-600" aria-hidden="true">*</span></label>
-            <input type="text" name="judul" required class="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500" placeholder="Contoh: Rapat Evaluasi Pembinaan Koperasi Sehat">
+            <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wide mb-1">Judul Agenda Rapat
+              <span class="text-rose-600" aria-hidden="true">*</span></label>
+            <input type="text" name="judul" required
+              class="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+              placeholder="Contoh: Rapat Evaluasi Pembinaan Koperasi Sehat">
           </div>
           <div>
-            <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wide mb-1">Pilih Ruangan Rapat <span class="text-rose-600" aria-hidden="true">*</span></label>
-            <select name="ruangan" id="rapatSelectRuangan" required class="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500">
+            <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wide mb-1">Pilih Ruangan Rapat
+              <span class="text-rose-600" aria-hidden="true">*</span></label>
+            <select name="ruangan" id="rapatSelectRuangan" required
+              class="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500">
               <option value="">Memuat ruangan...</option>
             </select>
           </div>
           <div class="meeting-date-time grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wide mb-1">Tanggal <span class="text-rose-600" aria-hidden="true">*</span></label>
-              <input type="date" lang="en-GB" title="dd-mm-yyyy" name="tanggal" required class="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 [color-scheme:light]">
+              <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wide mb-1">Tanggal <span
+                  class="text-rose-600" aria-hidden="true">*</span></label>
+              <input type="date" lang="en-GB" title="dd-mm-yyyy" name="tanggal" required
+                class="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 [color-scheme:light]">
             </div>
             <div>
-              <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wide mb-1">Jam Mulai <span class="text-rose-600" aria-hidden="true">*</span></label>
-              <input type="time" lang="en-GB" title="hh:mm (24 jam)" step="60" name="jam_mulai" required class="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 [color-scheme:light]">
+              <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wide mb-1">Jam Mulai <span
+                  class="text-rose-600" aria-hidden="true">*</span></label>
+              <input type="time" lang="en-GB" title="hh:mm (24 jam)" step="60" name="jam_mulai" required
+                class="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 [color-scheme:light]">
             </div>
             <div>
-              <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wide mb-1">Jam Selesai <span class="text-rose-600" aria-hidden="true">*</span></label>
-              <input type="time" lang="en-GB" title="hh:mm (24 jam)" step="60" name="jam_selesai" required class="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 [color-scheme:light]">
+              <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wide mb-1">Jam Selesai <span
+                  class="text-rose-600" aria-hidden="true">*</span></label>
+              <input type="time" lang="en-GB" title="hh:mm (24 jam)" step="60" name="jam_selesai" required
+                class="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 [color-scheme:light]">
             </div>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wide mb-1">Bidang Penyelenggara <span class="text-rose-600" aria-hidden="true">*</span></label>
-              <select name="bidang" id="rapatSelectBidang" onchange="applyRapatBidangAutoFill()" required class="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500">
+              <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wide mb-1">Bidang
+                Penyelenggara <span class="text-rose-600" aria-hidden="true">*</span></label>
+              <select name="bidang" id="rapatSelectBidang" onchange="applyRapatBidangAutoFill()" required
+                class="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500">
                 <option value="">-- Pilih Bidang Penyelenggara --</option>
               </select>
             </div>
             <div>
-              <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wide mb-1">Pimpinan Rapat <span class="text-rose-600" aria-hidden="true">*</span></label>
-              <input type="text" name="pimpinan" id="rapatInputPimpinan" required class="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500" placeholder="Kepala Dinas / Kabid...">
+              <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wide mb-1">Pimpinan Rapat
+                <span class="text-rose-600" aria-hidden="true">*</span></label>
+              <input type="text" name="pimpinan" id="rapatInputPimpinan" required
+                class="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                placeholder="Kepala Dinas / Kabid...">
             </div>
           </div>
           <div>
-            <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wide mb-1">Agenda / Keterangan <span class="text-rose-600" aria-hidden="true">*</span></label>
-            <textarea name="agenda" required rows="3" class="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500" placeholder="Catatan agenda atau pokok pembahasan..."></textarea>
+            <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wide mb-1">Agenda / Keterangan
+              <span class="text-rose-600" aria-hidden="true">*</span></label>
+            <textarea name="agenda" required rows="3"
+              class="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+              placeholder="Catatan agenda atau pokok pembahasan..."></textarea>
           </div>
           <div class="pt-4 border-t border-slate-200 flex justify-end items-center gap-3">
-            <button type="button" onclick="tutupModalRapat()" class="px-5 py-2.5 rounded-lg text-sm font-bold bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 transition">Batal</button>
-            <button type="submit" id="btnSubmitRapat" class="px-5 py-2.5 rounded-lg text-sm font-bold bg-gradient-to-r from-[#11504a] to-[#143238] hover:brightness-110 text-white shadow-md transition">Jadwalkan</button>
+            <button type="button" id="btnCancelRapat" onclick="tutupModalRapat()"
+              class="px-5 py-2.5 rounded-lg text-sm font-bold bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 transition">Batal</button>
+            <button type="submit" id="btnSubmitRapat"
+              class="px-5 py-2.5 rounded-lg text-sm font-bold bg-gradient-to-r from-[#11504a] to-[#143238] hover:brightness-110 text-white shadow-md transition">Jadwalkan</button>
           </div>
         </form>
+
+        <div id="meetingEditAttachments" hidden class="mt-4 pt-4 border-t border-slate-200 space-y-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-stretch">
+            <div id="meetingEditPhotoSection" class="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center"><i
+                  class="fa-solid fa-camera text-teal-700 mr-1.5"></i><span id="meetingEditPhotoHeadingText">Foto Rapat
+                  Internal</span></h4>
+              <div id="meetingEditPhotoList" class="grid grid-cols-2 gap-2"></div>
+              <div id="meetingEditPhotoUpload" class="mt-2">
+                <p id="meetingEditPhotoHint" class="text-[11px] leading-snug text-slate-600 mb-2">Wajib minimal 1 foto
+                  sebelum E-notula.
+                  Maksimal 5 MB/foto, 10 MB/unggahan, 10 foto/agenda.</p>
+                <input id="meetingPhotoFiles" type="file" multiple hidden
+                  accept="image/jpeg,image/png,image/webp,image/heic,image/heif" onchange="saveMeetingPhotos(this)">
+                <input id="meetingPhotoCamera" type="file" hidden accept="image/*" capture="environment"
+                  onchange="saveMeetingPhotos(this)">
+                <div class="flex flex-wrap gap-1.5">
+                  <button type="button" onclick="document.getElementById('meetingPhotoFiles').click()"
+                    class="photo-upload-action px-3 py-2 rounded-lg bg-gradient-to-r from-[#11504a] to-[#143238] text-white text-xs font-bold"><i
+                      class="fa-solid fa-upload mr-1.5"></i>Unggah Foto</button>
+                  <button type="button" onclick="document.getElementById('meetingPhotoCamera').click()"
+                    class="photo-upload-action meeting-camera items-center px-3 py-2 rounded-lg bg-teal-50 text-teal-800 text-xs font-bold"><i
+                      class="fa-solid fa-camera mr-1.5"></i>Ambil Gambar</button>
+                </div>
+                <p id="meetingPhotoProgress" role="status" class="mt-1.5 text-[11px] text-teal-800"></p>
+              </div>
+            </div>
+
+            <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-3 flex flex-col justify-between">
+              <div>
+                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center"><i
+                    class="fa-solid fa-file-lines text-sky-700 mr-1.5"></i>E-Notula</h4>
+                <div id="meetingEditNotulaInfo" class="text-xs text-slate-600 mb-2 leading-snug"></div>
+              </div>
+              <div id="meetingEditNotulaUpload">
+                <input id="meetingEditNotulaFile" type="file" hidden
+                  accept="application/pdf,image/jpeg,image/png,image/webp,image/heic,image/heif"
+                  onchange="saveMeetingEditNotula(this)">
+                <button type="button" id="btnUploadEditNotula"
+                  onclick="document.getElementById('meetingEditNotulaFile').click()"
+                  class="w-full sm:w-auto px-3 py-2 rounded-lg bg-sky-50 hover:bg-sky-100 border border-sky-200/70 text-sky-800 disabled:bg-slate-100 disabled:border-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-xs font-bold"><i
+                    class="fa-solid fa-file-arrow-up mr-1.5"></i>Unggah E-notula</button>
+                <p id="meetingNotulaProgress" role="status" class="mt-1.5 text-[11px] text-sky-800"></p>
+              </div>
+            </div>
+          </div>
+
+          <div id="meetingEditHistorySection" hidden
+            class="rounded-xl border border-amber-200/80 bg-amber-50/40 px-3 py-2">
+            <h4 class="text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1 flex items-center"><i
+                class="fa-solid fa-clock-rotate-left text-amber-700 mr-1.5"></i>Riwayat Perubahan Jadwal</h4>
+            <div id="meetingEditHistoryList" class="space-y-1 text-[11px] text-slate-600 max-h-24 overflow-y-auto">
+            </div>
+          </div>
+
+          <div id="meetingEditActionsGrid" class="pt-3 border-t border-slate-200 grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div id="meetingEditPostponeSection">
+              <button type="button" id="btnPostponeMeeting" onclick="confirmPostponeMeeting(editingRapatId)"
+                title="Tunda rapat jika pelaksanaan ditangguhkan sampai jadwal baru ditentukan."
+                class="w-full px-2.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200/70 text-amber-800 text-[11px] font-bold inline-flex items-center justify-center gap-1.5 leading-tight text-center"><i
+                  class="fa-solid fa-pause shrink-0"></i><span>Tunda Rapat</span></button>
+            </div>
+
+            <div id="meetingEditRescheduleSection">
+              <button type="button" id="btnRescheduleMeeting" onclick="openRescheduleMeeting(editingRapatId)"
+                title="Tetapkan tanggal dan jam baru sambil menyimpan jadwal sebelumnya di riwayat."
+                class="w-full px-2.5 py-2 rounded-xl bg-teal-50 hover:bg-teal-100 border border-teal-200/70 text-teal-800 text-[11px] font-bold inline-flex items-center justify-center gap-1.5 leading-tight text-center"><i
+                  class="fa-solid fa-calendar-day shrink-0"></i><span>Jadwalkan Ulang</span></button>
+            </div>
+
+            <div id="meetingEditLockSection">
+              <button type="button" id="btnLockRapatInEdit" onclick="confirmLockMeeting(editingRapatId)"
+                title="Setelah dikunci, data rapat dan seluruh lampiran menjadi hanya-baca dan tidak dapat diubah lagi."
+                class="w-full px-2.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200/70 text-rose-800 text-[11px] font-bold inline-flex items-center justify-center gap-1.5 leading-tight text-center"><i
+                  class="fa-solid fa-lock shrink-0"></i><span>Konfirmasi – Kunci</span></button>
+            </div>
+
+            <div id="meetingEditCancelSection">
+              <button type="button" id="btnCancelMeeting" onclick="confirmCancelMeeting(editingRapatId)"
+                title="Batalkan rapat jika agenda tidak jadi dilaksanakan agar slot ruangan kembali tersedia."
+                class="w-full px-2.5 py-2 rounded-xl border border-rose-200 bg-white hover:bg-rose-50 text-rose-700 text-[11px] font-bold inline-flex items-center justify-center gap-1.5 leading-tight text-center"><i
+                  class="fa-solid fa-ban shrink-0"></i><span>Batalkan Rapat</span></button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
+
+  <dialog id="confirmPostponeRapatModal" role="alertdialog" aria-modal="true"
+    aria-labelledby="confirmPostponeRapatTitle" aria-describedby="confirmPostponeRapatDesc">
+    <div class="p-5 bg-white space-y-4">
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0"><i
+            class="fa-solid fa-pause"></i></div>
+        <div>
+          <h3 id="confirmPostponeRapatTitle" class="text-base font-bold text-slate-900">Tunda Rapat</h3>
+          <p id="confirmPostponeRapatTitleText" class="text-xs font-semibold text-slate-700 mt-1"></p>
+        </div>
+      </div>
+      <p id="confirmPostponeRapatDesc" class="text-xs text-slate-600 leading-relaxed">Status rapat akan diubah menjadi
+        Ditunda dan slot ruangan akan dilepas hingga dijadwalkan ulang.</p>
+      <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+        <button type="button" id="btnCancelPostponeRapat" onclick="closeConfirmPostponeRapat()"
+          class="px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-700 text-xs font-bold">Kembali</button>
+        <button type="button" id="btnConfirmPostponeRapat" onclick="executeConfirmPostponeRapat()"
+          class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold inline-flex items-center"><i
+            class="fa-solid fa-pause mr-1.5"></i>Tunda Rapat</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="rescheduleRapatModal" role="dialog" aria-modal="true" aria-labelledby="rescheduleRapatTitle">
+    <form id="formRescheduleRapat" onsubmit="executeRescheduleRapat(event)" class="p-5 bg-white space-y-4">
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-teal-100 text-teal-700 flex items-center justify-center shrink-0"><i
+            class="fa-solid fa-calendar-day"></i></div>
+        <div>
+          <h3 id="rescheduleRapatTitle" class="text-base font-bold text-slate-900">Jadwalkan Ulang Rapat</h3>
+          <p id="rescheduleRapatTitleText" class="text-xs font-semibold text-slate-700 mt-1"></p>
+        </div>
+      </div>
+      <p id="rescheduleCurrentScheduleText"
+        class="text-xs text-slate-600 bg-slate-50 rounded-xl px-3 py-2 border border-slate-200"></p>
+      <div class="space-y-3">
+        <div>
+          <label for="rescheduleTanggal"
+            class="block text-[10px] font-bold text-slate-700 uppercase tracking-wide mb-1">Tanggal Baru <span
+              class="text-rose-600" aria-hidden="true">*</span></label>
+          <input type="date" id="rescheduleTanggal" name="tanggal" lang="en-GB" title="dd-mm-yyyy" required
+            class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 [color-scheme:light]">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="rescheduleJamMulai"
+              class="block text-[10px] font-bold text-slate-700 uppercase tracking-wide mb-1">Jam Mulai Baru <span
+                class="text-rose-600" aria-hidden="true">*</span></label>
+            <input type="time" id="rescheduleJamMulai" name="jam_mulai" lang="en-GB" title="hh:mm (24 jam)" step="60"
+              required
+              class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 [color-scheme:light]">
+          </div>
+          <div>
+            <label for="rescheduleJamSelesai"
+              class="block text-[10px] font-bold text-slate-700 uppercase tracking-wide mb-1">Jam Selesai Baru <span
+                class="text-rose-600" aria-hidden="true">*</span></label>
+            <input type="time" id="rescheduleJamSelesai" name="jam_selesai" lang="en-GB" title="hh:mm (24 jam)"
+              step="60" required
+              class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 [color-scheme:light]">
+          </div>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+        <button type="button" id="btnCancelRescheduleRapat" onclick="closeRescheduleRapat()"
+          class="px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-700 text-xs font-bold">Batal</button>
+        <button type="submit" id="btnConfirmRescheduleRapat"
+          class="px-4 py-2 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold inline-flex items-center"><i
+            class="fa-solid fa-calendar-day mr-1.5"></i>Simpan Jadwal Baru</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="confirmLockRapatModal" role="alertdialog" aria-modal="true" aria-labelledby="confirmLockRapatTitle"
+    aria-describedby="confirmLockRapatDesc">
+    <div class="p-5 bg-white space-y-4">
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0"><i
+            class="fa-solid fa-lock"></i></div>
+        <div>
+          <h3 id="confirmLockRapatTitle" class="text-base font-bold text-slate-900">Konfirmasi – Kunci Rapat</h3>
+          <p id="confirmLockRapatTitleText" class="text-xs font-semibold text-slate-700 mt-1"></p>
+        </div>
+      </div>
+      <p id="confirmLockRapatDesc" class="text-xs text-slate-600 leading-relaxed">Setelah dikunci, data rapat, foto, dan
+        E-notula bersifat hanya-baca dan tidak dapat diubah lagi. Melihat dan mengunduh lampiran tetap tersedia.</p>
+      <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+        <button type="button" id="btnCancelLockRapat" onclick="closeConfirmLockRapat()"
+          class="px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-700 text-xs font-bold">Batal</button>
+        <button type="button" id="btnConfirmLockRapat" onclick="executeConfirmLockRapat()"
+          class="px-4 py-2 rounded-xl bg-rose-700 hover:bg-rose-800 text-white text-xs font-bold inline-flex items-center"><i
+            class="fa-solid fa-lock mr-1.5"></i>Konfirmasi – Kunci</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="confirmCancelRapatModal" role="alertdialog" aria-modal="true" aria-labelledby="confirmCancelRapatTitle"
+    aria-describedby="confirmCancelRapatDesc">
+    <div class="p-5 bg-white space-y-4">
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0"><i
+            class="fa-solid fa-ban"></i></div>
+        <div>
+          <h3 id="confirmCancelRapatTitle" class="text-base font-bold text-slate-900">Batalkan Rapat</h3>
+          <p id="confirmCancelRapatTitleText" class="text-xs font-semibold text-slate-700 mt-1"></p>
+        </div>
+      </div>
+      <p id="confirmCancelRapatDesc" class="text-xs text-slate-600 leading-relaxed">Agenda rapat yang dibatalkan akan
+        dihapus dari jadwal aktif dan slot ruangan akan dilepas.</p>
+      <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+        <button type="button" id="btnCancelDismissRapat" onclick="closeConfirmCancelRapat()"
+          class="px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-700 text-xs font-bold">Kembali</button>
+        <button type="button" id="btnConfirmCancelRapat" onclick="executeConfirmCancelRapat()"
+          class="px-4 py-2 rounded-xl bg-rose-700 hover:bg-rose-800 text-white text-xs font-bold inline-flex items-center"><i
+            class="fa-solid fa-ban mr-1.5"></i>Batalkan Rapat</button>
+      </div>
+    </div>
+  </dialog>
 
   <!-- TOAST NOTIFICATION CONTAINER -->
   <div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-3 pointer-events-none"></div>
@@ -607,10 +1015,11 @@
     let allTamuData = [];
     const tamuTableState = { key: null, direction: 'asc' };
     let allRapatData = [];
-    let meetingRoomOptions=null,meetingRoomRequest=null;
-    let visitListRevision=0,visitListPatches=new Map(),dashboardRequestRevision=0,calendarRequestRevision=0;
+    let editingRapatId = null, pendingLockRapatId = null, lockRapatBusy = false, pendingCancelRapatId = null, cancelRapatBusy = false, pendingPostponeRapatId = null, postponeRapatBusy = false, pendingRescheduleRapatId = null, rescheduleRapatBusy = false;
+    let meetingRoomOptions = null, meetingRoomRequest = null;
+    let visitListRevision = 0, visitListPatches = new Map(), dashboardRequestRevision = 0, calendarRequestRevision = 0;
 
-    
+
     function _printHtml(htmlStr) {
       let iframe = document.getElementById('printIframe');
       if (!iframe) {
@@ -677,13 +1086,13 @@
     function showToast(type, title, message) {
       const container = document.getElementById('toastContainer');
       const toast = document.createElement('div');
-      
+
       const colors = {
         success: 'bg-emerald-50 border-emerald-200 text-emerald-800',
         error: 'bg-red-50 border-red-200 text-red-800',
         info: 'bg-blue-50 border-blue-200 text-blue-800'
       };
-      
+
       const icons = {
         success: '<i class="fa-solid fa-circle-check text-emerald-500 text-xl"></i>',
         error: '<i class="fa-solid fa-circle-xmark text-red-500 text-xl"></i>',
@@ -699,9 +1108,9 @@
         </div>
         <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
       `;
-      
+
       container.appendChild(toast);
-      
+
       // Animate in
       setTimeout(() => {
         toast.classList.remove('translate-x-full', 'opacity-0');
@@ -735,7 +1144,7 @@
     }
 
     function switchTab(tabId) {
-      if(tabId==='tamu')clearVisitStatusFilter();
+      if (tabId === 'tamu') clearVisitStatusFilter();
       ['dashboard', 'tamu', 'calendar', 'qrcode'].forEach(t => {
         const btn = document.getElementById(`tab-${t}`);
         const mobileBtn = document.getElementById(`mobile-tab-${t}`);
@@ -784,133 +1193,133 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(args && args.length > 0 ? args[0] : {})
         })
-        .then(r => r.json())
-        .then(onSuccess)
-        .catch(handleErr);
+          .then(r => r.json())
+          .then(onSuccess)
+          .catch(handleErr);
       }
     }
 
     async function refreshHeaderData() {
-      const button=document.getElementById('headerRefreshData'),icon=document.getElementById('headerRefreshIcon');
-      if(!button||button.disabled)return;
-      button.disabled=true;button.setAttribute('aria-busy','true');icon.classList.add('fa-spin');
+      const button = document.getElementById('headerRefreshData'), icon = document.getElementById('headerRefreshIcon');
+      if (!button || button.disabled) return;
+      button.disabled = true; button.setAttribute('aria-busy', 'true'); icon.classList.add('fa-spin');
       try {
-        const results=await loadAllDashboard();
-        const success=results.every(Boolean);
-        showToast(success?'success':'error',success?'Data diperbarui':'Sebagian data gagal dimuat',success?'Ringkasan, buku tamu, dan jadwal rapat telah diperbarui.':'Periksa koneksi dan coba lagi.');
+        const results = await loadAllDashboard();
+        const success = results.every(Boolean);
+        showToast(success ? 'success' : 'error', success ? 'Data diperbarui' : 'Sebagian data gagal dimuat', success ? 'Ringkasan, buku tamu, dan jadwal rapat telah diperbarui.' : 'Periksa koneksi dan coba lagi.');
         return success;
-      } catch(error) {
-        showToast('error','Data gagal diperbarui','Periksa koneksi dan coba lagi.');return false;
+      } catch (error) {
+        showToast('error', 'Data gagal diperbarui', 'Periksa koneksi dan coba lagi.'); return false;
       } finally {
-        button.disabled=false;button.removeAttribute('aria-busy');icon.classList.remove('fa-spin');
+        button.disabled = false; button.removeAttribute('aria-busy'); icon.classList.remove('fa-spin');
       }
     }
 
     function loadAllDashboard(options = {}) {
-      const requests=[];
-      const request=(name,args,success,failure)=>requests.push(new Promise(resolve=>{
+      const requests = [];
+      const request = (name, args, success, failure) => requests.push(new Promise(resolve => {
         try {
-          callBackend(name,args,res=>{
-            try {success(res);resolve(Boolean(res&&res.success));}catch(error){console.warn('Data render failed:',error);resolve(false);}
-          },error=>{try{failure(error);}finally{resolve(false);}});
-        }catch(error){resolve(false);}
+          callBackend(name, args, res => {
+            try { success(res); resolve(Boolean(res && res.success)); } catch (error) { console.warn('Data render failed:', error); resolve(false); }
+          }, error => { try { failure(error); } finally { resolve(false); } });
+        } catch (error) { resolve(false); }
       }));
-      const summaryRequest=options.summary!==false?++dashboardRequestRevision:0;
-      const summaryVisitRevision=visitListRevision;
-      if(options.summary!==false) {
-      request('getDashboardSummary', [], res => {
-        if(summaryRequest!==dashboardRequestRevision)return;
-        if (res && res.success) {
-          const d = res.data || {};
-          const stats = d.stats || {};
-          const sppdStats = stats.sppd || {};
-          document.getElementById('statTamuHariIni').innerText = stats.tamuHariIni ?? 0;
-          document.getElementById('statTotalTamu').innerText = stats.totalTamu ?? 0;
-          document.getElementById('statTamuLuar').innerText = stats.tamuLuar ?? 0;
-          document.getElementById('statTamuFo').innerText = stats.tamuFo ?? 0;
-          document.getElementById('statRapatHariIni').innerText = stats.rapatHariIni ?? 0;
-          document.getElementById('statSppdBelumLengkap').innerText = sppdStats.belumLengkap ?? 0;
-          document.getElementById('statSppdSah').innerText = sppdStats.sah ?? 0;
+      const summaryRequest = options.summary !== false ? ++dashboardRequestRevision : 0;
+      const summaryVisitRevision = visitListRevision;
+      if (options.summary !== false) {
+        request('getDashboardSummary', [], res => {
+          if (summaryRequest !== dashboardRequestRevision) return;
+          if (res && res.success) {
+            const d = res.data || {};
+            const stats = d.stats || {};
+            const sppdStats = stats.sppd || {};
+            document.getElementById('statTamuHariIni').innerText = stats.tamuHariIni ?? 0;
+            document.getElementById('statTotalTamu').innerText = stats.totalTamu ?? 0;
+            document.getElementById('statTamuLuar').innerText = stats.tamuLuar ?? 0;
+            document.getElementById('statTamuFo').innerText = stats.tamuFo ?? 0;
+            document.getElementById('statRapatHariIni').innerText = stats.rapatHariIni ?? 0;
+            document.getElementById('statSppdBelumLengkap').innerText = sppdStats.belumLengkap ?? 0;
+            document.getElementById('statSppdSah').innerText = sppdStats.sah ?? 0;
 
-          renderTodayMeetings(d.todayMeetings);
-          renderRecentTamu(mergeVisitPatches(d.recentTamu||[],summaryVisitRevision));
-        } else {
-          renderPanelState(document.getElementById('todayMeetingsList'), 'error', responseMessage(res, 'Agenda hari ini gagal dimuat.'));
-          renderTableState(document.getElementById('recentTamuTableBody'), 7, 'error', responseMessage(res, 'Kunjungan terbaru gagal dimuat.'));
-        }
-      }, err => {
-        if(summaryRequest!==dashboardRequestRevision)return;
-        console.error('getDashboardSummary failed:', err);
-        renderPanelState(document.getElementById('todayMeetingsList'), 'error', 'Agenda hari ini gagal dimuat. Silakan muat ulang halaman.');
-        renderTableState(document.getElementById('recentTamuTableBody'), 7, 'error', 'Kunjungan terbaru gagal dimuat. Silakan muat ulang halaman.');
-        showToast('error', 'Dashboard Gagal Dimuat', 'Periksa koneksi lalu muat ulang halaman.');
-      });
+            renderTodayMeetings(d.todayMeetings);
+            renderRecentTamu(mergeVisitPatches(d.recentTamu || [], summaryVisitRevision));
+          } else {
+            renderPanelState(document.getElementById('todayMeetingsList'), 'error', responseMessage(res, 'Agenda hari ini gagal dimuat.'));
+            renderTableState(document.getElementById('recentTamuTableBody'), 7, 'error', responseMessage(res, 'Kunjungan terbaru gagal dimuat.'));
+          }
+        }, err => {
+          if (summaryRequest !== dashboardRequestRevision) return;
+          console.error('getDashboardSummary failed:', err);
+          renderPanelState(document.getElementById('todayMeetingsList'), 'error', 'Agenda hari ini gagal dimuat. Silakan muat ulang halaman.');
+          renderTableState(document.getElementById('recentTamuTableBody'), 7, 'error', 'Kunjungan terbaru gagal dimuat. Silakan muat ulang halaman.');
+          showToast('error', 'Dashboard Gagal Dimuat', 'Periksa koneksi lalu muat ulang halaman.');
+        });
       }
 
-      if(options.visitors!==false) {
-      const revision=visitListRevision;
-      request('getTamuList', [], res => {
-        if (res && res.success) {
-          allTamuData = mergeVisitPatches(Array.isArray(res.data) ? res.data : [],revision);
-          renderTamuTable(allTamuData);
-          renderMonthlyReport();
-        } else {
-          if(visitListRevision!==revision)return;
+      if (options.visitors !== false) {
+        const revision = visitListRevision;
+        request('getTamuList', [], res => {
+          if (res && res.success) {
+            allTamuData = mergeVisitPatches(Array.isArray(res.data) ? res.data : [], revision);
+            renderTamuTable(allTamuData);
+            renderMonthlyReport();
+          } else {
+            if (visitListRevision !== revision) return;
+            allTamuData = [];
+            renderMonthlyReport();
+            renderTableState(document.getElementById('tamuTableBody'), 7, 'error', responseMessage(res, 'Data kunjungan gagal dimuat.'));
+          }
+        }, err => {
+          console.error('getTamuList failed:', err);
+          if (visitListRevision !== revision) return;
           allTamuData = [];
           renderMonthlyReport();
-          renderTableState(document.getElementById('tamuTableBody'), 7, 'error', responseMessage(res, 'Data kunjungan gagal dimuat.'));
-        }
-      }, err => {
-        console.error('getTamuList failed:', err);
-        if(visitListRevision!==revision)return;
-        allTamuData = [];
-        renderMonthlyReport();
-        renderTableState(document.getElementById('tamuTableBody'), 7, 'error', 'Data kunjungan gagal dimuat. Silakan muat ulang halaman.');
-      });
+          renderTableState(document.getElementById('tamuTableBody'), 7, 'error', 'Data kunjungan gagal dimuat. Silakan muat ulang halaman.');
+        });
       }
 
-      if(options.calendar!==false) {
-      const calendarRequest=++calendarRequestRevision;
-      request('getRapatCalendar', [], res => {
-        if(calendarRequest!==calendarRequestRevision)return;
-        if (res && res.success) {
-          allRapatData = Array.isArray(res.data) ? res.data : [];
-          if(typeof setBookingCalendarState==='function')setBookingCalendarState('ready');
-          renderMeetingsList(allRapatData);
-        } else {
+      if (options.calendar !== false) {
+        const calendarRequest = ++calendarRequestRevision;
+        request('getRapatCalendar', [], res => {
+          if (calendarRequest !== calendarRequestRevision) return;
+          if (res && res.success) {
+            allRapatData = Array.isArray(res.data) ? res.data : [];
+            if (typeof setBookingCalendarState === 'function') setBookingCalendarState('ready');
+            renderMeetingsList(allRapatData);
+          } else {
+            allRapatData = [];
+            if (typeof setBookingCalendarState === 'function') setBookingCalendarState('error');
+            renderPanelState(document.getElementById('meetingsListContainer'), 'error', responseMessage(res, 'Agenda rapat gagal dimuat.'));
+          }
+        }, err => {
+          if (calendarRequest !== calendarRequestRevision) return;
+          console.error('getRapatCalendar failed:', err);
           allRapatData = [];
-          if(typeof setBookingCalendarState==='function')setBookingCalendarState('error');
-          renderPanelState(document.getElementById('meetingsListContainer'), 'error', responseMessage(res, 'Agenda rapat gagal dimuat.'));
-        }
-      }, err => {
-        if(calendarRequest!==calendarRequestRevision)return;
-        console.error('getRapatCalendar failed:', err);
-        allRapatData = [];
-        if(typeof setBookingCalendarState==='function')setBookingCalendarState('error');
-        renderPanelState(document.getElementById('meetingsListContainer'), 'error', 'Agenda rapat gagal dimuat. Silakan muat ulang halaman.');
-      });
+          if (typeof setBookingCalendarState === 'function') setBookingCalendarState('error');
+          renderPanelState(document.getElementById('meetingsListContainer'), 'error', 'Agenda rapat gagal dimuat. Silakan muat ulang halaman.');
+        });
       }
 
       return Promise.all(requests);
     }
 
     function mergeVisitPatches(records, revision) {
-      return records.map(visit=>{const patch=visitListPatches.get(String(visit.kode_kunjungan));return patch&&patch.revision>revision?Object.assign({},visit,patch.visit):visit;});
+      return records.map(visit => { const patch = visitListPatches.get(String(visit.kode_kunjungan)); return patch && patch.revision > revision ? Object.assign({}, visit, patch.visit) : visit; });
     }
     function refreshVisitSummary() {
-      loadAllDashboard({visitors:false,calendar:false});
+      loadAllDashboard({ visitors: false, calendar: false });
     }
     function refreshVisitCalendar() {
-      loadAllDashboard({summary:false,visitors:false});
+      loadAllDashboard({ summary: false, visitors: false });
     }
-    function applyVisitUpdate(data,action) {
-      const visit=Object.assign({},data.visit,{status_kunjungan:data.workflow.status});
-      const index=allTamuData.findIndex(item=>String(item.kode_kunjungan)===String(visit.kode_kunjungan));
-      if(index<0)allTamuData.unshift(visit);else allTamuData[index]=visit;
-      visitListPatches.set(String(visit.kode_kunjungan),{revision:++visitListRevision,visit});
-      renderTamuTable(allTamuData);renderRecentTamu(allTamuData.slice(0,5));renderMonthlyReport();
-      if(['book','reschedule','finish'].includes(action))refreshVisitSummary();
-      if(action==='book')refreshVisitCalendar();
+    function applyVisitUpdate(data, action) {
+      const visit = Object.assign({}, data.visit, { status_kunjungan: data.workflow.status });
+      const index = allTamuData.findIndex(item => String(item.kode_kunjungan) === String(visit.kode_kunjungan));
+      if (index < 0) allTamuData.unshift(visit); else allTamuData[index] = visit;
+      visitListPatches.set(String(visit.kode_kunjungan), { revision: ++visitListRevision, visit });
+      renderTamuTable(allTamuData); renderRecentTamu(allTamuData.slice(0, 5)); renderMonthlyReport();
+      if (['book', 'reschedule', 'finish'].includes(action)) refreshVisitSummary();
+      if (action === 'book') refreshVisitCalendar();
     }
 
     function renderTodayMeetings(meetings) {
@@ -924,10 +1333,10 @@
         <div class="p-3.5 rounded-2xl border border-slate-100 bg-slate-50/80 hover:bg-slate-50 transition">
           <div class="flex items-center justify-between">
             ${renderMeetingRoomBadge(r.nama_ruangan)}
-            <span class="text-[11px] font-mono font-bold text-slate-600">${r.jam_mulai&&r.jam_selesai?escapeHtml(r.jam_mulai+' - '+r.jam_selesai+' WIB'):'Kegiatan terlaksana'}</span>
+            <span class="text-[11px] font-mono font-bold text-slate-600">${r.jam_mulai && r.jam_selesai ? escapeHtml(r.jam_mulai + ' - ' + r.jam_selesai + ' WIB') : 'Kegiatan terlaksana'}</span>
           </div>
           <h4 class="text-xs font-bold text-slate-800 mt-2 line-clamp-2">${escapeHtml(r.judul_rapat)}</h4>
-          <span class="text-[10px] text-slate-400 block mt-1">Bidang ${escapeHtml(r.penyelenggara_bidang)} • Pimpinan: ${escapeHtml(r.pimpinan_rapat)}</span>
+          <span class="text-[10px] text-slate-400 block mt-1">${escapeHtml(r.penyelenggara_bidang || '-')} • Pimpinan: ${escapeHtml(r.pimpinan_rapat || '-')}</span>
         </div>
       `).join('');
     }
@@ -951,14 +1360,14 @@
       return String(value || '').split(';').map(name => name.trim()).filter(Boolean).map(name => {
         const colour = /umum dan kepegawaian/i.test(name) ? 'bg-violet-100 text-violet-800'
           : /program dan perencanaan/i.test(name) ? 'bg-indigo-100 text-indigo-800'
-          : /keuangan dan aset/i.test(name) ? 'bg-fuchsia-100 text-fuchsia-800'
-          : /pengawasan koperasi/i.test(name) ? 'bg-teal-100 text-teal-800'
-          : /koperasi/i.test(name) ? 'bg-emerald-100 text-emerald-800'
-          : /plut/i.test(name) ? 'bg-cyan-100 text-cyan-800'
-          : /mikro/i.test(name) ? 'bg-blue-100 text-blue-800'
-          : /kewirausahaan/i.test(name) ? 'bg-orange-100 text-orange-800'
-          : /sekretariat/i.test(name) ? 'bg-violet-100 text-violet-800'
-          : 'bg-rose-100 text-rose-800';
+            : /keuangan dan aset/i.test(name) ? 'bg-fuchsia-100 text-fuchsia-800'
+              : /pengawasan koperasi/i.test(name) ? 'bg-teal-100 text-teal-800'
+                : /koperasi/i.test(name) ? 'bg-emerald-100 text-emerald-800'
+                  : /plut/i.test(name) ? 'bg-cyan-100 text-cyan-800'
+                    : /mikro/i.test(name) ? 'bg-blue-100 text-blue-800'
+                      : /kewirausahaan/i.test(name) ? 'bg-orange-100 text-orange-800'
+                        : /sekretariat/i.test(name) ? 'bg-violet-100 text-violet-800'
+                          : 'bg-rose-100 text-rose-800';
         return `<span class="inline-block px-2 py-0.5 rounded-md font-bold mr-1 mb-1 ${colour}">${escapeHtml(name)}</span>`;
       }).join('');
     }
@@ -1013,16 +1422,16 @@
     }
 
     function setMobileTamuSort(key, direction) {
-      if (!['', 'waktu', 'instansi', 'tamu', 'bidang', 'penerima', 'status'].includes(key) || !['asc','desc'].includes(direction)) return;
+      if (!['', 'waktu', 'instansi', 'tamu', 'bidang', 'penerima', 'status'].includes(key) || !['asc', 'desc'].includes(direction)) return;
       tamuTableState.key = key || null;
       tamuTableState.direction = direction;
       renderTamuTable(allTamuData);
     }
 
     function updateTamuSortHeadings() {
-      const mobileKey=document.getElementById('mobileTamuSort'),mobileDirection=document.getElementById('mobileTamuDirection');
-      if(mobileKey)mobileKey.value=tamuTableState.key||'';
-      if(mobileDirection)mobileDirection.value=tamuTableState.direction;
+      const mobileKey = document.getElementById('mobileTamuSort'), mobileDirection = document.getElementById('mobileTamuDirection');
+      if (mobileKey) mobileKey.value = tamuTableState.key || '';
+      if (mobileDirection) mobileDirection.value = tamuTableState.direction;
       document.querySelectorAll('#tamuTableWrapper th[data-tamu-sort]').forEach(th => {
         const active = th.dataset.tamuSort === tamuTableState.key;
         th.setAttribute('aria-sort', active ? (tamuTableState.direction === 'asc' ? 'ascending' : 'descending') : 'none');
@@ -1034,11 +1443,11 @@
         <tr class="hover:bg-slate-50 transition border-b border-slate-100">
           <td class="px-4 py-3.5">
             <span class="visit-code font-mono font-bold text-slate-900 block">${escapeHtml(t.kode_kunjungan)}</span>
-            <span class="text-[10px] text-slate-400">${escapeHtml(formatVisitDateCompact(t.tanggal_kunjungan))}${t.jam_kunjungan?' • '+escapeHtml(t.jam_kunjungan)+' WIB':''}</span>
+            <span class="text-[10px] text-slate-400">${escapeHtml(formatVisitDateCompact(t.tanggal_kunjungan))}${t.jam_kunjungan ? ' • ' + escapeHtml(t.jam_kunjungan) + ' WIB' : ''}</span>
           </td>
           <td class="px-4 py-3.5"><span class="font-bold text-slate-800 block">${escapeHtml(t.instansi)}</span><span class="text-[10px] text-slate-400">${escapeHtml(t.alamat || '-')}</span></td>
           <td class="px-4 py-3.5"><span class="font-semibold text-slate-800 block">${escapeHtml(t.ketua_nama)}</span><span class="text-slate-600 block">(${escapeHtml(t.jumlah_orang)} Orang)</span><span class="text-[10px] text-emerald-700 font-mono block"><i class="fa-brands fa-whatsapp"></i> ${escapeHtml(t.narahubung_hp || '-')}</span></td>
-          <td class="px-4 py-3.5">${renderBidangBadges(t.tujuan_bidang)}${!String(t.tujuan_bidang||'').trim()?'<span class="mobile-field-empty hidden">Belum ditentukan</span>':''}<p class="text-[10px] text-slate-500 line-clamp-1 max-w-xs">${escapeHtml(t.keperluan)}</p></td>
+          <td class="px-4 py-3.5">${renderBidangBadges(t.tujuan_bidang)}${!String(t.tujuan_bidang || '').trim() ? '<span class="mobile-field-empty hidden">Belum ditentukan</span>' : ''}<p class="text-[10px] text-slate-500 line-clamp-1 max-w-xs">${escapeHtml(t.keperluan)}</p></td>
           <td class="px-4 py-3.5"><span class="font-bold text-emerald-900 block">${escapeHtml(t.lo_nama || 'Belum Ditugaskan').replace(/; /g, '<br>')}</span></td>
           <td class="px-4 py-3.5 text-center">${renderVisitStatus(t)}</td>
           ${recent ? `<td class="px-4 py-3.5 text-center"><button type="button" data-kode="${escapeHtml(t.kode_kunjungan)}" data-readonly="${getVisitStatus(t).label === 'Non-SPPD'}" onclick="openRecentVisitDetail(this.dataset.kode,this.dataset.readonly === 'true')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-bold">Detail</button></td>` : `<td class="px-4 py-3.5 text-center">${getVisitStatus(t).label === 'Non-SPPD' ? `<button type="button" disabled class="px-3 py-1.5 bg-slate-100 text-slate-400 rounded-xl font-bold text-[11px] cursor-not-allowed"><i class="fa-solid fa-pen-to-square mr-1"></i> EDIT</button>` : `<button type="button" data-kode="${escapeHtml(t.kode_kunjungan)}" onclick="openVisitWorkflow(this.dataset.kode)" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-[11px] shadow-sm transition"><i class="fa-solid ${getVisitStatus(t).label === 'Selesai' ? 'fa-eye' : 'fa-pen-to-square'} mr-1"></i> ${getVisitStatus(t).label === 'Selesai' ? 'VIEW' : 'EDIT'}</button>`} </td>`}
@@ -1047,26 +1456,26 @@
     }
 
     function clearVisitStatusFilter() {
-      const filter=document.getElementById('visitStatusFilter');
-      if(filter){filter.dataset.status='';filter.classList.add('hidden');}
+      const filter = document.getElementById('visitStatusFilter');
+      if (filter) { filter.dataset.status = ''; filter.classList.add('hidden'); }
       renderTamuTable(allTamuData);
     }
 
     function openSppdVisits() {
-      document.getElementById('visitSearch').value='';
-      document.getElementById('visitSearchDate').value='';
+      document.getElementById('visitSearch').value = '';
+      document.getElementById('visitSearchDate').value = '';
       switchTab('tamu');
-      const filter=document.getElementById('visitStatusFilter');
-      filter.dataset.status='Kelola SPPD';filter.classList.remove('hidden');
+      const filter = document.getElementById('visitStatusFilter');
+      filter.dataset.status = 'Kelola SPPD'; filter.classList.remove('hidden');
       renderTamuTable(allTamuData);
     }
 
     function renderTamuTable(tamus) {
       const tbody = document.getElementById('tamuTableBody');
       if (!tbody) return;
-      const status=document.getElementById('visitStatusFilter')?.dataset?.status;
-      const records=status?tamus.filter(t=>getVisitStatus(t).label===status):tamus;
-      const filtered=filterAgendaRecords_(records,document.getElementById('visitSearch')?.value,document.getElementById('visitSearchDate')?.value);
+      const status = document.getElementById('visitStatusFilter')?.dataset?.status;
+      const records = status ? tamus.filter(t => getVisitStatus(t).label === status) : tamus;
+      const filtered = filterAgendaRecords_(records, document.getElementById('visitSearch')?.value, document.getElementById('visitSearchDate')?.value);
       const sorted = getSortedTamu(filtered, tamuTableState);
       updateTamuSortHeadings();
       if (!sorted.length) {
@@ -1076,24 +1485,24 @@
       tbody.innerHTML = sorted.map(t => renderVisitRow(t)).join('');
     }
 
-    
+
     function bukaModalPresensi(id) {
       const r = allRapatData.find(x => String(x.id) === String(id));
-      if(!r) return;
+      if (!r) return;
       if (!attendanceAvailability(r).open) {
         renderMeetingsList(allRapatData);
         return;
       }
       document.getElementById('presensiTitle').innerText = r.judul_rapat;
       document.getElementById('presensiSub').innerText = agendaScheduleLabel(r) + ' di ' + getMeetingRoomInfo(r.nama_ruangan).name;
-      
+
       const url = APP_URL + '?page=presensi&id=' + r.id;
       document.getElementById('presensiQrImg').src = QR_SERVICE_BASE + '?size=300x300&data=' + encodeURIComponent(url);
-      
+
       document.getElementById('modalPresensiQr').classList.remove('hidden');
       document.getElementById('modalPresensiQr').classList.add('flex');
     }
-    
+
     function tutupModalPresensi() {
       document.getElementById('modalPresensiQr').classList.add('hidden');
       document.getElementById('modalPresensiQr').classList.remove('flex');
@@ -1137,70 +1546,77 @@
       return Number.isFinite(endsAt) && now.getTime() >= endsAt;
     }
 
+    function isMeetingLocked(meeting) {
+      if (!meeting) return false;
+      const status = String(meeting.status || '').trim().toLowerCase();
+      return meeting.locked === true || status === 'terkunci';
+    }
+
     function meetingStatusInfo(meeting, now = new Date()) {
-      if(String(meeting.status||'').toLowerCase()==='selesai'||meeting.notula)return {label:'Selesai',colour:'bg-emerald-100 text-emerald-800'};
-      if(meeting.status==='Terlaksana')return {label:'Terlaksana',colour:'bg-teal-100 text-teal-800'};
-      if(isMeetingOverdue(meeting,now))return {label:!meeting.kode_kunjungan&&!String(meeting.kode_rapat||'').startsWith('VISIT-')&&!(meeting.photos||[]).length?'Menunggu Foto':'Menunggu E-notula',colour:'bg-amber-100 text-amber-800'};
-      const start=Date.parse(String(meeting.tanggal)+'T'+String(meeting.jam_mulai)+':00+07:00');
-      if(Number.isFinite(start)&&now.getTime()>=start)return {label:'Berlangsung',colour:'bg-cyan-100 text-cyan-800'};
-      return {label:'Terjadwal',colour:'bg-blue-100 text-blue-800'};
+      if (String(meeting.status || '').toLowerCase() === 'selesai' || meeting.notula) return { label: 'Selesai', colour: 'bg-emerald-100 text-emerald-800' };
+      if (isMeetingLocked(meeting)) return { label: 'Terkunci', colour: 'bg-slate-200 text-slate-800' };
+      if (String(meeting.status || '').toLowerCase() === 'ditunda') return { label: 'Ditunda', colour: 'bg-amber-100 text-amber-900' };
+      if (meeting.status === 'Terlaksana') return { label: 'Terlaksana', colour: 'bg-teal-100 text-teal-800' };
+      if (isMeetingOverdue(meeting, now)) return { label: !meeting.kode_kunjungan && !String(meeting.kode_rapat || '').startsWith('VISIT-') && !(meeting.photos || []).length ? 'Menunggu Foto' : 'Menunggu E-notula', colour: 'bg-amber-100 text-amber-800' };
+      const start = Date.parse(String(meeting.tanggal) + 'T' + String(meeting.jam_mulai) + ':00+07:00');
+      if (Number.isFinite(start) && now.getTime() >= start) return { label: 'Berlangsung', colour: 'bg-cyan-100 text-cyan-800' };
+      return { label: 'Terjadwal', colour: 'bg-blue-100 text-blue-800' };
     }
 
     function renderMeetingsList(meetings) {
       const c = document.getElementById('meetingsListContainer');
       if (!c) return;
-      meetings=filterAgendaRecords_(Array.isArray(meetings)?meetings:[],document.getElementById('meetingSearch')?.value,document.getElementById('meetingSearchDate')?.value);
+      meetings = filterAgendaRecords_(Array.isArray(meetings) ? meetings : [], document.getElementById('meetingSearch')?.value, document.getElementById('meetingSearchDate')?.value);
       if (!Array.isArray(meetings) || meetings.length === 0) {
         renderPanelState(c, 'empty', 'Belum ada agenda rapat yang terjadwal.');
         return;
       }
-      const phone=Boolean(typeof window!=='undefined'&&window.matchMedia?.('(max-width: 767.98px), (max-width: 1023.98px) and (hover: none) and (pointer: coarse)').matches);
-      const expanded=new Set([...(c.querySelectorAll?.('details[open]')||[])].map(item=>String(item.dataset.agendaId)));
-      // A fresh first-match index for this render only; never approval authority.
-      const visitsByCode=new Map();
-      if(typeof allTamuData!=='undefined')allTamuData.forEach(visit=>{
-        const code=String(visit.kode_kunjungan);
-        if(!visitsByCode.has(code))visitsByCode.set(code,visit);
-      });
+      meetings = meetings.slice().sort((a, b) =>
+        String(b && b.tanggal || '').localeCompare(String(a && a.tanggal || '')) ||
+        String(b && b.jam_mulai || '').localeCompare(String(a && a.jam_mulai || '')) ||
+        String(b && b.jam_selesai || '').localeCompare(String(a && a.jam_selesai || ''))
+      );
+      const phone = Boolean(typeof window !== 'undefined' && window.matchMedia?.('(max-width: 767.98px), (max-width: 1023.98px) and (hover: none) and (pointer: coarse)').matches);
+      const expanded = new Set([...(c.querySelectorAll?.('details[open]') || [])].map(item => String(item.dataset.agendaId)));
       c.innerHTML = meetings.map(r => {
-        const statusInfo=meetingStatusInfo(r),attendance=attendanceAvailability(r);
-        const linked=Boolean(r.kode_kunjungan||String(r.kode_rapat||'').startsWith('VISIT-'));
-        const canRecord=linked&&canAdminRecordAttendance(r,visitsByCode);
-        const internal=!r.kode_kunjungan&&!String(r.kode_rapat||'').startsWith('VISIT-'),hasPhotos=Boolean(r.photos&&r.photos.length);
-        const photoAction=internal?`<button type="button" data-id="${escapeHtml(r.id)}" onclick="openMeetingPhotos(this.dataset.id)" ${r.status==='Selesai'&&!hasPhotos?'disabled':''} class="px-3.5 py-2 bg-teal-50 text-teal-800 disabled:bg-slate-100 disabled:text-slate-400 rounded-xl text-xs font-bold inline-flex items-center justify-center"><i class="fa-solid ${hasPhotos?'fa-check':'fa-camera'} mr-1.5"></i>${hasPhotos?'Lihat Foto':r.status==='Selesai'?'Foto Tidak Tersedia':'Unggah Foto'}</button>`:'';
-        const documentAction=r.notula?`<a href="${escapeHtml(r.notula.url)}" target="_blank" rel="noopener" class="px-3.5 py-2 bg-sky-50 text-sky-800 rounded-xl text-xs font-bold inline-flex items-center justify-center"><i class="fa-solid fa-check mr-1.5"></i>Lihat E-Notula</a>`:`<button type="button" data-id="${escapeHtml(r.id)}" onclick="uploadAgendaNotula(this.dataset.id)" ${r.status==='Selesai'||(internal&&!hasPhotos)?'disabled':''} title="${internal&&!hasPhotos?'Unggah foto rapat terlebih dahulu.':'Unggah E-notula'}" class="px-3.5 py-2 bg-sky-50 text-sky-800 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed rounded-xl text-xs font-bold"><i class="fa-solid fa-file-arrow-up mr-1.5"></i>Unggah E-notula</button>`;
-        const details=phone?`<details class="meeting-mobile-details" data-agenda-id="${escapeHtml(r.id)}" ${expanded.has(String(r.id))?'open':''}><summary>Detail <i class="fa-solid fa-chevron-down" aria-hidden="true"></i></summary><div class="meeting-detail-body"><p>${escapeHtml(r.agenda||'Agenda rapat dinas.')}</p>${photoAction}${documentAction}</div></details>`:photoAction+documentAction;
+        const statusInfo = meetingStatusInfo(r), attendance = attendanceAvailability(r);
+        const locked = isMeetingLocked(r);
+        const lockBadge = locked && statusInfo.label !== 'Terkunci' ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-200 text-slate-800"><i class="fa-solid fa-lock" aria-hidden="true"></i>Terkunci</span>` : '';
+        const editAction = `<button type="button" data-id="${escapeHtml(r.id)}" onclick="bukaModalEditRapat(this.dataset.id)" title="${locked ? 'Lihat rincian & lampiran (hanya-baca)' : 'Edit rapat'}" class="px-3.5 py-2 ${locked ? 'bg-slate-200 hover:bg-slate-300 text-slate-600' : 'bg-amber-600 hover:bg-amber-700 text-white'} rounded-xl text-xs font-bold inline-flex items-center justify-center"><i class="fa-solid ${locked ? 'fa-lock' : 'fa-pen-to-square'} mr-1.5"></i>${locked ? 'Terkunci' : 'Edit Rapat'}</button>`;
+        const details = phone ? `<details class="meeting-mobile-details" data-agenda-id="${escapeHtml(r.id)}" ${expanded.has(String(r.id)) ? 'open' : ''}><summary>Detail <i class="fa-solid fa-chevron-down" aria-hidden="true"></i></summary><div class="meeting-detail-body"><p>${escapeHtml(r.agenda || 'Agenda rapat dinas.')}</p></div></details>` : '';
         return `
         <div class="p-4 rounded-2xl border border-slate-200 bg-white flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
             <div class="flex flex-wrap items-center gap-2">
               ${renderMeetingRoomBadge(r.nama_ruangan)}
               <span class="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold ${statusInfo.colour}">${statusInfo.label}</span>
-              <span class="text-xs font-mono font-bold text-slate-700">${escapeHtml(phone?formatMeetingDate(r.tanggal)+(r.jam_mulai&&r.jam_selesai?' '+r.jam_mulai+' - '+r.jam_selesai:''):agendaScheduleLabel(r))}</span>
+              ${lockBadge}
+              <span class="text-xs font-mono font-bold text-slate-700">${escapeHtml(phone ? formatMeetingDate(r.tanggal) + (r.jam_mulai && r.jam_selesai ? ' ' + r.jam_mulai + ' - ' + r.jam_selesai : '') : agendaScheduleLabel(r))}</span>
             </div>
             <h4 class="text-sm font-bold text-slate-900 mt-1">${escapeHtml(r.judul_rapat)}</h4>
-            ${phone?'':`<p class="text-xs text-slate-500 mt-0.5">${escapeHtml(r.agenda || 'Agenda rapat dinas.')}</p>`}
-            <div class="text-[11px] text-slate-400 mt-2">Penyelenggara: Bidang <strong>${escapeHtml(r.penyelenggara_bidang)}</strong> | Pimpinan: <strong>${escapeHtml(r.pimpinan_rapat)}</strong></div>
+            ${phone ? '' : `<p class="text-xs text-slate-500 mt-0.5">${escapeHtml(r.agenda || 'Agenda rapat dinas.')}</p>`}
+            <div class="text-[11px] text-slate-400 mt-2">Penyelenggara: <strong>${escapeHtml(r.penyelenggara_bidang || '-')}</strong> | Pimpinan: <strong>${escapeHtml(r.pimpinan_rapat || '-')}</strong></div>
           </div>
           <div class="flex flex-wrap gap-2 shrink-0">
-          ${!attendance.open ? `<button type="button" disabled title="${escapeHtml(attendance.message)}" class="px-3.5 py-2 bg-slate-100 text-slate-400 cursor-not-allowed text-xs font-bold rounded-xl inline-flex items-center justify-center shrink-0"><i class="fa-solid ${attendance.reason==='manual'?'fa-qrcode':'fa-circle-check'} mr-1.5"></i> ${attendance.reason==='manual'?'Presensi sudah diisi':attendance.reason==='future'?'Presensi belum dibuka':r.status==='Selesai'||r.notula?'Rapat selesai':'Presensi ditutup'}</button>` : `<button data-id="${escapeHtml(r.id)}" onclick="bukaModalPresensi(this.dataset.id)" class="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl transition inline-flex items-center justify-center shrink-0">
+          ${!attendance.open ? `<button type="button" disabled title="${escapeHtml(attendance.message)}" class="px-3.5 py-2 bg-slate-100 text-slate-400 cursor-not-allowed text-xs font-bold rounded-xl inline-flex items-center justify-center shrink-0"><i class="fa-solid ${attendance.reason === 'manual' ? 'fa-qrcode' : attendance.reason === 'postponed' ? 'fa-pause' : 'fa-circle-check'} mr-1.5"></i> ${attendance.reason === 'manual' ? 'Presensi sudah diisi' : attendance.reason === 'future' ? 'Presensi belum dibuka' : attendance.reason === 'postponed' ? 'Rapat ditunda' : r.status === 'Selesai' || r.notula || locked ? 'Rapat selesai' : 'Presensi ditutup'}</button>` : `<button data-id="${escapeHtml(r.id)}" onclick="bukaModalPresensi(this.dataset.id)" class="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl transition inline-flex items-center justify-center shrink-0">
             <i class="fa-solid fa-qrcode mr-1.5"></i> Presensi QR
           </button>`}
-          <button type="button" data-id="${escapeHtml(r.id)}" onclick="openAgendaAttendance(this.dataset.id)" class="px-3.5 py-2 bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold rounded-xl inline-flex items-center justify-center"><i class="fa-solid fa-list-check mr-1.5"></i>Lihat Presensi</button>
-          ${linked?`<button type="button" data-id="${escapeHtml(r.id)}" onclick="openManualVisitAttendance(this.dataset.id)" ${!canRecord?'disabled':''} class="px-3.5 py-2 ${!canRecord?'bg-slate-100 text-slate-400 cursor-not-allowed':'bg-teal-50 hover:bg-teal-100 text-teal-800'} text-xs font-bold rounded-xl inline-flex items-center justify-center"><i class="fa-solid fa-user-check mr-1.5"></i>Presensi Manual</button>`:''}
+          <button type="button" data-id="${escapeHtml(r.id)}" onclick="openAgendaAttendance(this.dataset.id)" class="px-3.5 py-2 bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold rounded-xl inline-flex items-center justify-center"><i class="fa-solid fa-list-check mr-1.5"></i>Presensi</button>
+          ${editAction}
           ${details}
           </div>
         </div>
-      `; }).join('');
+      `;
+      }).join('');
     }
 
-    window.matchMedia('(max-width: 767.98px), (max-width: 1023.98px) and (hover: none) and (pointer: coarse)').addEventListener('change',()=>renderMeetingsList(allRapatData));
+    window.matchMedia('(max-width: 767.98px), (max-width: 1023.98px) and (hover: none) and (pointer: coarse)').addEventListener('change', () => renderMeetingsList(allRapatData));
 
     function canAdminRecordAttendance(meeting, visitsByCode) {
-      if(!adminAttendanceAvailability(meeting).open)return false;
-      const code=meeting.kode_kunjungan||String(meeting.kode_rapat||'').replace(/^VISIT-/,'');
-      const visit=visitsByCode?visitsByCode.get(String(code)):typeof allTamuData!=='undefined'?allTamuData.find(v=>String(v.kode_kunjungan)===String(code)):null;
-      return !visit||!['Kelola SPPD','Selesai'].includes(visit.status_kunjungan);
+      if (!adminAttendanceAvailability(meeting).open) return false;
+      const code = meeting.kode_kunjungan || String(meeting.kode_rapat || '').replace(/^VISIT-/, '');
+      const visit = visitsByCode ? visitsByCode.get(String(code)) : typeof allTamuData !== 'undefined' ? allTamuData.find(v => String(v.kode_kunjungan) === String(code)) : null;
+      return !visit || !['Kelola SPPD', 'Selesai'].includes(visit.status_kunjungan);
     }
 
     function renderSppdTable(sppds) {
@@ -1513,8 +1929,8 @@
         </html>
       `);
     }
-    
-    
+
+
     function openIframeModal(pageQuery) {
       document.getElementById('iframeLoading').classList.remove('hidden');
       document.getElementById('iframeModalContent').src = APP_URL + pageQuery;
@@ -1530,28 +1946,110 @@
     }
 
     function loadMeetingRoomOptions() {
-      if(meetingRoomOptions)return Promise.resolve(meetingRoomOptions);
-      if(!meetingRoomRequest)meetingRoomRequest=new Promise((resolve,reject)=>{
-        callBackend('getMeetingRoomOptions',[],res=>{
-          if(res&&res.success)resolve(res.data.ruangan||[]);else reject(new Error(responseMessage(res,'Ruangan gagal dimuat.')));
-        },reject);
-      }).then(rooms=>{meetingRoomOptions=rooms;return rooms;}).finally(()=>{meetingRoomRequest=null;});
+      if (meetingRoomOptions) return Promise.resolve(meetingRoomOptions);
+      if (!meetingRoomRequest) meetingRoomRequest = new Promise((resolve, reject) => {
+        callBackend('getMeetingRoomOptions', [], res => {
+          if (res && res.success) resolve(res.data.ruangan || []); else reject(new Error(responseMessage(res, 'Ruangan gagal dimuat.')));
+        }, reject);
+      }).then(rooms => { meetingRoomOptions = rooms; return rooms; }).finally(() => { meetingRoomRequest = null; });
       return meetingRoomRequest;
     }
+    function renderMeetingEditAttachments(meeting) {
+      const box = document.getElementById('meetingEditAttachments');
+      if (!box) return;
+      if (!meeting) { box.hidden = true; return; }
+      box.hidden = false;
+      const locked = isMeetingLocked(meeting);
+      const internal = !meeting.kode_kunjungan && !String(meeting.kode_rapat || '').startsWith('VISIT-');
+      const photoSection = document.getElementById('meetingEditPhotoSection');
+      const photoHeading = document.getElementById('meetingEditPhotoHeadingText');
+      const photoHint = document.getElementById('meetingEditPhotoHint');
+      if (photoSection) photoSection.hidden = false;
+      if (photoHeading) photoHeading.textContent = internal ? 'Foto Rapat Internal' : 'Foto Agenda Kunjungan';
+      if (photoHint) photoHint.textContent = internal
+        ? 'Wajib minimal 1 foto sebelum E-notula. Maksimal 5 MB/foto, 10 MB/unggahan, 10 foto/agenda.'
+        : 'Opsional untuk dokumentasi agenda kunjungan (maksimal 5 MB/foto, 10 MB/unggahan, 10 foto/agenda). Foto SPPD terpisah di menu Buku Tamu → EDIT (tab SPPD).';
+      if (typeof renderMeetingEditPhotos === 'function') renderMeetingEditPhotos(meeting);
+      const notulaInfo = document.getElementById('meetingEditNotulaInfo');
+      if (notulaInfo) {
+        notulaInfo.innerHTML = meeting.notula
+          ? `<div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"><span class="text-xs font-semibold text-slate-700 break-all">${escapeHtml(meeting.notula.name || 'E-Notula')}</span><a href="${escapeHtml(meeting.notula.url)}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-sky-100 text-sky-800 text-xs font-bold inline-flex items-center"><i class="fa-solid fa-eye mr-1.5"></i>Lihat E-Notula</a></div>`
+          : '<p class="text-xs text-slate-500">Belum ada E-notula.</p>';
+      }
+      const notulaUpload = document.getElementById('meetingEditNotulaUpload');
+      const btnNotula = document.getElementById('btnUploadEditNotula');
+      const notulaProgress = document.getElementById('meetingNotulaProgress');
+      const hasPhotos = Boolean(meeting.photos && meeting.photos.length);
+      const notulaBusy = typeof meetingNotulaBusy !== 'undefined' && meetingNotulaBusy;
+      const photoReady = !internal || hasPhotos;
+      const rawStatus = String(meeting.status || '').trim();
+      const postponed = rawStatus === 'Ditunda';
+      const completed = rawStatus === 'Selesai' || rawStatus === 'Terlaksana' || Boolean(meeting.notula);
+      if (notulaUpload) notulaUpload.hidden = locked || postponed;
+      if (btnNotula) {
+        btnNotula.disabled = locked || postponed || notulaBusy || !photoReady;
+        btnNotula.title = postponed ? 'Jadwalkan ulang rapat sebelum mengunggah E-notula.' : photoReady ? (meeting.notula ? 'Ganti E-notula' : 'Unggah E-notula') : 'Unggah foto rapat terlebih dahulu.';
+        btnNotula.innerHTML = `<i class="fa-solid fa-file-arrow-up mr-1.5"></i>${meeting.notula ? 'Ganti E-notula' : 'Unggah E-notula'}`;
+      }
+      if (notulaProgress) notulaProgress.textContent = notulaBusy ? 'Menyimpan E-notula…' : '';
+      const history = Array.isArray(meeting.schedule_history) ? meeting.schedule_history : [];
+      const historySection = document.getElementById('meetingEditHistorySection');
+      const historyList = document.getElementById('meetingEditHistoryList');
+      if (historySection) historySection.hidden = history.length === 0;
+      if (historyList) {
+        const formatHistoryDate = val => (typeof formatMeetingDate === 'function' ? formatMeetingDate(val) : String(val || '-'));
+        historyList.innerHTML = history.map((item, idx) => `<div class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">${escapeHtml(idx === 0 ? 'Jadwal Awal' : 'Jadwal Sebelumnya')}: <strong>${escapeHtml(formatHistoryDate(item.tanggal))}</strong> (${escapeHtml(item.jam_mulai || '-')} - ${escapeHtml(item.jam_selesai || '-')} WIB)${item.nama_ruangan ? ' • ' + escapeHtml(item.nama_ruangan) : ''}</div>`).join('');
+      }
+      const postponeSection = document.getElementById('meetingEditPostponeSection');
+      if (postponeSection) postponeSection.hidden = locked || postponed || completed;
+      const rescheduleSection = document.getElementById('meetingEditRescheduleSection');
+      if (rescheduleSection) rescheduleSection.hidden = locked || completed;
+      const lockSection = document.getElementById('meetingEditLockSection');
+      if (lockSection) lockSection.hidden = locked || postponed;
+      const cancelSection = document.getElementById('meetingEditCancelSection');
+      if (cancelSection) cancelSection.hidden = locked;
+    }
+
+    function applyModalRapatMode(mode, meeting) {
+      const locked = mode === 'view';
+      const isCreate = mode === 'create';
+      const pill = document.getElementById('modalRapatPill');
+      const title = document.getElementById('modalRapatTitle');
+      const banner = document.getElementById('meetingEditLockBanner');
+      const submitBtn = document.getElementById('btnSubmitRapat');
+      const cancelBtn = document.getElementById('btnCancelRapat');
+      const form = document.getElementById('formJadwalRapat');
+      if (pill) pill.textContent = isCreate ? 'Jadwal Rapat' : locked ? 'Detail Rapat' : 'Edit Rapat';
+      if (title) title.textContent = isCreate ? 'Buat Agenda Rapat Baru' : locked ? 'Detail Agenda Rapat (Terkunci)' : 'Edit Agenda Rapat';
+      if (banner) banner.hidden = !locked;
+      if (cancelBtn) cancelBtn.textContent = locked ? 'Tutup' : 'Batal';
+      if (submitBtn) {
+        submitBtn.hidden = locked;
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = isCreate ? 'Jadwalkan' : 'Simpan Perubahan';
+      }
+      if (form && typeof form.querySelectorAll === 'function') {
+        form.querySelectorAll('input,select,textarea').forEach(el => { el.disabled = locked; });
+      }
+      renderMeetingEditAttachments(isCreate ? null : meeting);
+    }
+
     function bukaModalRapat() {
+      if (typeof editingRapatId !== 'undefined') editingRapatId = null;
+      if (typeof applyModalRapatMode === 'function') applyModalRapatMode('create', null);
       populateRapatBidangOptions();
       // Fetch list ruangan jika belum
-      const field=document.getElementById('rapatSelectRuangan');
-      field.disabled=true;field.replaceChildren(new Option('Memuat ruangan...', ''));
+      const field = document.getElementById('rapatSelectRuangan');
+      field.disabled = true; field.replaceChildren(new Option('Memuat ruangan...', ''));
       loadMeetingRoomOptions().then(rooms => {
         const select = document.getElementById('rapatSelectRuangan');
         select.replaceChildren(new Option('-- Pilih Ruangan --', ''));
-        select.disabled=false;
-          rooms.forEach(r => select.add(new Option(
-            `${r.nama_ruangan || '-'}${r.kapasitas?' (Kapasitas: '+r.kapasitas+' orang)':''}`,
-            `${r.id || ''}|${r.nama_ruangan || ''}`
-          )));
-          if (rooms.length === 0) select.add(new Option('Belum ada ruangan tersedia', '', true, true));
+        select.disabled = false;
+        rooms.forEach(r => select.add(new Option(
+          `${r.nama_ruangan || '-'}${r.kapasitas ? ' (Kapasitas: ' + r.kapasitas + ' orang)' : ''}`,
+          `${r.id || ''}|${r.nama_ruangan || ''}`
+        )));
+        if (rooms.length === 0) select.add(new Option('Belum ada ruangan tersedia', '', true, true));
       }).catch(err => {
         console.error('getMeetingRoomOptions failed:', err);
         const select = document.getElementById('rapatSelectRuangan');
@@ -1562,43 +2060,344 @@
       modal.classList.add('flex');
     }
 
+    function bukaModalEditRapat(id) {
+      const meeting = allRapatData.find(r => String(r.id) === String(id));
+      if (!meeting) return;
+      editingRapatId = meeting.id;
+      const locked = isMeetingLocked(meeting);
+      populateRapatBidangOptions();
+      resetRapatPimpinanAutoFill();
+      const form = document.getElementById('formJadwalRapat');
+      if (form) {
+        const setField = (name, val) => { const el = form.querySelector(`[name="${name}"]`); if (el) el.value = val ?? ''; };
+        setField('judul', meeting.judul_rapat || '');
+        setField('tanggal', meeting.tanggal || '');
+        setField('jam_mulai', meeting.jam_mulai || '');
+        setField('jam_selesai', meeting.jam_selesai || '');
+        const selectBidang = document.getElementById('rapatSelectBidang');
+        const bidangValue = String(meeting.penyelenggara_bidang || '');
+        if (selectBidang && bidangValue && !Array.from(selectBidang.options || []).some(opt => opt.value === bidangValue)) {
+          selectBidang.add(new Option(bidangValue, bidangValue));
+        }
+        setField('bidang', bidangValue);
+        setField('pimpinan', meeting.pimpinan_rapat || '');
+        setField('agenda', meeting.agenda || '');
+      }
+      applyModalRapatMode(locked ? 'view' : 'edit', meeting);
+      const selectRuangan = document.getElementById('rapatSelectRuangan');
+      if (selectRuangan) {
+        selectRuangan.disabled = true;
+        selectRuangan.replaceChildren(new Option('Memuat ruangan...', ''));
+        loadMeetingRoomOptions().then(rooms => {
+          if (String(editingRapatId) !== String(meeting.id)) return;
+          selectRuangan.replaceChildren(new Option('-- Pilih Ruangan --', ''));
+          rooms.forEach(r => selectRuangan.add(new Option(
+            `${r.nama_ruangan || '-'}${r.kapasitas ? ' (Kapasitas: ' + r.kapasitas + ' orang)' : ''}`,
+            `${r.id || ''}|${r.nama_ruangan || ''}`
+          )));
+          const byId = Array.from(selectRuangan.options || []).find(opt => opt.value.split('|')[0] === String(meeting.ruangan_id || ''));
+          if (byId) {
+            selectRuangan.value = byId.value;
+          } else if (meeting.ruangan_id || meeting.nama_ruangan) {
+            const legacyRoomValue = `${meeting.ruangan_id || ''}|${meeting.nama_ruangan || ''}`;
+            selectRuangan.add(new Option(meeting.nama_ruangan || String(meeting.ruangan_id), legacyRoomValue));
+            selectRuangan.value = legacyRoomValue;
+          }
+          selectRuangan.disabled = isMeetingLocked(meeting);
+        }).catch(() => {
+          if (String(editingRapatId) !== String(meeting.id)) return;
+          const legacyRoomValue = `${meeting.ruangan_id || ''}|${meeting.nama_ruangan || ''}`;
+          selectRuangan.replaceChildren(new Option(meeting.nama_ruangan || 'Ruangan', legacyRoomValue));
+          selectRuangan.value = legacyRoomValue;
+          selectRuangan.disabled = isMeetingLocked(meeting);
+        });
+      }
+      const modal = document.getElementById('modalJadwalRapat');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
     function tutupModalRapat() {
+      if (typeof editingRapatId !== 'undefined') editingRapatId = null;
       const modal = document.getElementById('modalJadwalRapat');
       modal.classList.add('hidden');
       modal.classList.remove('flex');
       document.getElementById('formJadwalRapat').reset();
       resetRapatPimpinanAutoFill();
+      if (typeof applyModalRapatMode === 'function') applyModalRapatMode('create', null);
     }
 
     function submitJadwalRapat(e) {
       e.preventDefault();
       const form = e.target;
+      const editId = typeof editingRapatId !== 'undefined' ? editingRapatId : null;
+      const isEdit = editId !== null && editId !== '';
+      if (isEdit && typeof allRapatData !== 'undefined') {
+        const current = allRapatData.find(r => String(r.id) === String(editId));
+        if (current && typeof isMeetingLocked === 'function' && isMeetingLocked(current)) {
+          if (typeof showToast === 'function') showToast('error', 'Agenda Terkunci', 'Agenda rapat sudah dikunci dan bersifat hanya-baca.');
+          return;
+        }
+      }
       if (!form.reportValidity()) return;
       const btn = document.getElementById('btnSubmitRapat');
+      const idleLabel = isEdit ? 'Simpan Perubahan' : 'Jadwalkan';
       btn.disabled = true;
       btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Menyimpan...';
 
       const formData = new FormData(form);
       const payload = Object.fromEntries(formData.entries());
+      if (isEdit) payload.rapat_id = editId;
 
-      callBackend('simpanJadwalRapat', [payload], res => {
+      callBackend(isEdit ? 'updateJadwalRapat' : 'simpanJadwalRapat', [payload], res => {
         btn.disabled = false;
-        btn.innerHTML = 'Jadwalkan';
+        btn.innerHTML = idleLabel;
         if (res && res.success) {
-          showToast('success', 'Jadwal Rapat Tersimpan', res.message);
+          showToast('success', isEdit ? 'Data Rapat Diperbarui' : 'Jadwal Rapat Tersimpan', res.message);
           tutupModalRapat();
           loadAllDashboard(); // Refresh calendar
           switchTab('calendar');
         } else {
-          showToast('error', 'Gagal', responseMessage(res, 'Tidak dapat menyimpan jadwal rapat.'));
+          showToast('error', 'Gagal', responseMessage(res, isEdit ? 'Tidak dapat memperbarui data rapat.' : 'Tidak dapat menyimpan jadwal rapat.'));
         }
       }, err => {
         btn.disabled = false;
-        btn.innerHTML = 'Jadwalkan';
+        btn.innerHTML = idleLabel;
         showToast('error', 'Terjadi Kesalahan', err.message);
       });
     }
 
+    function confirmLockMeeting(id) {
+      const meeting = allRapatData.find(r => String(r.id) === String(id));
+      if (!meeting || isMeetingLocked(meeting)) return;
+      pendingLockRapatId = meeting.id;
+      const titleEl = document.getElementById('confirmLockRapatTitleText');
+      if (titleEl) titleEl.textContent = meeting.judul_rapat || '';
+      const modal = document.getElementById('confirmLockRapatModal');
+      if (modal && !modal.open) modal.showModal();
+    }
+
+    function closeConfirmLockRapat() {
+      if (typeof lockRapatBusy !== 'undefined' && lockRapatBusy) return;
+      pendingLockRapatId = null;
+      const modal = document.getElementById('confirmLockRapatModal');
+      if (modal && modal.open) modal.close();
+    }
+
+    async function executeConfirmLockRapat() {
+      const busy = typeof lockRapatBusy !== 'undefined' && lockRapatBusy;
+      const targetId = typeof pendingLockRapatId !== 'undefined' ? pendingLockRapatId : null;
+      if (busy || targetId == null) return;
+      const btnConfirm = document.getElementById('btnConfirmLockRapat');
+      const btnCancel = document.getElementById('btnCancelLockRapat');
+      lockRapatBusy = true;
+      if (btnConfirm) { btnConfirm.disabled = true; btnConfirm.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Mengunci...'; }
+      if (btnCancel) btnCancel.disabled = true;
+      try {
+        const updated = await visitRpc('lockAgendaRapat', { rapat_id: targetId });
+        const idx = allRapatData.findIndex(r => String(r.id) === String(targetId));
+        if (idx >= 0) allRapatData[idx] = Object.assign({}, allRapatData[idx], updated, { locked: true });
+        pendingLockRapatId = null;
+        const dialog = document.getElementById('confirmLockRapatModal');
+        if (dialog && dialog.open) dialog.close();
+        renderMeetingsList(allRapatData);
+        const modal = document.getElementById('modalJadwalRapat');
+        if (modal && !modal.classList.contains('hidden') && String(editingRapatId) === String(targetId)) {
+          const current = idx >= 0 ? allRapatData[idx] : updated;
+          if (typeof applyModalRapatMode === 'function') applyModalRapatMode('view', current);
+        }
+        showToast('success', 'Rapat dikunci', 'Agenda rapat dikunci. Data dan lampiran kini hanya-baca.');
+      } catch (error) {
+        showToast('error', 'Gagal mengunci rapat', error.message);
+      } finally {
+        lockRapatBusy = false;
+        if (btnConfirm) { btnConfirm.disabled = false; btnConfirm.innerHTML = '<i class="fa-solid fa-lock mr-1.5"></i>Konfirmasi – Kunci'; }
+        if (btnCancel) btnCancel.disabled = false;
+      }
+    }
+
+    function confirmCancelMeeting(id) {
+      const meeting = allRapatData.find(r => String(r.id) === String(id));
+      if (!meeting || isMeetingLocked(meeting)) return;
+      pendingCancelRapatId = meeting.id;
+      const titleEl = document.getElementById('confirmCancelRapatTitleText');
+      if (titleEl) titleEl.textContent = meeting.judul_rapat || '';
+      const modal = document.getElementById('confirmCancelRapatModal');
+      if (modal && !modal.open) modal.showModal();
+    }
+
+    function closeConfirmCancelRapat() {
+      if (typeof cancelRapatBusy !== 'undefined' && cancelRapatBusy) return;
+      pendingCancelRapatId = null;
+      const modal = document.getElementById('confirmCancelRapatModal');
+      if (modal && modal.open) modal.close();
+    }
+
+    async function executeConfirmCancelRapat() {
+      const busy = typeof cancelRapatBusy !== 'undefined' && cancelRapatBusy;
+      const targetId = typeof pendingCancelRapatId !== 'undefined' ? pendingCancelRapatId : null;
+      if (busy || targetId == null) return;
+      const btnConfirm = document.getElementById('btnConfirmCancelRapat');
+      const btnCancel = document.getElementById('btnCancelDismissRapat');
+      cancelRapatBusy = true;
+      if (btnConfirm) { btnConfirm.disabled = true; btnConfirm.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Membatalkan...'; }
+      if (btnCancel) btnCancel.disabled = true;
+      try {
+        await visitRpc('cancelAgendaRapat', { rapat_id: targetId });
+        const cancelledMeeting = allRapatData.find(r => String(r.id) === String(targetId));
+        const isVisitAgenda = Boolean(cancelledMeeting && (cancelledMeeting.kode_kunjungan || String(cancelledMeeting.kode_rapat || '').startsWith('VISIT-')));
+        allRapatData = allRapatData.filter(r => String(r.id) !== String(targetId));
+        pendingCancelRapatId = null;
+        const dialog = document.getElementById('confirmCancelRapatModal');
+        if (dialog && dialog.open) dialog.close();
+        tutupModalRapat();
+        renderMeetingsList(allRapatData);
+        if (typeof setBookingCalendarState === 'function') setBookingCalendarState('ready');
+        if (typeof loadAllDashboard === 'function') loadAllDashboard(isVisitAgenda ? undefined : { visitors: false });
+        showToast('success', 'Rapat dibatalkan', 'Agenda rapat dibatalkan dan slot ruangan telah dilepas.');
+      } catch (error) {
+        showToast('error', 'Gagal membatalkan rapat', error.message);
+      } finally {
+        cancelRapatBusy = false;
+        if (btnConfirm) { btnConfirm.disabled = false; btnConfirm.innerHTML = '<i class="fa-solid fa-ban mr-1.5"></i>Batalkan Rapat'; }
+        if (btnCancel) btnCancel.disabled = false;
+      }
+    }
+
+    function confirmPostponeMeeting(id) {
+      const meeting = allRapatData.find(r => String(r.id) === String(id));
+      if (!meeting || isMeetingLocked(meeting) || meeting.status === 'Ditunda' || meeting.status === 'Selesai' || meeting.status === 'Terlaksana' || meeting.notula) return;
+      pendingPostponeRapatId = meeting.id;
+      const titleEl = document.getElementById('confirmPostponeRapatTitleText');
+      if (titleEl) titleEl.textContent = meeting.judul_rapat || '';
+      const modal = document.getElementById('confirmPostponeRapatModal');
+      if (modal && !modal.open) modal.showModal();
+    }
+
+    function closeConfirmPostponeRapat() {
+      if (typeof postponeRapatBusy !== 'undefined' && postponeRapatBusy) return;
+      pendingPostponeRapatId = null;
+      const modal = document.getElementById('confirmPostponeRapatModal');
+      if (modal && modal.open) modal.close();
+    }
+
+    async function executeConfirmPostponeRapat() {
+      const busy = typeof postponeRapatBusy !== 'undefined' && postponeRapatBusy;
+      const targetId = typeof pendingPostponeRapatId !== 'undefined' ? pendingPostponeRapatId : null;
+      if (busy || targetId == null) return;
+      const btnConfirm = document.getElementById('btnConfirmPostponeRapat');
+      const btnCancel = document.getElementById('btnCancelPostponeRapat');
+      postponeRapatBusy = true;
+      if (btnConfirm) { btnConfirm.disabled = true; btnConfirm.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Menunda...'; }
+      if (btnCancel) btnCancel.disabled = true;
+      try {
+        const updated = await visitRpc('postponeAgendaRapat', { rapat_id: targetId });
+        const idx = allRapatData.findIndex(r => String(r.id) === String(targetId));
+        if (idx >= 0) allRapatData[idx] = Object.assign({}, allRapatData[idx], updated, { status: 'Ditunda' });
+        const currentMeeting = idx >= 0 ? allRapatData[idx] : updated;
+        const isVisitAgenda = Boolean(currentMeeting && (currentMeeting.kode_kunjungan || String(currentMeeting.kode_rapat || '').startsWith('VISIT-')));
+        pendingPostponeRapatId = null;
+        const dialog = document.getElementById('confirmPostponeRapatModal');
+        if (dialog && dialog.open) dialog.close();
+        renderMeetingsList(allRapatData);
+        if (typeof setBookingCalendarState === 'function') setBookingCalendarState('ready');
+        if (typeof loadAllDashboard === 'function') loadAllDashboard(isVisitAgenda ? undefined : { visitors: false });
+        const modal = document.getElementById('modalJadwalRapat');
+        if (modal && !modal.classList.contains('hidden') && String(editingRapatId) === String(targetId)) {
+          const current = idx >= 0 ? allRapatData[idx] : updated;
+          if (typeof applyModalRapatMode === 'function') applyModalRapatMode('edit', current);
+        }
+        showToast('success', 'Rapat ditunda', 'Status rapat diubah menjadi Ditunda dan slot ruangan dilepas.');
+      } catch (error) {
+        showToast('error', 'Gagal menunda rapat', error.message);
+      } finally {
+        postponeRapatBusy = false;
+        if (btnConfirm) { btnConfirm.disabled = false; btnConfirm.innerHTML = '<i class="fa-solid fa-pause mr-1.5"></i>Tunda Rapat'; }
+        if (btnCancel) btnCancel.disabled = false;
+      }
+    }
+
+    function openRescheduleMeeting(id) {
+      const meeting = allRapatData.find(r => String(r.id) === String(id));
+      if (!meeting || isMeetingLocked(meeting) || meeting.status === 'Selesai' || meeting.status === 'Terlaksana' || meeting.notula) return;
+      pendingRescheduleRapatId = meeting.id;
+      const titleEl = document.getElementById('rescheduleRapatTitleText');
+      if (titleEl) titleEl.textContent = meeting.judul_rapat || '';
+      const currentEl = document.getElementById('rescheduleCurrentScheduleText');
+      if (currentEl) {
+        const formattedDate = typeof formatMeetingDate === 'function' ? formatMeetingDate(meeting.tanggal) : (meeting.tanggal || '-');
+        currentEl.textContent = `Jadwal saat ini: ${formattedDate} (${meeting.jam_mulai || '-'} - ${meeting.jam_selesai || '-'} WIB)`;
+      }
+      const dateInput = document.getElementById('rescheduleTanggal');
+      const startInput = document.getElementById('rescheduleJamMulai');
+      const endInput = document.getElementById('rescheduleJamSelesai');
+      if (dateInput) dateInput.value = '';
+      if (startInput) startInput.value = '';
+      if (endInput) endInput.value = '';
+      const modal = document.getElementById('rescheduleRapatModal');
+      if (modal && !modal.open) modal.showModal();
+    }
+
+    function closeRescheduleRapat() {
+      if (typeof rescheduleRapatBusy !== 'undefined' && rescheduleRapatBusy) return;
+      pendingRescheduleRapatId = null;
+      const modal = document.getElementById('rescheduleRapatModal');
+      if (modal && modal.open) modal.close();
+    }
+
+    async function executeRescheduleRapat(e) {
+      if (e && typeof e.preventDefault === 'function') e.preventDefault();
+      if (e && e.target && typeof e.target.reportValidity === 'function' && !e.target.reportValidity()) return;
+      const busy = typeof rescheduleRapatBusy !== 'undefined' && rescheduleRapatBusy;
+      const targetId = typeof pendingRescheduleRapatId !== 'undefined' ? pendingRescheduleRapatId : null;
+      if (busy || targetId == null) return;
+      const tanggal = String(document.getElementById('rescheduleTanggal')?.value || '').trim();
+      const jam_mulai = String(document.getElementById('rescheduleJamMulai')?.value || '').trim();
+      const jam_selesai = String(document.getElementById('rescheduleJamSelesai')?.value || '').trim();
+      if (!tanggal || !jam_mulai || !jam_selesai) {
+        showToast('error', 'Jadwal tidak lengkap', 'Tanggal, jam mulai, dan jam selesai baru wajib diisi.');
+        return;
+      }
+      const btnConfirm = document.getElementById('btnConfirmRescheduleRapat');
+      const btnCancel = document.getElementById('btnCancelRescheduleRapat');
+      rescheduleRapatBusy = true;
+      if (btnConfirm) { btnConfirm.disabled = true; btnConfirm.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Menyimpan...'; }
+      if (btnCancel) btnCancel.disabled = true;
+      try {
+        const updated = await visitRpc('rescheduleAgendaRapat', { rapat_id: targetId, tanggal, jam_mulai, jam_selesai });
+        const idx = allRapatData.findIndex(r => String(r.id) === String(targetId));
+        if (idx >= 0) allRapatData[idx] = Object.assign({}, allRapatData[idx], updated);
+        const form = document.getElementById('formJadwalRapat');
+        if (form && typeof form.querySelector === 'function') {
+          const setField = (name, val) => { const el = form.querySelector(`[name="${name}"]`); if (el) el.value = val ?? ''; };
+          setField('tanggal', updated?.tanggal ?? tanggal);
+          setField('jam_mulai', updated?.jam_mulai ?? jam_mulai);
+          setField('jam_selesai', updated?.jam_selesai ?? jam_selesai);
+        }
+        pendingRescheduleRapatId = null;
+        const dialog = document.getElementById('rescheduleRapatModal');
+        if (dialog && dialog.open) dialog.close();
+        renderMeetingsList(allRapatData);
+        if (typeof setBookingCalendarState === 'function') setBookingCalendarState('ready');
+        const currentMeeting = idx >= 0 ? allRapatData[idx] : updated;
+        const isVisitAgenda = Boolean(currentMeeting && (currentMeeting.kode_kunjungan || String(currentMeeting.kode_rapat || '').startsWith('VISIT-')));
+        if (typeof loadAllDashboard === 'function') loadAllDashboard(isVisitAgenda ? undefined : { visitors: false });
+        const modal = document.getElementById('modalJadwalRapat');
+        if (modal && !modal.classList.contains('hidden') && String(editingRapatId) === String(targetId)) {
+          const current = idx >= 0 ? allRapatData[idx] : updated;
+          if (typeof applyModalRapatMode === 'function') applyModalRapatMode('edit', current);
+        }
+        showToast('success', 'Jadwal diperbarui', 'Rapat berhasil dijadwalkan ulang dan jadwal sebelumnya tersimpan di riwayat.');
+      } catch (error) {
+        showToast('error', 'Gagal menjadwalkan ulang', error.message);
+      } finally {
+        rescheduleRapatBusy = false;
+        if (btnConfirm) { btnConfirm.disabled = false; btnConfirm.innerHTML = '<i class="fa-solid fa-calendar-day mr-1.5"></i>Simpan Jadwal Baru'; }
+        if (btnCancel) btnCancel.disabled = false;
+      }
+    }
+
   </script>
 </body>
+
 </html>

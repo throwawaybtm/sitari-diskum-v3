@@ -75,9 +75,10 @@ function appendMeetingRow_(sheet,row) {
   sheet.getRange(sheet.getLastRow()+1,6,1,3).setNumberFormat('@');
   sheet.appendRow(row);
 }
-function meetingRoomClash_(rows,roomId,date,start,end) {
+function meetingRoomClash_(rows,roomId,date,start,end,excludeId) {
   return rows.find(row=>{
-    if(row[12]==='Dibatalkan'||String(row[3])!==String(roomId)||row[5]!==date)return false;
+    if(excludeId!=null&&String(row[0])===String(excludeId))return false;
+    if(row[12]==='Dibatalkan'||row[12]==='Ditunda'||String(row[3])!==String(roomId)||row[5]!==date)return false;
     if(!row[6]||!row[7])throw new Error('Jam agenda tersimpan tidak valid. Periksa jadwal ruangan sebelum membuat agenda baru.');
     return start<row[7]&&end>row[6];
   });
@@ -281,7 +282,7 @@ function readDashboardData_(includeLoStats) {
     const rows = readMeetingRows_(sheetRapat);
     rows.forEach(r => {
       const tgl = formatDateVal(r[5]);
-      if (tgl === today && r[12] !== 'Dibatalkan') {
+      if (tgl === today && r[12] !== 'Dibatalkan' && r[12] !== 'Ditunda') {
         rapatHariIni++;
         todayMeetings.push({
           id: r[0],
@@ -491,15 +492,18 @@ function getRapatCalendar() {
   const docsByAgendaId=new Map();
   docs.forEach(doc=>{const key=String(doc[0]);if(!docsByAgendaId.has(key))docsByAgendaId.set(key,doc);});
   const photos=typeof getAgendaPhotosMap_==='function'?getAgendaPhotosMap_(ss):{};
+  const historyMap=typeof getAgendaScheduleHistoryMap_==='function'?getAgendaScheduleHistoryMap_(ss):{};
   const attendanceSheet=ss.getSheetByName('Data_Presensi');
   const attendance=attendanceSheet&&attendanceSheet.getLastRow()>1?attendanceSheet.getRange(2,1,attendanceSheet.getLastRow()-1,12).getValues():[];
   const manualAgendaIds=new Set(attendance.filter(row=>row[11]==='Admin').map(row=>String(row[1])));
   const list = rows.filter(r => r[12] !== 'Dibatalkan').map(r => {
     const doc=docsByAgendaId.get(String(r[0]));
+    const rawStatus = String(r[12] || '');
     return {
     id: r[0],
     manual_attendance: manualAgendaIds.has(String(r[0])),
     photos: photos[String(r[0])]||[],
+    schedule_history: historyMap[String(r[0])]||[],
     kode_rapat: r[1],
     kode_kunjungan: String(r[1] || '').indexOf('VISIT-') === 0 ? String(r[1]).slice(6) : '',
     judul_rapat: r[2],
@@ -512,12 +516,260 @@ function getRapatCalendar() {
     pimpinan_rapat: r[9],
     jumlah_peserta: r[10],
     agenda: r[11],
-    status: doc?'Selesai':r[12],
+    status: doc?'Selesai':rawStatus,
+    locked: rawStatus === 'Terkunci',
     notula: doc&&doc[1]?JSON.parse(doc[1]):null
     };
   });
+  if (typeof compareMeetingsDesc_ === 'function') list.sort(compareMeetingsDesc_);
 
   return { success: true, data: list };
+}
+
+function findEditableMeetingRow_(ss, rapatId) {
+  const sheetRapat = ss.getSheetByName('Data_Rapat');
+  if (!sheetRapat || sheetRapat.getLastRow() < 2) throw new Error('Agenda tidak ditemukan.');
+  const rows = readMeetingRows_(sheetRapat);
+  const rowIndex = rows.findIndex(r => String(r[0]) === String(rapatId));
+  if (rowIndex < 0) throw new Error('Agenda tidak ditemukan.');
+  const row = rows[rowIndex];
+  const agenda = { id: row[0], kode_rapat: row[1], status: row[12] };
+  if (String(row[12] || '') === 'Dibatalkan') throw new Error('Agenda yang dibatalkan tidak dapat diubah.');
+  if (isMeetingLocked_(agenda)) throw new Error('Agenda rapat sudah dikunci dan bersifat hanya-baca.');
+  return { sheetRapat, rows, rowIndex, sheetRow: rowIndex + 2, row, agenda };
+}
+
+function isMeetingCompletedForTransition_(ss, target) {
+  const rawStatus = String(target.row[12] || '');
+  if (rawStatus === 'Selesai' || rawStatus === 'Terlaksana') return true;
+  return Boolean(typeof getAgendaNotula_ === 'function' && getAgendaNotula_(target.agenda.id, ss));
+}
+
+function resolveMeetingRoomInput_(ss, ruanganValue, fallbackRow) {
+  const raw = String(ruanganValue || '').trim();
+  if (!raw) return { ruangan_id: fallbackRow[3], nama_ruangan: fallbackRow[4] };
+  const parts = raw.split('|');
+  const ruangan_id = parts[0];
+  let nama_ruangan = parts[1] || '';
+  if (!nama_ruangan && typeof readMeetingRoomOptions_ === 'function') {
+    const foundRoom = readMeetingRoomOptions_(ss).find(r => String(r.id) === String(ruangan_id));
+    if (foundRoom) nama_ruangan = foundRoom.nama_ruangan;
+  }
+  if (!nama_ruangan) nama_ruangan = String(ruangan_id) === String(fallbackRow[3]) ? fallbackRow[4] : raw;
+  return { ruangan_id, nama_ruangan };
+}
+
+function syncVisitBookingState_(ss, kodeRapat, mode, bookingPatch, meta) {
+  if (String(kodeRapat || '').indexOf('VISIT-') !== 0 || typeof visitWorkflowSheet_ !== 'function' || typeof findRecordByColumn_ !== 'function') return;
+  const wfSheet = visitWorkflowSheet_(ss, false);
+  const visitCode = String(kodeRapat).slice(6);
+  const wfRecord = wfSheet ? findRecordByColumn_(wfSheet, 1, visitCode, 4) : null;
+  if (!wfRecord) return;
+  const state = JSON.parse(wfRecord.values[2]);
+  if (!state) return;
+  const nowIso = new Date().toISOString();
+  const actor = typeof getApprovalActor_ === 'function' ? getApprovalActor_() : 'Admin Si Tari';
+  const info = meta || {};
+  const visitorSheet = ss.getSheetByName('Data_Tamu');
+  const visitorRecord = visitorSheet ? findRecordByColumn_(visitorSheet, 2, visitCode, 20) : null;
+  const history = Array.isArray(state.history) ? state.history.slice() : [];
+
+  if (mode === 'schedule' && state.booking) {
+    const nextBooking = Object.assign({}, state.booking, bookingPatch);
+    if (nextBooking.status !== 'Ditunda') delete nextBooking.postponed_at;
+    state.booking = nextBooking;
+    if (bookingPatch && bookingPatch.tanggal && bookingPatch.jam_mulai) {
+      state.schedule = { tanggal: bookingPatch.tanggal, jam: bookingPatch.jam_mulai };
+      if (visitorRecord) {
+        visitorSheet.getRange(visitorRecord.row, 13, 1, 2).setNumberFormat('@').setValues([[bookingPatch.tanggal, bookingPatch.jam_mulai]]);
+      }
+    }
+    history.push({ at: nowIso, actor: actor, action: info.action || 'agendaReschedule', status: state.status, agendaId: info.agendaId });
+  } else if (mode === 'postpone' && state.booking) {
+    state.booking = Object.assign({}, state.booking, { status: 'Ditunda', postponed_at: nowIso });
+    history.push({ at: nowIso, actor: actor, action: 'agendaPostpone', status: state.status, agendaId: info.agendaId });
+  } else if (mode === 'cancel') {
+    if (state.status === 'Menunggu Kedatangan' && !state.arrival) {
+      if (state.booking) {
+        const cancelled = Array.isArray(state.cancelledBookings) ? state.cancelledBookings.slice() : [];
+        cancelled.push(Object.assign({}, state.booking, { cancelledAt: nowIso, cancelledBy: actor }));
+        state.cancelledBookings = cancelled;
+      }
+      history.push({ at: nowIso, actor: actor, action: 'agendaCancel', status: 'Sudah Disposisi', agendaId: info.agendaId, cancelledBooking: state.booking || null });
+      state.booking = null;
+      state.status = 'Sudah Disposisi';
+      if (visitorRecord) visitorSheet.getRange(visitorRecord.row, 20).setValue('Sudah Disposisi');
+    } else {
+      if (state.booking) state.booking = Object.assign({}, state.booking, { status: 'Dibatalkan', cancelled_at: nowIso });
+      history.push({ at: nowIso, actor: actor, action: 'agendaCancel', status: state.status, agendaId: info.agendaId });
+    }
+  } else {
+    return;
+  }
+
+  state.history = history;
+  state.version = (Number(state.version) || 0) + 1;
+  wfSheet.getRange(wfRecord.row, 2, 1, 3).setValues([[state.version, JSON.stringify(state), nowIso]]);
+}
+
+function syncVisitBookingSchedule_(ss, kodeRapat, bookingPatch) {
+  syncVisitBookingState_(ss, kodeRapat, 'schedule', bookingPatch, { action: 'agendaReschedule' });
+}
+
+function runAdminMeetingAction_(fn) {
+  const lock = LockService.getScriptLock();
+  let locked = false;
+  try {
+    if (typeof requireVisitAdmin_ === 'function') requireVisitAdmin_();
+    lock.waitLock(30000);
+    locked = true;
+    return fn();
+  } catch (error) {
+    return { success: false, error: error.message };
+  } finally {
+    if (locked) lock.releaseLock();
+  }
+}
+
+function updateJadwalRapat(p) {
+  return runAdminMeetingAction_(() => updateJadwalRapat_(p));
+}
+
+function updateJadwalRapat_(p) {
+  const ss = getSpreadsheet();
+  const rapatId = p && (p.rapat_id != null ? p.rapat_id : p.id);
+  const target = findEditableMeetingRow_(ss, rapatId);
+  validateMeetingSchedule_(p);
+  const rawStatus = String(target.row[12] || '');
+  const isPostponed = rawStatus === 'Ditunda';
+  if (isPostponed && (
+    p.tanggal !== formatDateVal(target.row[5]) ||
+    p.jam_mulai !== formatTimeVal(target.row[6]) ||
+    p.jam_selesai !== formatTimeVal(target.row[7])
+  )) {
+    return { success: false, error: 'Agenda rapat berstatus Ditunda. Gunakan Jadwalkan Ulang untuk menetapkan tanggal dan jam baru.' };
+  }
+  const room = resolveMeetingRoomInput_(ss, p.ruangan, target.row);
+  if (!isPostponed && meetingRoomClash_(target.rows, room.ruangan_id, p.tanggal, p.jam_mulai, p.jam_selesai, target.agenda.id)) {
+    return { success: false, error: 'Ruangan sudah digunakan pada jadwal tersebut.' };
+  }
+  target.sheetRapat.getRange(target.sheetRow, 6, 1, 3).setNumberFormat('@');
+  target.sheetRapat.getRange(target.sheetRow, 3, 1, 8).setValues([[
+    p.judul, room.ruangan_id, room.nama_ruangan, p.tanggal, p.jam_mulai, p.jam_selesai, p.bidang, p.pimpinan
+  ]]);
+  target.sheetRapat.getRange(target.sheetRow, 12).setValue(p.agenda || '');
+  syncVisitBookingState_(ss, target.agenda.kode_rapat, 'schedule', {
+    judul_rapat: p.judul,
+    ruangan_id: room.ruangan_id,
+    nama_ruangan: room.nama_ruangan,
+    tanggal: p.tanggal,
+    jam_mulai: p.jam_mulai,
+    jam_selesai: p.jam_selesai,
+    status: isPostponed ? 'Ditunda' : 'Terjadwal'
+  }, { action: 'agendaUpdate', agendaId: target.agenda.id });
+  if (typeof autoSortAllSheets === 'function') autoSortAllSheets(ss);
+  const updated = getRapatCalendar().data.find(r => String(r.id) === String(target.agenda.id)) || null;
+  return { success: true, message: 'Data rapat berhasil diperbarui.', data: updated };
+}
+
+function postponeAgendaRapat(payload) {
+  return runAdminMeetingAction_(() => {
+    const ss = getSpreadsheet();
+    const rapatId = payload && (payload.rapat_id != null ? payload.rapat_id : payload.id);
+    const target = findEditableMeetingRow_(ss, rapatId);
+    if (String(target.row[12] || '') === 'Ditunda') throw new Error('Agenda rapat sudah berstatus Ditunda.');
+    if (isMeetingCompletedForTransition_(ss, target)) throw new Error('Agenda rapat yang sudah selesai tidak dapat ditunda.');
+    target.sheetRapat.getRange(target.sheetRow, 13).setValue('Ditunda');
+    syncVisitBookingState_(ss, target.agenda.kode_rapat, 'postpone', null, { agendaId: target.agenda.id });
+    const updated = getRapatCalendar().data.find(r => String(r.id) === String(target.agenda.id)) || Object.assign({}, target.agenda, { status: 'Ditunda' });
+    return { success: true, message: 'Agenda rapat berhasil ditunda.', data: updated };
+  });
+}
+
+function rescheduleAgendaRapat(payload) {
+  return runAdminMeetingAction_(() => {
+    const ss = getSpreadsheet();
+    const rapatId = payload && (payload.rapat_id != null ? payload.rapat_id : payload.id);
+    const target = findEditableMeetingRow_(ss, rapatId);
+    if (isMeetingCompletedForTransition_(ss, target)) throw new Error('Agenda rapat yang sudah selesai tidak dapat dijadwalkan ulang.');
+    const nextTanggal = String(payload && payload.tanggal || '').trim();
+    const nextJamMulai = String(payload && payload.jam_mulai || '').trim();
+    const nextJamSelesai = String(payload && payload.jam_selesai || '').trim();
+    validateMeetingDateTime_(nextTanggal, nextJamMulai, nextJamSelesai);
+
+    const prevTanggal = formatDateVal(target.row[5]);
+    const prevJamMulai = formatTimeVal(target.row[6]);
+    const prevJamSelesai = formatTimeVal(target.row[7]);
+    if (nextTanggal === prevTanggal && nextJamMulai === prevJamMulai && nextJamSelesai === prevJamSelesai) {
+      throw new Error('Masukkan tanggal atau jam baru untuk menjadwalkan ulang rapat.');
+    }
+
+    const room = resolveMeetingRoomInput_(ss, payload && payload.ruangan, target.row);
+    if (meetingRoomClash_(target.rows, room.ruangan_id, nextTanggal, nextJamMulai, nextJamSelesai, target.agenda.id)) {
+      return { success: false, error: 'Ruangan sudah digunakan pada jadwal tersebut.' };
+    }
+
+    const actor = typeof getApprovalActor_ === 'function' ? getApprovalActor_() : 'Admin Si Tari';
+    if (typeof appendAgendaScheduleHistory_ === 'function') {
+      appendAgendaScheduleHistory_(ss, target.agenda.id, {
+        tanggal: prevTanggal,
+        jam_mulai: prevJamMulai,
+        jam_selesai: prevJamSelesai,
+        ruangan_id: target.row[3],
+        nama_ruangan: meetingRoomName_(target.row[4]),
+        status_sebelumnya: String(target.row[12] || 'Terjadwal'),
+        diubah_pada: new Date().toISOString(),
+        diubah_oleh: actor,
+        jadwal_baru: {
+          tanggal: nextTanggal,
+          jam_mulai: nextJamMulai,
+          jam_selesai: nextJamSelesai,
+          ruangan_id: room.ruangan_id,
+          nama_ruangan: room.nama_ruangan
+        }
+      });
+    }
+
+    target.sheetRapat.getRange(target.sheetRow, 6, 1, 3).setNumberFormat('@');
+    target.sheetRapat.getRange(target.sheetRow, 4, 1, 5).setValues([[
+      room.ruangan_id, room.nama_ruangan, nextTanggal, nextJamMulai, nextJamSelesai
+    ]]);
+    target.sheetRapat.getRange(target.sheetRow, 13).setValue('Terjadwal');
+    syncVisitBookingState_(ss, target.agenda.kode_rapat, 'schedule', {
+      ruangan_id: room.ruangan_id,
+      nama_ruangan: room.nama_ruangan,
+      tanggal: nextTanggal,
+      jam_mulai: nextJamMulai,
+      jam_selesai: nextJamSelesai,
+      status: 'Terjadwal'
+    }, { action: 'agendaReschedule', agendaId: target.agenda.id });
+    if (typeof autoSortAllSheets === 'function') autoSortAllSheets(ss);
+    const updated = getRapatCalendar().data.find(r => String(r.id) === String(target.agenda.id)) || null;
+    return { success: true, message: 'Agenda rapat berhasil dijadwalkan ulang.', data: updated };
+  });
+}
+
+function lockAgendaRapat(payload) {
+  return runAdminMeetingAction_(() => {
+    const ss = getSpreadsheet();
+    const rapatId = payload && (payload.rapat_id != null ? payload.rapat_id : payload.id);
+    const target = findEditableMeetingRow_(ss, rapatId);
+    if (String(target.row[12] || '') === 'Ditunda') throw new Error('Agenda rapat berstatus Ditunda tidak dapat dikunci sebelum dijadwalkan ulang.');
+    target.sheetRapat.getRange(target.sheetRow, 13).setValue('Terkunci');
+    const updated = getRapatCalendar().data.find(r => String(r.id) === String(target.agenda.id)) || Object.assign({}, target.agenda, { locked: true, status: 'Terkunci' });
+    return { success: true, message: 'Agenda rapat berhasil dikonfirmasi dan dikunci.', data: updated };
+  });
+}
+
+function cancelAgendaRapat(payload) {
+  return runAdminMeetingAction_(() => {
+    const ss = getSpreadsheet();
+    const rapatId = payload && (payload.rapat_id != null ? payload.rapat_id : payload.id);
+    const target = findEditableMeetingRow_(ss, rapatId);
+    target.sheetRapat.getRange(target.sheetRow, 13).setValue('Dibatalkan');
+    syncVisitBookingState_(ss, target.agenda.kode_rapat, 'cancel', null, { agendaId: target.agenda.id });
+    return { success: true, message: 'Agenda rapat berhasil dibatalkan.', data: { id: target.agenda.id, kode_rapat: target.agenda.kode_rapat, status: 'Dibatalkan' } };
+  });
 }
 
 function createRapatSchedule(p) {

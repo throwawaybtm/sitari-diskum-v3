@@ -61,7 +61,7 @@ function autoSortTamu(ss) {
 
 /**
  * Auto-sort Data_Rapat:
- * Diurutkan berdasarkan Tanggal Rapat (ASC) dan Jam Mulai (ASC) agar agenda rapat terdekat selalu muncul teratas
+ * Diurutkan berdasarkan Tanggal Rapat (DESC) dan Jam Mulai (DESC) agar jadwal rapat terbaru muncul teratas
  */
 function autoSortRapat(ss) {
   if (!ss) ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -74,10 +74,10 @@ function autoSortRapat(ss) {
 
   // Kolom 6: Tanggal, Kolom 7: Jam_Mulai
   range.sort([
-    { column: 6, ascending: true },
-    { column: 7, ascending: true }
+    { column: 6, ascending: false },
+    { column: 7, ascending: false }
   ]);
-  Logger.log("Sheet Data_Rapat di-sort otomatis (Jadwal Rapat Terdekat)");
+  Logger.log("Sheet Data_Rapat di-sort otomatis (Jadwal Rapat Terbaru)");
 }
 
 /**

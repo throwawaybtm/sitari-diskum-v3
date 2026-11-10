@@ -57,20 +57,58 @@
       a.href=url;a.download=/\.(pdf|png|jpe?g)$/i.test(file.name)?file.name:file.name+extension;a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);
     }catch(error){showToast('error','Dokumen gagal diunduh',error.message);}finally{if(button)button.disabled=false;}
   }
+  let meetingNotulaBusy=false;
+  function encodeVisitUploadFile(file, readErrorMessage) {
+    return new Promise((resolve,reject)=>{
+      const r=new FileReader();
+      r.onload=()=>resolve(String(r.result).replace(/^data:[^;]*;base64,/, 'data:'+visitFileMime(file)+';base64,'));
+      r.onerror=()=>reject(new Error(readErrorMessage||'File gagal dibaca. Silakan pilih ulang.'));
+      r.readAsDataURL(file);
+    });
+  }
+  function isNotulaAgendaLocked_(meeting) {
+    if(typeof isMeetingLocked==='function')return isMeetingLocked(meeting);
+    return Boolean(meeting&&(meeting.locked===true||String(meeting.status||'').trim().toLowerCase()==='terkunci'));
+  }
+  async function submitAgendaNotulaFile_(meeting, file) {
+    if(!meeting||!file)return;
+    if(isNotulaAgendaLocked_(meeting))throw new Error('Agenda rapat sudah dikunci. E-notula bersifat hanya-baca.');
+    if(String(meeting.status||'').trim()==='Ditunda')throw new Error('Agenda rapat berstatus Ditunda. Jadwalkan ulang terlebih dahulu.');
+    const internal=!meeting.kode_kunjungan&&!String(meeting.kode_rapat||'').startsWith('VISIT-');
+    if(internal&&!(meeting.photos||[]).length)throw new Error('Unggah minimal satu foto rapat sebelum E-notula.');
+    if(file.size>5*1024*1024)throw new Error('Maksimal 5 MB.');
+    if(!visitFileMime(file))throw new Error('Pilih PDF / foto maksimal 5 MB.');
+    const encoded=await encodeVisitUploadFile(file,'File gagal dibaca. Silakan pilih ulang.');
+    const result=await visitRpc('saveAgendaNotula',{rapat_id:meeting.id,file:{name:file.name,data:encoded}});
+    meeting.notula=result;meeting.status='Selesai';
+    renderMeetingsList(allRapatData);
+    return result;
+  }
   async function uploadAgendaNotula(id) {
     const meeting=allRapatData.find(r=>String(r.id)===String(id));if(!meeting)return;
-    if(meeting.status==='Selesai'||meeting.notula)return;
-    if(!meeting.kode_kunjungan&&!String(meeting.kode_rapat||'').startsWith('VISIT-')&&!(meeting.photos||[]).length){showToast('error','Foto wajib diunggah','Unggah minimal satu foto rapat sebelum E-notula.');return;}
+    const visit=Boolean(meeting.kode_kunjungan||String(meeting.kode_rapat||'').startsWith('VISIT-'));
+    if(isNotulaAgendaLocked_(meeting)||meeting.status==='Dibatalkan')return;
+    if(!visit&&!(meeting.photos||[]).length){showToast('error','Foto wajib diunggah','Unggah minimal satu foto rapat sebelum E-notula.');return;}
     const input=document.createElement('input');input.type='file';input.accept='application/pdf,image/jpeg,image/png,image/webp,image/heic,image/heif';
     input.onchange=async()=>{
       const file=input.files[0];if(!file)return;
-      if(file.size>5*1024*1024){showToast('error','File terlalu besar','Maksimal 5 MB.');return;}
-      if(!visitFileMime(file)){showToast('error','Dokumen tidak valid','Pilih PDF / foto maksimal 5 MB.');return;}
       try{
-        const encoded=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result).replace(/^data:[^;]*;base64,/, 'data:'+visitFileMime(file)+';base64,'));r.onerror=()=>reject(new Error('File gagal dibaca. Silakan pilih ulang.'));r.readAsDataURL(file);});
-        const result=await visitRpc('saveAgendaNotula',{rapat_id:id,file:{name:file.name,data:encoded}});
-        meeting.notula=result;meeting.status='Selesai';renderMeetingsList(allRapatData);showToast('success','Agenda selesai','E-notula tersimpan dan tersedia untuk dilihat.');
+        await submitAgendaNotulaFile_(meeting,file);
+        showToast('success','Agenda selesai','E-notula tersimpan dan tersedia untuk dilihat.');
       }catch(error){showToast('error','E-notula gagal disimpan',error.message);}
     };input.click();
+  }
+  async function saveMeetingEditNotula(input) {
+    if(meetingNotulaBusy)return;
+    const targetId=typeof editingRapatId!=='undefined'?editingRapatId:null;
+    const meeting=allRapatData.find(r=>String(r.id)===String(targetId)),file=input&&input.files&&input.files[0];
+    if(!meeting||!file)return;
+    meetingNotulaBusy=true;
+    if(typeof renderMeetingEditAttachments==='function')renderMeetingEditAttachments(meeting);
+    try{
+      await submitAgendaNotulaFile_(meeting,file);
+      showToast('success','E-notula tersimpan','E-notula tersimpan dan tersedia untuk dilihat.');
+    }catch(error){showToast('error','E-notula gagal disimpan',error.message);}
+    finally{if(input)input.value='';meetingNotulaBusy=false;if(typeof renderMeetingEditAttachments==='function')renderMeetingEditAttachments(meeting);}
   }
 </script>

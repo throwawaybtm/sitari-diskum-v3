@@ -11,8 +11,11 @@ function saveAgendaNotula(payload) {
   try {
     requireVisitAdmin_();const agenda=getRapatCalendar().data.find(r=>String(r.id)===String(payload.rapat_id));
     if(!agenda)throw new Error('Agenda tidak ditemukan.');
-    if(agenda.status==='Selesai'||agenda.notula)throw new Error('Agenda sudah selesai. E-notula telah dikunci.');
-    if(isInternalMeeting_(agenda)&&!getAgendaPhotos_(agenda.id).length)throw new Error('Unggah minimal satu foto rapat sebelum menyelesaikan agenda melalui E-notula.');
+    const internal=isInternalMeeting_(agenda);
+    if(agenda.status==='Dibatalkan')throw new Error('Agenda yang dibatalkan tidak dapat diubah.');
+    if(agenda.status==='Ditunda')throw new Error('Agenda rapat berstatus Ditunda. Jadwalkan ulang terlebih dahulu sebelum mengunggah E-notula.');
+    if(isMeetingLocked_(agenda))throw new Error('Agenda rapat sudah dikunci. E-notula bersifat hanya-baca.');
+    if(internal&&!getAgendaPhotos_(agenda.id).length)throw new Error('Unggah minimal satu foto rapat sebelum menyelesaikan agenda melalui E-notula.');
     validateVisitFile_(payload.file);
     const document=saveVisitWorkflowFile_(payload.file,agenda.kode_rapat,'e-notula');
     const ss=getSpreadsheet();let sheet=ss.getSheetByName('Dokumen_Agenda');
@@ -36,6 +39,22 @@ function getAgendaPhotosMap_(ss) {
   return result;
 }
 function getAgendaPhotos_(id,ss) {return getAgendaPhotosMap_(ss)[String(id)]||[];}
+function getAgendaScheduleHistoryMap_(ss) {
+  const sheet=(ss||getSpreadsheet()).getSheetByName('Riwayat_Agenda'),result={};
+  if(sheet&&sheet.getLastRow()>1)sheet.getRange(2,1,sheet.getLastRow()-1,3).getValues().forEach(row=>{result[String(row[0])]=JSON.parse(row[1]||'[]');});
+  return result;
+}
+function appendAgendaScheduleHistory_(ss,id,entry) {
+  let sheet=ss.getSheetByName('Riwayat_Agenda');
+  if(!sheet){sheet=ss.insertSheet('Riwayat_Agenda');sheet.appendRow(['Agenda ID','Riwayat JSON','Diperbarui']);}
+  const rows=sheet.getLastRow()>1?sheet.getRange(2,1,sheet.getLastRow()-1,3).getValues():[];
+  const index=rows.findIndex(row=>String(row[0])===String(id));
+  const current=index>=0?JSON.parse(rows[index][1]||'[]'):[];
+  const next=current.concat([entry]);
+  const values=[id,JSON.stringify(next),new Date().toISOString()];
+  if(index>=0)sheet.getRange(index+2,1,1,3).setValues([values]);else sheet.appendRow(values);
+  return next;
+}
 function validateMeetingPhotoBatch_(files,existingCount) {
   if(!Array.isArray(files)||!files.length||files.length>5)throw new Error('Pilih 1–5 foto setiap unggahan.');
   if((existingCount||0)+files.length>10)throw new Error('Maksimal 10 foto per agenda.');
@@ -48,11 +67,14 @@ function saveAgendaPhotos(payload) {
   try {
     requireVisitAdmin_();
     const agenda=getRapatCalendar().data.find(row=>String(row.id)===String(payload.rapat_id));
-    if(!agenda||!isInternalMeeting_(agenda))throw new Error('Foto ini hanya untuk agenda rapat internal.');
-    if(agenda.status==='Selesai'||agenda.notula)throw new Error('Agenda sudah selesai. Foto telah dikunci.');
+    if(!agenda)throw new Error('Agenda tidak ditemukan.');
+    if(agenda.status==='Dibatalkan')throw new Error('Agenda yang dibatalkan tidak dapat diubah.');
+    if(agenda.status==='Ditunda')throw new Error('Agenda rapat berstatus Ditunda. Jadwalkan ulang terlebih dahulu sebelum mengunggah dokumentasi.');
+    if(isMeetingLocked_(agenda))throw new Error('Agenda rapat sudah dikunci. Foto bersifat hanya-baca.');
+    const internal=isInternalMeeting_(agenda),kind=internal?'foto-rapat':'foto-kunjungan',label=internal?'Foto Rapat Internal':'Foto Agenda Kunjungan';
     const ss=getSpreadsheet(),current=getAgendaPhotos_(agenda.id,ss);
     validateMeetingPhotoBatch_(payload.files,current.length);
-    const photos=current.concat(payload.files.map(file=>saveVisitWorkflowFile_(file,agenda.kode_rapat,'foto-rapat')));
+    const photos=current.concat(payload.files.map(file=>Object.assign(saveVisitWorkflowFile_(file,agenda.kode_rapat,kind),{label:label})));
     let sheet=ss.getSheetByName('Foto_Agenda');
     if(!sheet){sheet=ss.insertSheet('Foto_Agenda');sheet.appendRow(['Agenda ID','Foto JSON','Diperbarui']);}
     const rows=sheet.getLastRow()>1?sheet.getRange(2,1,sheet.getLastRow()-1,3).getValues():[];
@@ -65,7 +87,7 @@ function getAgendaPhotoDocument(payload) {
   try {
     requireVisitAdmin_();
     const agenda=getRapatCalendar().data.find(row=>String(row.id)===String(payload.rapat_id));
-    if(!agenda||!isInternalMeeting_(agenda))throw new Error('Agenda rapat internal tidak ditemukan.');
+    if(!agenda)throw new Error('Agenda rapat tidak ditemukan.');
     const photos=getAgendaPhotos_(agenda.id);
     if(!Number.isInteger(payload.index)||payload.index<0||payload.index>=photos.length)throw new Error('Foto tidak ditemukan.');
     const photo=photos[payload.index],id=visitDriveFileId_(photo.url);

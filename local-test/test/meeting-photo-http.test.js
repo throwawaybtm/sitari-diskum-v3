@@ -17,6 +17,8 @@ test('local HTTP booking rejects overlaps and requires internal photos before E-
   assert.equal((await rpc('getAgendaPhotoDocument',{rapat_id:meeting.id,index:0})).data.mime,'image/jpeg');
   assert.equal((await rpc('saveAgendaNotula',{rapat_id:meeting.id,file})).success,true);
   assert.equal((await rpc('getRapatCalendar')).data.find(row=>row.id===meeting.id).status,'Selesai');
+  assert.equal((await rpc('saveAgendaPhotos',{rapat_id:meeting.id,files:[{name:'foto.jpg',data:'data:image/jpeg;base64,/9j/2Q=='}]})).success,true);
+  assert.equal((await rpc('lockAgendaRapat',{rapat_id:meeting.id})).success,true);
   assert.equal((await rpc('saveAgendaPhotos',{rapat_id:meeting.id,files:[{name:'foto.jpg',data:'data:image/jpeg;base64,/9j/2Q=='}]})).success,false);
  }finally{await new Promise(resolve=>server.close(resolve));}
 });

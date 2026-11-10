@@ -283,9 +283,9 @@ test('Jadwalkan Rapat modal preserves existing 8-field layout with no NIP or Pan
 test('existing storage/schema accepts auto-filled and manually overridden values while preserving legacy records', async () => {
   const store = createFixtureStore(new Date('2026-10-24T18:30:00.000Z'));
   const legacyMeetings = store.responses.getRapatCalendar.data;
-  assert.equal(legacyMeetings[0].penyelenggara_bidang, 'Sekretariat');
-  assert.equal(legacyMeetings[0].pimpinan_rapat, 'Rini Handayani, S.E.');
-  assert.equal(legacyMeetings[1].penyelenggara_bidang, 'Usaha Mikro');
+  assert.equal(legacyMeetings[0].penyelenggara_bidang, 'Usaha Mikro');
+  assert.equal(legacyMeetings[1].penyelenggara_bidang, 'Sekretariat');
+  assert.equal(legacyMeetings[1].pimpinan_rapat, 'Rini Handayani, S.E.');
 
   const server = createLocalTestServer({ now: () => new Date('2026-10-24T18:30:00.000Z') });
   server.listen(0, '127.0.0.1');
@@ -389,8 +389,8 @@ test('GAS simpanJadwalRapat and getRapatCalendar reuse existing 14-column schema
 
   const calendar = context.getRapatCalendar().data;
   assert.equal(calendar.length, 2);
-  assert.equal(calendar[0].penyelenggara_bidang, 'Sekretariat / Umpeg');
-  assert.equal(calendar[0].pimpinan_rapat, 'Pimpinan Lama');
-  assert.equal(calendar[1].penyelenggara_bidang, 'Subbagian Tata Usaha UPTD Pengelolaan Dana Bergulir');
-  assert.equal(calendar[1].pimpinan_rapat, 'Zulfahri, S.E., M.M.');
+  assert.equal(calendar[0].penyelenggara_bidang, 'Subbagian Tata Usaha UPTD Pengelolaan Dana Bergulir');
+  assert.equal(calendar[0].pimpinan_rapat, 'Zulfahri, S.E., M.M.');
+  assert.equal(calendar[1].penyelenggara_bidang, 'Sekretariat / Umpeg');
+  assert.equal(calendar[1].pimpinan_rapat, 'Pimpinan Lama');
 });

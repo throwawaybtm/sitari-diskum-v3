@@ -872,6 +872,15 @@
     #visitWorkflowModal .visit-modal-head,#manualVisitAttendance .attendance-header {padding:10px!important;}
     #visitWorkflowModal .visit-eyebrow {display:none;}
   }
+  #formJadwalRapat :is(input,select,textarea):disabled {
+    background-color: #f8fafc;
+    color: #475569;
+    cursor: not-allowed;
+  }
+  #meetingEditActionsGrid:not(:has(> div:not([hidden]))) {
+    display: none;
+  }
+
   @media print {
     header, nav, footer, .no-print, button, .modal-backdrop {
       display: none !important;

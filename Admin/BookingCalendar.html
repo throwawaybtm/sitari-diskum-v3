@@ -58,7 +58,7 @@
     renderBookingCalendar();const modal=document.getElementById('bookingCalendar');if(!modal.open)modal.showModal();
   }
   function bookingsOnDate(date,meetings=allRapatData) {
-    return meetings.filter(row=>row.tanggal===date&&row.status!=='Dibatalkan').slice().sort((a,b)=>String(a.jam_mulai||'').localeCompare(String(b.jam_mulai||''))||String(a.nama_ruangan||'').localeCompare(String(b.nama_ruangan||'')));
+    return meetings.filter(row=>row.tanggal===date&&row.status!=='Dibatalkan'&&row.status!=='Ditunda').slice().sort((a,b)=>String(a.jam_mulai||'').localeCompare(String(b.jam_mulai||''))||String(a.nama_ruangan||'').localeCompare(String(b.nama_ruangan||'')));
   }
   function bookingAgendaType(meeting) {
     const code=String(meeting.kode_kunjungan||String(meeting.kode_rapat||'').replace(/^VISIT-/,''));

@@ -74,6 +74,7 @@ function applyVisitWorkflow_(visit, current, payload, env) {
       state.status = 'Menunggu Kedatangan'; break;
     case 'arrival':
       requireStage(3);
+      if (state.booking && state.booking.status === 'Ditunda') throw new Error('Agenda kunjungan sedang ditunda. Jadwalkan ulang terlebih dahulu.');
       if (!state.booking || !env.attendance.length) throw new Error('Belum ada presensi untuk agenda kunjungan ini.');
       if (!state.retrospective && Date.parse(env.now) < Date.parse(state.booking.tanggal + 'T' + (state.booking.jam_selesai || state.booking.jam_mulai) + ':00+07:00')) {
         throw new Error('Waktu kunjungan belum selesai berlangsung.');
@@ -111,7 +112,7 @@ function chooseVisitDestinations_(requested,directory) {
   return {bidang:selected.map(d=>d.bidang).join('; '),pic:selected.map(d=>d.pic).join('; '),picIds:selected.map(d=>d.id||d.bidang).join('; ')};
 }
 
-function validateVisitBooking_(booking, visit, rooms, meetings) {
+function validateVisitBooking_(booking, visit, rooms, meetings, excludeMeetingId) {
   if (!booking) throw new Error('Lengkapi pemesanan ruangan.');
   const room = rooms.find(item => String(item.id) === String(booking.ruangan_id));
   if (!room) throw new Error('Pilih ruangan yang tersedia.');
@@ -119,7 +120,7 @@ function validateVisitBooking_(booking, visit, rooms, meetings) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(booking.tanggal || '') || Number.isNaN(Date.parse(booking.tanggal)) || new Date(booking.tanggal).toISOString().slice(0, 10) !== booking.tanggal) throw new Error('Tanggal tidak valid.');
   const time = /^([01]\d|2[0-3]):[0-5]\d$/;
   if (!time.test(booking.jam_mulai) || !time.test(booking.jam_selesai) || booking.jam_mulai >= booking.jam_selesai) throw new Error('Jam mulai/selesai tidak valid.');
-  if (meetings.some(m => m.status !== 'Dibatalkan' && String(m.ruangan_id) === String(room.id) && m.tanggal === booking.tanggal && booking.jam_mulai < m.jam_selesai && booking.jam_selesai > m.jam_mulai)) {
+  if (meetings.some(m => (excludeMeetingId == null || String(m.id) !== String(excludeMeetingId)) && !['Dibatalkan', 'Ditunda'].includes(m.status) && String(m.ruangan_id) === String(room.id) && m.tanggal === booking.tanggal && booking.jam_mulai < m.jam_selesai && booking.jam_selesai > m.jam_mulai)) {
     throw new Error('Ruangan sudah digunakan pada jadwal tersebut.');
   }
   return Object.assign({}, booking, { nama_ruangan: room.nama_ruangan, ruangan_id: room.id });

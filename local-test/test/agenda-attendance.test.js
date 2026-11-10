@@ -28,3 +28,23 @@ test('attendance dialog opens immediately and ignores older responses after swit
  assert.equal(fields.agendaAttendanceName.textContent,'B');assert.match(fields.agendaAttendanceRows.innerHTML,/New/);assert.doesNotMatch(fields.agendaAttendanceRows.innerHTML,/Old/);assert.equal(fields.agendaAttendanceRefresh.disabled,false);
  c.closeAgendaAttendance();assert.equal(fields.agendaAttendanceModal.open,false);
 });
+test('Presensi modal displays Presensi Manual below attendance table for visit agendas and transitions cleanly',async()=>{
+ const fields={agendaAttendanceModal:{open:false,showModal(){this.open=true;},close(){this.open=false;}},agendaAttendanceName:{},agendaAttendanceRows:{},agendaAttendanceCount:{},agendaAttendanceError:{hidden:true},agendaAttendanceRefresh:{},agendaAttendanceManualWrap:{hidden:true},agendaAttendanceManualBtn:{disabled:false,className:''},agendaAttendanceManualNote:{textContent:''}};
+ const openedManual=[];
+ const internal={id:1,kode_rapat:'RPT-1',judul_rapat:'Rapat Internal'};
+ const visit={id:2,kode_rapat:'VISIT-TLD-2',kode_kunjungan:'TLD-2',judul_rapat:'Kunjungan Tamu',status:'Terjadwal'};
+ const lockedVisit={...visit,id:3,status:'Terkunci',locked:true};
+ const c=vm.createContext({allRapatData:[internal,visit,lockedVisit],isMeetingLocked:m=>Boolean(m&&(m.locked||m.status==='Terkunci')),canAdminRecordAttendance:m=>m.id===2,openManualVisitAttendance:id=>openedManual.push(id),document:{getElementById:id=>fields[id]},escapeHtml:value=>String(value),visitRpc:async()=>({agenda:{judul_rapat:'Kunjungan Tamu'},attendance:[]})});
+ vm.runInContext(fs.readFileSync('Admin/AgendaAttendance.html','utf8').match(/<script>([^]*?)<\/script>/)[1],c);
+ c.openAgendaAttendance(1);
+ assert.equal(fields.agendaAttendanceManualWrap.hidden,true,'internal meeting hides visit manual attendance footer');
+ c.openAgendaAttendance(2);
+ assert.equal(fields.agendaAttendanceManualWrap.hidden,false);
+ assert.equal(fields.agendaAttendanceManualBtn.disabled,false);
+ c.openManualAttendanceFromAgenda();
+ assert.equal(fields.agendaAttendanceModal.open,false,'closes dialog before opening manual attendance overlay');
+ assert.deepEqual(openedManual,['2']);
+ c.openAgendaAttendance(3);
+ assert.equal(fields.agendaAttendanceManualWrap.hidden,false);
+ assert.equal(fields.agendaAttendanceManualBtn.disabled,true,'locked visit disables Presensi Manual button');
+});

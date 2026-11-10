@@ -184,6 +184,7 @@ function submitManualVisitAttendance(payload) {
     requireVisitAdmin_();
     const meeting=getRapatCalendar().data.find(m=>String(m.id)===String(payload.rapat_id));
     const availability=adminAttendanceAvailability_(meeting);if(!availability.open)throw new Error(availability.message);
+    if(typeof isMeetingLocked_==='function'?isMeetingLocked_(meeting):Boolean(meeting&&(meeting.locked===true||String(meeting.status||'').trim().toLowerCase()==='terkunci')))throw new Error('Agenda terkunci. Presensi manual dinonaktifkan.');
     const data=meeting&&visitAttendanceForAgenda_(meeting);
     if(!data||!data.workflow.booking||String(data.workflow.booking.id)!==String(meeting.id))throw new Error('Agenda kunjungan tidak ditemukan.');
     if(data.workflow.arrival||data.workflow.status==='Selesai')throw new Error('Presensi kunjungan sudah divalidasi.');

@@ -276,8 +276,10 @@
       const people=data.roster||[];
       panel += people.length ? `<table><thead><tr><th>Nama</th><th>Peran</th><th>Jabatan</th><th>Status</th></tr></thead><tbody>${people.map(member=>{const entry=data.attendance.find(a=>a.member_id===member.id||a.nama===member.nama);return `<tr><td data-label="Nama">${escapeHtml(member.nama)}</td><td data-label="Peran">${escapeHtml(member.peran)}</td><td data-label="Jabatan">${escapeHtml(entry&&entry.jabatan||'-')}</td><td data-label="Status" class="${entry?'text-emerald-700':'text-slate-400'}">${entry?'Hadir':'Belum hadir'}</td></tr>`;}).join('')}</tbody></table>` : '<p class="text-slate-400">Daftar rombongan belum tersedia.</p>';
 
+      const bookingPostponed = Boolean(w.booking && w.booking.status === 'Ditunda');
+      if (bookingPostponed) panel += '<p class="text-amber-700 font-semibold">Agenda kunjungan sedang ditunda. Jadwalkan ulang melalui tab Jadwal Rapat sebelum validasi kedatangan.</p>';
       if (w.arrival) panel += '<p class="text-emerald-700">Kedatangan telah divalidasi.</p>';
-      else if (!readonly && data.stage === 3) panel += visitAction('VALIDASI','arrival',data.attendance.length>0);
+      else if (!readonly && data.stage === 3) panel += visitAction('VALIDASI','arrival',!bookingPostponed && data.attendance.length>0);
     } else if (visitModalTab === 4) {
       panel = '<div class="visit-note">Lengkapi foto kegiatan dan catatan singkat. Daftar hadir PDF dibuat otomatis dari presensi agenda saat kunjungan diselesaikan.</div>';
       if (!readonly && data.stage === 4) {

@@ -1,7 +1,8 @@
 <script>
   function attendanceAvailability(meeting,now=new Date()) {
     if(!meeting)return {open:false,reason:'invalid',message:'Pilih agenda yang valid.'};
-    if(['Selesai','Terlaksana','Dibatalkan'].includes(meeting.status)||meeting.notula)return {open:false,reason:'closed',message:'Agenda sudah selesai. Gunakan pencatatan admin untuk melengkapi presensi.'};
+    if(String(meeting.status||'').trim()==='Ditunda')return {open:false,reason:'postponed',message:'Agenda rapat sedang ditunda.'};
+    if(meeting.locked||['Selesai','Terlaksana','Dibatalkan','Terkunci'].includes(meeting.status)||meeting.notula)return {open:false,reason:'closed',message:'Agenda sudah selesai. Gunakan pencatatan admin untuk melengkapi presensi.'};
     if(meeting.manual_attendance)return {open:false,reason:'manual',message:'Presensi sudah diisi manual. Gunakan Presensi Manual untuk melengkapi daftar hadir.'};
     const date=String(meeting.tanggal||''),opensAt=/^\d{4}-\d{2}-\d{2}$/.test(date)?Date.parse(date+'T00:00:00+07:00'):NaN;
     if(!Number.isFinite(opensAt))return {open:false,reason:'invalid',message:'Tanggal agenda tidak valid.'};
@@ -9,8 +10,8 @@
     return {open:true,reason:'open',message:'Presensi tersedia sejak tanggal agenda sampai agenda selesai atau presensi divalidasi.'};
   }
   function adminAttendanceAvailability(meeting,now=new Date()) {
-    if(!meeting||meeting.status==='Dibatalkan')return {open:false,reason:'closed',message:'Agenda tidak tersedia atau dibatalkan.'};
-    return attendanceAvailability(Object.assign({},meeting,{status:'Terjadwal',notula:null,manual_attendance:false}),now);
+    if(!meeting||meeting.status==='Dibatalkan'||meeting.status==='Ditunda')return {open:false,reason:'closed',message:meeting&&meeting.status==='Ditunda'?'Agenda rapat sedang ditunda.':'Agenda tidak tersedia atau dibatalkan.'};
+    return attendanceAvailability(Object.assign({},meeting,{status:'Terjadwal',notula:null,manual_attendance:false,locked:false}),now);
   }
   function agendaScheduleLabel(meeting) {
     const date=String(meeting.tanggal||'').replace(/^(\d{4})-(\d{2})-(\d{2})$/,'$3-$2-$1');

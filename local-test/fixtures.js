@@ -243,7 +243,7 @@ function createFixtureStore(now = new Date(), options = {}) {
   };
 
   if(options.deploymentPreview)masterData.pegawai=require('./previews/employee-directory.json').map((p,i)=>({...p,id:10001+i}));
-  const visitWorkflow = createVisitWorkflow({ visitors, meetings, sppd, rooms: normalizeMeetingRooms(masterData.ruangan), currentTime });
+  const visitWorkflow = createVisitWorkflow({ visitors, meetings, sppd, rooms: normalizeMeetingRooms(masterData.ruangan), employees: masterData.pegawai, currentTime });
 
   function previewDocument(title,visit,attendance) {
     const doc=new jsPDF({unit:'mm',format:'a4'});doc.setFont('times','bold');doc.setFontSize(16);doc.text(title,20,25);
@@ -273,7 +273,7 @@ function createFixtureStore(now = new Date(), options = {}) {
       tamuHariIni: visitors.filter(item => item.tanggal_kunjungan === jakartaDate(currentTime())).length,
       tamuLuar: visitors.filter(item => item.tipe_tamu === 'luar_daerah').length,
       tamuFo: visitors.filter(item => item.tipe_tamu === 'dalam_daerah_fo').length,
-      rapatHariIni: meetings.filter(item => item.tanggal === jakartaDate(currentTime())).length,
+      rapatHariIni: meetings.filter(item => item.tanggal === jakartaDate(currentTime()) && item.status !== 'Dibatalkan' && item.status !== 'Ditunda').length,
       sppd: {
         total: sppd.length,
         belumLengkap: sppd.filter(item => item.status_sppd === 'Belum Lengkap').length,
@@ -363,14 +363,24 @@ function createFixtureStore(now = new Date(), options = {}) {
           data: {
             stats: getStats(),
             recentTamu: visitors.slice(0, 5),
-            todayMeetings: meetings.filter(item => item.tanggal === jakartaDate(currentTime())),
+            todayMeetings: meetings.filter(item => item.tanggal === jakartaDate(currentTime()) && item.status !== 'Dibatalkan' && item.status !== 'Ditunda'),
             loStats: []
           }
         };
       },
       get getDashboardSummary() { const result=this.getDashboardData;delete result.data.loStats;return result; },
       get getTamuList() { return { success: true, data: visitors }; },
-      getRapatCalendar: { success: true, data: meetings },
+      get getRapatCalendar() {
+        const sorted = meetings
+          .filter(item => item.status !== 'Dibatalkan')
+          .map(item => { if (!item.schedule_history) item.schedule_history = []; return item; })
+          .sort((a, b) =>
+            String(b.tanggal || '').localeCompare(String(a.tanggal || '')) ||
+            String(b.jam_mulai || '').localeCompare(String(a.jam_mulai || '')) ||
+            String(b.jam_selesai || '').localeCompare(String(a.jam_selesai || ''))
+          );
+        return { success: true, data: sorted };
+      },
       getSppdList: { success: true, data: sppd },
       getMasterData: { success: true, data: { ...masterData, ruangan: normalizeMeetingRooms(masterData.ruangan) } },
       getMeetingRoomOptions: { success: true, data: { ruangan: normalizeMeetingRooms(masterData.ruangan) } }

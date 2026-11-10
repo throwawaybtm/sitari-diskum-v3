@@ -11,5 +11,5 @@ test('guest forms and attendance navigate the existing top-level tab without rep
 });
 test('Isi presensi uses the existing tab while document links retain their own target',()=>{
  assert.match(html.match(/<a href="[^\n]*\?page=presensi-admin"[^>]*>/)[0],/target="_top"/);
- assert.match(html,/escapeHtml\(r\.notula\.url\)\}" target="_blank"/);
+ assert.match(html,/escapeHtml\(meeting\.notula\.url\)\}" target="_blank"/);
 });

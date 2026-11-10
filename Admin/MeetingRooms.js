@@ -33,6 +33,20 @@ function readCachedMeetingRoomOptions_(ss) {
   return typeof cachedMasterRead_==='function'?cachedMasterRead_(ss,'rooms',read):read();
 }
 
+function validateMeetingDateTime_(tanggal, jamMulai, jamSelesai) {
+  if (!String(tanggal || '').trim() || !String(jamMulai || '').trim() || !String(jamSelesai || '').trim()) {
+    throw new Error('Tanggal, jam mulai, dan jam selesai wajib diisi.');
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(tanggal) ||
+      Number.isNaN(Date.parse(tanggal)) ||
+      new Date(tanggal).toISOString().slice(0, 10) !== tanggal) {
+    throw new Error('Tanggal rapat tidak valid.');
+  }
+  const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
+  if (!timePattern.test(jamMulai) || !timePattern.test(jamSelesai)) throw new Error('Jam rapat tidak valid.');
+  if (jamSelesai <= jamMulai) throw new Error('Jam selesai harus setelah jam mulai.');
+}
+
 function validateMeetingSchedule_(payload) {
   const fields = {
     judul: 'Judul agenda rapat', ruangan: 'Ruangan rapat', tanggal: 'Tanggal',
@@ -42,25 +56,33 @@ function validateMeetingSchedule_(payload) {
   Object.keys(fields).forEach(field => {
     if (!payload || !String(payload[field] || '').trim()) throw new Error(fields[field] + ' wajib diisi.');
   });
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(payload.tanggal) ||
-      Number.isNaN(Date.parse(payload.tanggal)) ||
-      new Date(payload.tanggal).toISOString().slice(0, 10) !== payload.tanggal) {
-    throw new Error('Tanggal rapat tidak valid.');
-  }
-  const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
-  if (!timePattern.test(payload.jam_mulai) || !timePattern.test(payload.jam_selesai)) throw new Error('Jam rapat tidak valid.');
-  if (payload.jam_selesai <= payload.jam_mulai) throw new Error('Jam selesai harus setelah jam mulai.');
+  validateMeetingDateTime_(payload.tanggal, payload.jam_mulai, payload.jam_selesai);
+}
+
+function compareMeetingsDesc_(a, b) {
+  const dateCmp = String(b && b.tanggal || '').localeCompare(String(a && a.tanggal || ''));
+  if (dateCmp !== 0) return dateCmp;
+  const startCmp = String(b && b.jam_mulai || '').localeCompare(String(a && a.jam_mulai || ''));
+  if (startCmp !== 0) return startCmp;
+  return String(b && b.jam_selesai || '').localeCompare(String(a && a.jam_selesai || ''));
+}
+
+function isMeetingLocked_(meeting) {
+  if (!meeting) return false;
+  const status = String(meeting.status || '').trim().toLowerCase();
+  return meeting.locked === true || status === 'terkunci';
 }
 
 function isAgendaEnded_(meeting,now) {
-  if(meeting.status==='Selesai')return true;
+  if(meeting.status==='Selesai'||isMeetingLocked_(meeting))return true;
   const end=Date.parse(String(meeting.tanggal)+'T'+String(meeting.jam_selesai)+':00+07:00');
   return Number.isFinite(end)&&(now||new Date()).getTime()>=end;
 }
 
 function attendanceAvailability_(meeting,now) {
   if(!meeting)return {open:false,reason:'invalid',message:'Pilih agenda yang valid.'};
-  if(['Selesai','Terlaksana','Dibatalkan'].includes(meeting.status)||meeting.notula)return {open:false,reason:'closed',message:'Agenda sudah selesai. Gunakan pencatatan admin untuk melengkapi presensi.'};
+  if(String(meeting.status||'').trim()==='Ditunda')return {open:false,reason:'postponed',message:'Agenda rapat sedang ditunda.'};
+  if(isMeetingLocked_(meeting)||['Selesai','Terlaksana','Dibatalkan','Terkunci'].includes(meeting.status)||meeting.notula)return {open:false,reason:'closed',message:'Agenda sudah selesai. Gunakan pencatatan admin untuk melengkapi presensi.'};
   if(meeting.manual_attendance)return {open:false,reason:'manual',message:'Presensi sudah diisi manual. Gunakan Presensi Manual untuk melengkapi daftar hadir.'};
   const date=String(meeting.tanggal||''),opensAt=/^\d{4}-\d{2}-\d{2}$/.test(date)?Date.parse(date+'T00:00:00+07:00'):NaN;
   if(!Number.isFinite(opensAt))return {open:false,reason:'invalid',message:'Tanggal agenda tidak valid.'};
@@ -68,8 +90,8 @@ function attendanceAvailability_(meeting,now) {
   return {open:true,reason:'open',message:'Presensi tersedia sejak tanggal agenda sampai agenda selesai atau presensi divalidasi.'};
 }
 function adminAttendanceAvailability_(meeting,now) {
-  if(!meeting||meeting.status==='Dibatalkan')return {open:false,reason:'closed',message:'Agenda tidak tersedia atau dibatalkan.'};
-  return attendanceAvailability_(Object.assign({},meeting,{status:'Terjadwal',notula:null,manual_attendance:false}),now);
+  if(!meeting||meeting.status==='Dibatalkan'||meeting.status==='Ditunda')return {open:false,reason:'closed',message:meeting&&meeting.status==='Ditunda'?'Agenda rapat sedang ditunda.':'Agenda tidak tersedia atau dibatalkan.'};
+  return attendanceAvailability_(Object.assign({},meeting,{status:'Terjadwal',notula:null,manual_attendance:false,locked:false}),now);
 }
 
 function ensurePlutMeetingRoom_() {

@@ -23,17 +23,42 @@
     <div class="flex items-center justify-between gap-3 mb-3"><p id="agendaAttendanceCount" role="status" class="text-sm text-slate-600"></p><button id="agendaAttendanceRefresh" type="button" onclick="loadAgendaAttendance(agendaAttendanceId)" class="px-3 py-2 rounded-xl bg-teal-50 text-teal-800 text-sm font-semibold"><i class="fa-solid fa-rotate-right mr-1"></i>Refresh</button></div>
     <p id="agendaAttendanceError" role="alert" class="text-rose-700 mb-3" hidden></p>
     <table aria-label="Daftar presensi agenda"><colgroup><col style="width:9%"><col style="width:43%"><col style="width:30%"><col style="width:18%"></colgroup><thead><tr><th scope="col">No.</th><th scope="col">Nama</th><th scope="col">Tanggal</th><th scope="col">Jam</th></tr></thead><tbody id="agendaAttendanceRows"></tbody></table>
+    <div id="agendaAttendanceManualWrap" hidden class="mt-4 pt-4 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <p id="agendaAttendanceManualNote" class="text-xs text-slate-500">Catat kehadiran tamu kunjungan secara manual.</p>
+      <button id="agendaAttendanceManualBtn" type="button" onclick="openManualAttendanceFromAgenda()" class="px-4 py-2.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold inline-flex items-center justify-center shrink-0"><i class="fa-solid fa-user-check mr-1.5"></i>Presensi Manual</button>
+    </div>
   </div>
 </dialog>
 <script>
   let agendaAttendanceId=null,agendaAttendanceRequest=0;
   function cancelAgendaAttendanceRequest(){agendaAttendanceRequest++;}
   function closeAgendaAttendance(){cancelAgendaAttendanceRequest();document.getElementById('agendaAttendanceModal').close();}
+  function updateAgendaAttendanceManual(meeting) {
+    const wrap=document.getElementById('agendaAttendanceManualWrap');
+    const btn=document.getElementById('agendaAttendanceManualBtn');
+    const note=document.getElementById('agendaAttendanceManualNote');
+    if(!wrap||!btn)return;
+    const linked=Boolean(meeting&&(meeting.kode_kunjungan||String(meeting.kode_rapat||'').startsWith('VISIT-')));
+    wrap.hidden=!linked;
+    if(!linked)return;
+    const locked=typeof isMeetingLocked==='function'?isMeetingLocked(meeting):Boolean(meeting&&(meeting.locked===true||String(meeting.status||'').trim().toLowerCase()==='terkunci'));
+    const canRecord=!locked&&typeof canAdminRecordAttendance==='function'&&canAdminRecordAttendance(meeting);
+    btn.disabled=!canRecord;
+    btn.className='px-4 py-2.5 rounded-xl text-xs font-bold inline-flex items-center justify-center shrink-0 '+(canRecord?'bg-teal-50 hover:bg-teal-100 text-teal-800':'bg-slate-100 text-slate-400 cursor-not-allowed');
+    if(note)note.textContent=canRecord?'Catat kehadiran ketua atau anggota rombongan kunjungan secara manual.':locked?'Agenda terkunci. Presensi manual dinonaktifkan.':'Presensi manual tidak tersedia untuk status agenda saat ini.';
+  }
   function openAgendaAttendance(id) {
     const meeting=allRapatData.find(row=>String(row.id)===String(id));if(!meeting)return;
     agendaAttendanceId=String(id);document.getElementById('agendaAttendanceName').textContent=meeting.judul_rapat||'';
+    updateAgendaAttendanceManual(meeting);
     const modal=document.getElementById('agendaAttendanceModal');if(!modal.open)modal.showModal();
     loadAgendaAttendance(agendaAttendanceId);
+  }
+  function openManualAttendanceFromAgenda() {
+    if(agendaAttendanceId==null||typeof openManualVisitAttendance!=='function')return;
+    const id=agendaAttendanceId;
+    closeAgendaAttendance();
+    openManualVisitAttendance(id);
   }
   async function loadAgendaAttendance(id) {
     const request=++agendaAttendanceRequest;

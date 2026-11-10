@@ -25,7 +25,7 @@
   async function openManualVisitAttendance(id) {
     if(manualAttendanceBusy&&!manualAttendanceLoading)return;
     const agenda=allRapatData.find(m=>String(m.id)===String(id));
-    if(!canAdminRecordAttendance(agenda))return;
+    if(!agenda||(typeof isMeetingLocked==='function'&&isMeetingLocked(agenda))||!canAdminRecordAttendance(agenda))return;
     const code=agenda&&(agenda.kode_kunjungan||(String(agenda.kode_rapat||'').startsWith('VISIT-')?String(agenda.kode_rapat).slice(6):''));
     if(!code)return;
     const request=++manualAttendanceRequest;manualAttendanceBusy=true;manualAttendanceLoading=true;manualAttendanceData=null;
