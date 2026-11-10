@@ -16,7 +16,12 @@ function getTddPublicDestinations_() {
 }
 
 function prepareTddVisit_(payload) {
-  const fields = { ketua_nama: 'Nama pengunjung', narahubung_hp: 'WhatsApp narahubung', keperluan: 'Agenda' };
+  const fields = {
+    ketua_nama: 'Nama ketua rombongan',
+    pengikut_list: 'Daftar anggota rombongan',
+    narahubung_hp: 'WhatsApp narahubung',
+    keperluan: 'Agenda'
+  };
   Object.keys(fields).forEach(field => {
     if (!payload || !String(payload[field] || '').trim()) throw new Error(fields[field] + ' wajib diisi.');
   });

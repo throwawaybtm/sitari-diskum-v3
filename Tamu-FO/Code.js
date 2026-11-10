@@ -148,7 +148,7 @@ function registerTamuFo(payload) {
 
     sheetTamu.appendRow([
       nextId, kodeKunjungan, 'dalam_daerah_fo', payload.instansi || 'Perorangan', payload.alamat || '',
-      Number(payload.jumlah_orang), payload.ketua_nama, '',
+      Number(payload.jumlah_orang), payload.ketua_nama, payload.pengikut_list || '',
       destination.bidang, payload.keperluan, payload.ketua_nama, payload.narahubung_hp,
       today, nowHours, '', '', destination.picIds, destination.pic, 0, 'Diterima', timeNow
     ]);

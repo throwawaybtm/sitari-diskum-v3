@@ -326,7 +326,7 @@ function createFixtureStore(now = new Date(), options = {}) {
       alamat: payload.alamat || '',
       jumlah_orang: Number.parseInt(payload.jumlah_orang, 10) || 1,
       ketua_nama: payload.ketua_nama || '',
-      pengikut_list: isFo ? '' : (payload.pengikut_list || ''),
+      pengikut_list: payload.pengikut_list || '',
       tujuan_bidang: destination.bidang,
       keperluan: payload.keperluan || '',
       narahubung_nama: payload.ketua_nama || '',

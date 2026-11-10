@@ -72,7 +72,12 @@ function getTddPublicDestinations_() {
 }
 
 function prepareTddVisit_(payload) {
-  const fields = { ketua_nama: 'Nama pengunjung', narahubung_hp: 'WhatsApp narahubung', keperluan: 'Agenda' };
+  const fields = {
+    ketua_nama: 'Nama ketua rombongan',
+    pengikut_list: 'Daftar anggota rombongan',
+    narahubung_hp: 'WhatsApp narahubung',
+    keperluan: 'Agenda'
+  };
   Object.keys(fields).forEach(field => {
     if (!payload || !String(payload[field] || '').trim()) throw new Error(fields[field] + ' wajib diisi.');
   });
@@ -304,7 +309,7 @@ function registerTamuFo(payload) {
 
     sheetTamu.appendRow([
       nextId, kodeKunjungan, 'dalam_daerah_fo', payload.instansi || 'Perorangan', payload.alamat || '',
-      Number(payload.jumlah_orang), payload.ketua_nama, '',
+      Number(payload.jumlah_orang), payload.ketua_nama, payload.pengikut_list || '',
       destination.bidang, payload.keperluan, payload.ketua_nama, payload.narahubung_hp,
       today, nowHours, '', '', destination.picIds, destination.pic, 0, 'Diterima', timeNow
     ]);

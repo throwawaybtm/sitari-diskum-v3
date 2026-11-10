@@ -28,10 +28,11 @@ test('TDD directory matches all TLD destinations, PICs and private contacts', ()
   assert.throws(() => fo.prepareTddVisit_(completeTddPayload({ tujuan_bidang: [] })), /minimal satu/);
   assert.throws(() => fo.prepareTddVisit_(completeTddPayload({ tujuan_bidang: ['unknown'] })), /tersedia/);
   assert.throws(() => fo.prepareTddVisit_(completeTddPayload({ jumlah_orang: 0 })), /minimal 1/);
-  assert.throws(() => fo.prepareTddVisit_(completeTddPayload({ ketua_nama: '   ' })), /wajib/);
+  assert.throws(() => fo.prepareTddVisit_(completeTddPayload({ ketua_nama: '   ' })), /ketua rombongan.*wajib/i);
+  assert.throws(() => fo.prepareTddVisit_(completeTddPayload({ pengikut_list: '   ' })), /anggota rombongan.*wajib/i);
 });
 
-test('GAS TDD records only headcount, server arrival and Non-SPPD, ignoring removed client fields', () => {
+test('GAS TDD records rombongan members, headcount, server arrival and Non-SPPD, ignoring removed client fields', () => {
   const context = loadFo();
   const rows = [];
   const touched = [];
@@ -42,11 +43,13 @@ test('GAS TDD records only headcount, server arrival and Non-SPPD, ignoring remo
   })[format] };
   context.getSharedSpreadsheet_ = () => ({ getSheetByName: name => { touched.push(name); return sheet; } });
   const response = context.registerTamuFo(completeTddPayload({
-    bawa_sppd: 1, pengikut_list: 'ignore me', tanggal_kunjungan: '2030-01-01', jam_kunjungan: '01:00'
+    ketua_nama: 'Ketua FO', pengikut_list: 'Anggota Satu\nAnggota Dua', jumlah_orang: 3,
+    bawa_sppd: 1, tanggal_kunjungan: '2030-01-01', jam_kunjungan: '01:00'
   }));
   assert.equal(rows.length, 1);
-  assert.equal(rows[0][5], 1);
-  assert.equal(rows[0][7], '');
+  assert.equal(rows[0][5], 3);
+  assert.equal(rows[0][6], 'Ketua FO');
+  assert.equal(rows[0][7], 'Anggota Satu\nAnggota Dua');
   assert.equal(rows[0][13], '20:45');
   assert.equal(rows[0][18], 0);
   assert.equal(response.data.kode_kunjungan, 'TDD-26102026-001');
@@ -54,7 +57,7 @@ test('GAS TDD records only headcount, server arrival and Non-SPPD, ignoring remo
   assert.ok(!touched.includes('Kendali_SPPD'));
 });
 
-test('local TDD keeps the compact form and submits multiple recipients without removed fields', async () => {
+test('local TDD keeps the compact form with rombongan fields and submits multiple recipients without removed fields', async () => {
   const server = createLocalTestServer({ now: new Date('2026-10-26T13:45:00Z') });
   server.listen(0, '127.0.0.1');
   await once(server, 'listening');
@@ -66,16 +69,21 @@ test('local TDD keeps the compact form and submits multiple recipients without r
     const html = await (await fetch(base + '/tamu-fo')).text();
     assert.match(html, /Pendaftaran Kunjungan Tamu Dalam Daerah/);
     assert.match(html, /tdd-page max-w-\[860px\]/);
-    assert.doesNotMatch(html, /<\?|name="pengikut_list"|name="bawa_sppd"|type="date"|type="time"|type="file"|PHONE_NUMBER_PLACEHOLDER/);
+    assert.match(html, /Nama Ketua Rombongan/);
+    assert.match(html, /Daftar Anggota Rombongan/);
+    assert.match(html, /name="pengikut_list"/);
+    assert.doesNotMatch(html, /<\?|name="bawa_sppd"|type="date"|type="time"|type="file"|PHONE_NUMBER_PLACEHOLDER/);
     for (const match of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) new vm.Script(match[1]);
     const result = await post('registerTamuFo', completeTddPayload({
-      tujuan_bidang: ['Bidang Pengawasan Koperasi', 'UPTD PLUT KUMKM'], bawa_sppd: 1, pengikut_list: 'ignored'
+      tujuan_bidang: ['Bidang Pengawasan Koperasi', 'UPTD PLUT KUMKM'], bawa_sppd: 1,
+      ketua_nama: 'Ketua Lokal', pengikut_list: 'Anggota A\nAnggota B', jumlah_orang: 3
     }));
     assert.equal(result.success, true);
     const list = await post('getTamuList', {});
     assert.equal(list.data[0].lo_nama, 'Mery Sefina Simor, S.Kom.; Hafidz Qodli Abdillah, S.E.');
     assert.equal(list.data[0].bawa_sppd, false);
-    assert.equal(list.data[0].pengikut_list, '');
+    assert.equal(list.data[0].ketua_nama, 'Ketua Lokal');
+    assert.equal(list.data[0].pengikut_list, 'Anggota A\nAnggota B');
     assert.equal(list.data[0].jam_kunjungan, '20:45');
     assert.equal((await post('registerTamuFo', {})).success, false);
     assert.equal((await post('getTamuList', {})).data.length, 21);

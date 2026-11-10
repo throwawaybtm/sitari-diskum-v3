@@ -261,6 +261,7 @@ function readDashboardData_(includeLoStats) {
       alamat: r[4],
       jumlah_orang: r[5],
       ketua_nama: r[6],
+      pengikut_list: r[7],
       tujuan_bidang: r[8],
       keperluan: r[9],
       narahubung_hp: r[11],

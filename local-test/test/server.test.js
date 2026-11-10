@@ -251,7 +251,7 @@ test('adds local TDD and TLD submissions to the Admin visitor data', async () =>
     const foCode='TDD-25102026-'+String(serial+1).padStart(3,'0'),luarCode='TLD-26102026-'+String(serial+2).padStart(3,'0');
     const foResponse = await postJson(baseUrl, 'registerTamuFo', {
       ketua_nama: 'Pengunjung Lokal FO',
-      pengikut_list: '',
+      pengikut_list: 'Pengunjung Lokal FO',
       jumlah_orang: '1',
       instansi: 'UMKM Pengujian Lokal',
       narahubung_hp: '081234567890',
@@ -295,6 +295,8 @@ test('adds local TDD and TLD submissions to the Admin visitor data', async () =>
     assert.equal(listPayload.data.length, 22);
     assert.equal(listPayload.data[0].kode_kunjungan, luarCode);
     assert.equal(listPayload.data[1].kode_kunjungan, foCode);
+    assert.equal(listPayload.data[1].ketua_nama, 'Pengunjung Lokal FO');
+    assert.equal(listPayload.data[1].pengikut_list, 'Pengunjung Lokal FO');
     assert.equal(dashboardPayload.data.stats.totalTamu, 22);
     assert.equal(dashboardPayload.data.stats.tamuHariIni, 1);
     assert.equal(dashboardPayload.data.recentTamu[0].kode_kunjungan, luarCode);

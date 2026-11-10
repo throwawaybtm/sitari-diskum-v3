@@ -83,12 +83,15 @@
       else reject(new Error(responseMessage(res, 'Perubahan kunjungan gagal disimpan.')));
     }, reject));
   }
+  function renderVisitDetailGrid(details) {
+    return '<dl class="visit-detail-grid">'+details.map(([label,value])=>'<div><dt>'+label+'</dt><dd>'+escapeHtml(String(value??'').trim()?value:'-')+'</dd></div>').join('')+'</dl>';
+  }
   function renderVisitSnapshot(visit, checking) {
     const message=checking?'Memeriksa data terbaru...':'Data terbaru belum dapat diperiksa. Informasi di bawah berasal dari Buku Tamu.';
     if(!visit)return checking?'<p role="status" class="text-center text-sm text-slate-500 py-10"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Memuat data kunjungan...</p>':'';
     const date=String(visit.tanggal_kunjungan||'').replace(/^(\d{4})-(\d{2})-(\d{2})$/,'$3-$2-$1');
     const details=[['Nama Instansi Asal',visit.instansi],['Alamat Instansi',visit.alamat],['Ketua Rombongan',visit.ketua_nama],['Jumlah Orang',visit.jumlah_orang],['Bidang Tujuan',visit.tujuan_bidang||'Belum ditugaskan'],['Penerima Tamu',visit.lo_nama||'Belum ditugaskan'],['Agenda',visit.keperluan],['WhatsApp Narahubung',visit.narahubung_hp],['Jadwal Permohonan',(date+' '+(visit.jam_kunjungan||'')).trim()],['Daftar Anggota Rombongan',visit.pengikut_list]];
-    return '<div class="visit-note" role="status">'+(checking?'<i class="fa-solid fa-spinner fa-spin mr-2"></i>':'')+message+'</div><dl class="visit-detail-grid">'+details.map(([label,value])=>'<div><dt>'+label+'</dt><dd>'+escapeHtml(value??'-')+'</dd></div>').join('')+'</dl>';
+    return '<div class="visit-note" role="status">'+(checking?'<i class="fa-solid fa-spinner fa-spin mr-2"></i>':'')+message+'</div>'+renderVisitDetailGrid(details);
   }
   async function openVisitWorkflow(code, options = {}) {
     if (visitModalBusy && !visitModalLoading) return;
@@ -243,7 +246,7 @@
     const details = [ ['Nama Instansi Asal',v.instansi], ['Alamat Instansi',v.alamat], ['Ketua Rombongan',v.ketua_nama], ['Jumlah Orang',v.jumlah_orang], ['Bidang Tujuan',v.tujuan_bidang], ['Penerima Tamu',v.lo_nama], ['Agenda',v.keperluan], ['WhatsApp Narahubung',v.narahubung_hp], [w.retrospective?'Tanggal Kegiatan':'Jadwal Permohonan',String(schedule.tanggal||'').split('-').reverse().join('-') + (w.retrospective?'':' ' + (schedule.jam || '-'))], ['Daftar Anggota Rombongan',v.pengikut_list] ];
     let panel = '';
     if (visitModalTab === 0) {
-      panel = `<div class="visit-note">${w.status==='Non-SPPD'?'Data kunjungan Non-SPPD ditampilkan untuk dilihat tanpa tindakan pengesahan.':w.acknowledged ? 'Permintaan kunjungan telah diketahui oleh admin.' : 'Dengan menekan KONFIRMASI, admin menyatakan telah mengetahui dan memeriksa permintaan kunjungan berikut. Status tetap Menunggu Konfirmasi sampai surat disposisi disimpan.'}</div><dl class="visit-detail-grid">${details.map(([label,value])=>`<div><dt>${label}</dt><dd>${escapeHtml(value ?? '-')}</dd></div>`).join('')}</dl>`
+      panel = `<div class="visit-note">${w.status==='Non-SPPD'?'Data kunjungan Non-SPPD ditampilkan untuk dilihat tanpa tindakan pengesahan.':w.acknowledged ? 'Permintaan kunjungan telah diketahui oleh admin.' : 'Dengan menekan KONFIRMASI, admin menyatakan telah mengetahui dan memeriksa permintaan kunjungan berikut. Status tetap Menunggu Konfirmasi sampai surat disposisi disimpan.'}</div>${renderVisitDetailGrid(details)}`
         + `<div class="visit-document-grid">${visitFileLink({url:v.surat_kunjungan_file},'Surat Permohonan Kunjungan')}${visitFileLink({url:v.surat_tugas_file},'Surat Tugas Rombongan')}</div>`
         + (w.acknowledged ? `<p class="text-emerald-700">Dikonfirmasi oleh ${escapeHtml(w.acknowledged.actor)}</p>` : '');
       if(!readonly&&data.stage<=1){

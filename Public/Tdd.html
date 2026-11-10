@@ -114,16 +114,22 @@
     <form id="formTamuFo" onsubmit="submitFo(event)" class="space-y-5">
       <div class="grid grid-cols-1 sm:grid-cols-3 items-end gap-3">
       <div class="sm:col-span-2">
-        <label for="foNama" class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Pengunjung <span class="text-rose-600">*</span></label>
-        <input type="text" id="foNama" name="ketua_nama" required placeholder="Masukkan nama lengkap Anda..."
+        <label for="foNama" class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Ketua Rombongan <span class="text-rose-600" aria-hidden="true">*</span></label>
+        <input type="text" id="foNama" name="ketua_nama" required placeholder="Nama lengkap ketua rombongan"
           class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-teal-500 outline-none">
       </div>
 
       <div>
-        <label for="foJumlah" class="block text-xs font-bold text-slate-700 uppercase mb-1">Total Orang <span class="text-rose-600">*</span></label>
+        <label for="foJumlah" class="block text-xs font-bold text-slate-700 uppercase mb-1">Total Orang <span class="text-rose-600" aria-hidden="true">*</span></label>
         <input type="number" id="foJumlah" name="jumlah_orang" value="1" min="1" required
           class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-teal-500 outline-none">
       </div>
+      </div>
+
+      <div>
+        <label for="foAnggota" class="block text-xs font-bold text-slate-700 uppercase mb-1">Daftar Anggota Rombongan <span class="text-rose-600" aria-hidden="true">*</span></label>
+        <textarea id="foAnggota" name="pengikut_list" required rows="2" placeholder="Satu nama anggota per baris (jika sendiri, tulis nama Anda)..."
+          class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-teal-500 outline-none"></textarea>
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 items-end gap-3">
@@ -242,6 +248,7 @@
       const formData = new FormData(form);
       const payload = {
         ketua_nama: formData.get('ketua_nama'),
+        pengikut_list: formData.get('pengikut_list'),
         jumlah_orang: formData.get('jumlah_orang'),
         instansi: formData.get('instansi'),
         narahubung_hp: formData.get('narahubung_hp'),
