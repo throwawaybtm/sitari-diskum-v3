@@ -1,0 +1,62 @@
+<script>
+/** Rapat Pimpinan reference directory preserving exact 1-13 order and all provided fields. */
+const RAPAT_PIMPINAN_DIRECTORY = Object.freeze([
+  { no: 1, nama: 'Salim, S.Sos, M.Si', nip: '19681021 199010 1 001', pangkat_golongan: 'Pembina Utama Muda - IV/c', bidang: 'Dinas' },
+  { no: 2, nama: 'Adrial, S.K.M, M.K.M.', nip: '19710520 199403 1 009', pangkat_golongan: 'Pembina Tingkat I - IV/b', bidang: 'Sekretariat' },
+  { no: 3, nama: 'Syofya Nora, S.H.I.', nip: '19771107 200212 2 007', pangkat_golongan: 'Pembina - IV/a', bidang: 'Bidang Kewirausahaan' },
+  { no: 4, nama: 'Padlinsono, M.Si.', nip: '19761206 200212 1 012', pangkat_golongan: 'Pembina - IV/a', bidang: 'Bidang Pemberdayaan dan Pelindungan Koperasi' },
+  { no: 5, nama: 'Eva Corrina, S.E.', nip: '19750426 199403 2 003', pangkat_golongan: 'Pembina - IV/a', bidang: 'Bidang Pengawasan Koperasi' },
+  { no: 6, nama: 'Leny Nuriskawaty, S.Si. Apt., M.H.', nip: '19780604 200502 2 005', pangkat_golongan: 'Pembina - IV/a', bidang: 'Bidang Pengembangan Usaha Mikro' },
+  { no: 7, nama: 'Zulfahri, S.E., M.M.', nip: '19781119 200212 1 003', pangkat_golongan: 'Pembina - IV/a', bidang: 'UPTD Pengelolaan Dana Bergulir' },
+  { no: 8, nama: 'Meydiana Esterawaty Jastina, S.E.', nip: '19760521 201001 2 002', pangkat_golongan: 'Penata Tingkat I - III/d', bidang: 'UPTD PLUT KUMKM' },
+  { no: 9, nama: 'Zuziani, S.E.', nip: '19810902 200212 2 004', pangkat_golongan: 'Penata Tingkat I - III/d', bidang: 'Subbagian Keuangan dan Aset' },
+  { no: 10, nama: 'Maslinda, S.E.', nip: '19750525 200212 2 015', pangkat_golongan: 'Penata Tingkat I - III/d', bidang: 'Subbagian Perencanaan Program' },
+  { no: 11, nama: 'Septia Yorita, S.E.', nip: '19810906 200901 2 002', pangkat_golongan: 'Penata - III/c', bidang: 'Subbagian Umum dan Kepegawaian' },
+  { no: 12, nama: 'Intan Permata Sari, S.E.', nip: '19810322 200604 2 012', pangkat_golongan: 'Penata Tingkat I - III/d', bidang: 'Subbagian Tata Usaha UPTD Pengelolaan Dana Bergulir' },
+  { no: 13, nama: 'Hafidz Qodli Abdillah, S.E.', nip: '19920215 202012 1 005', pangkat_golongan: 'Penata Muda Tingkat I - III/b', bidang: 'Subbagian Tata Usaha UPTD PLUT KUMKM' }
+].map(item => Object.freeze(item)));
+
+let lastAutoFilledRapatPimpinan = '';
+
+function findRapatPimpinanByBidang(bidang) {
+  const key = String(bidang || '').trim();
+  if (!key) return null;
+  return RAPAT_PIMPINAN_DIRECTORY.find(item => item.bidang === key) || null;
+}
+
+function populateRapatBidangOptions() {
+  const select = document.getElementById('rapatSelectBidang');
+  if (!select) return;
+  const current = select.value;
+  select.replaceChildren(new Option('-- Pilih Bidang Penyelenggara --', ''));
+  RAPAT_PIMPINAN_DIRECTORY.forEach(item => {
+    select.add(new Option(item.bidang, item.bidang));
+  });
+  if (current && Array.from(select.options || []).some(opt => opt.value === current)) {
+    select.value = current;
+  }
+}
+
+function applyRapatBidangAutoFill() {
+  const select = document.getElementById('rapatSelectBidang');
+  const pimpinanInput = document.getElementById('rapatInputPimpinan');
+  if (!select || !pimpinanInput) return null;
+  const match = findRapatPimpinanByBidang(select.value);
+  if (match) {
+    pimpinanInput.value = match.nama;
+    lastAutoFilledRapatPimpinan = match.nama;
+    return match;
+  }
+  // Only clear Pimpinan Rapat on deselection if it was not manually overridden.
+  if (!String(select.value || '').trim() && pimpinanInput.value === lastAutoFilledRapatPimpinan) {
+    pimpinanInput.value = '';
+  }
+  lastAutoFilledRapatPimpinan = '';
+  return null;
+}
+
+function resetRapatPimpinanAutoFill() {
+  lastAutoFilledRapatPimpinan = '';
+}
+</script>
+

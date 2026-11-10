@@ -19,7 +19,7 @@ function renderAdminHtml({ baseUrl = 'http://127.0.0.1:4173' } = {}) {
   const adminDir = path.join(PROJECT_ROOT, 'Admin');
   const stylesheet = fs.readFileSync(path.join(adminDir, 'Stylesheet.html'), 'utf8');
   let html = fs.readFileSync(path.join(adminDir, 'Index.html'), 'utf8');
-  for(const name of ['ArchiveClient','AgendaSearch','Tools','AttendancePolicy','MobileBase','MeetingPhotos','AgendaAttendance','BookingCalendar'])html=replaceAllLiteral(html,"<?!= include('"+name+"'); ?>",fs.readFileSync(path.join(adminDir,name+'.html'),'utf8'));
+  for(const name of ['ArchiveClient','AgendaSearch','RapatPimpinan','Tools','AttendancePolicy','MobileBase','MeetingPhotos','AgendaAttendance','BookingCalendar'])html=replaceAllLiteral(html,"<?!= include('"+name+"'); ?>",fs.readFileSync(path.join(adminDir,name+'.html'),'utf8'));
   html = replaceAllLiteral(html, "<?!= include('VisitModal'); ?>", fs.readFileSync(path.join(adminDir, 'VisitModal.html'), 'utf8'));
   html = replaceAllLiteral(html, "<?!= include('VisitAttendance'); ?>", fs.readFileSync(path.join(adminDir, 'VisitAttendance.html'), 'utf8'));
   const tamuFoUrl = `${baseUrl}/tamu-fo`;

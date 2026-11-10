@@ -502,6 +502,7 @@
   <?!= include('MeetingPhotos'); ?>
   <?!= include('AgendaAttendance'); ?>
   <?!= include('AgendaSearch'); ?>
+  <?!= include('RapatPimpinan'); ?>
   <?!= include('VisitAttendance'); ?>
 
   <!-- MODAL PRESENSI QR -->
@@ -563,16 +564,13 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wide mb-1">Bidang Penyelenggara <span class="text-rose-600" aria-hidden="true">*</span></label>
-              <select name="bidang" required class="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500">
-                <option value="Sekretariat / Umpeg">Sekretariat / Umpeg</option>
-                <option value="Koperasi">Bidang Koperasi</option>
-                <option value="Usaha Mikro">Bidang Usaha Mikro</option>
-                <option value="Lainnya">Lainnya</option>
+              <select name="bidang" id="rapatSelectBidang" onchange="applyRapatBidangAutoFill()" required class="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500">
+                <option value="">-- Pilih Bidang Penyelenggara --</option>
               </select>
             </div>
             <div>
               <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wide mb-1">Pimpinan Rapat <span class="text-rose-600" aria-hidden="true">*</span></label>
-              <input type="text" name="pimpinan" required class="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500" placeholder="Kepala Dinas / Kabid...">
+              <input type="text" name="pimpinan" id="rapatInputPimpinan" required class="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500" placeholder="Kepala Dinas / Kabid...">
             </div>
           </div>
           <div>
@@ -720,6 +718,7 @@
     function initializeApp() {
       setupQrImages();
       renderMeetingRooms();
+      populateRapatBidangOptions();
       loadAllDashboard();
       window.setInterval(() => {
         if (!document.hidden && allRapatData.length) renderMeetingsList(allRapatData);
@@ -1540,6 +1539,7 @@
       return meetingRoomRequest;
     }
     function bukaModalRapat() {
+      populateRapatBidangOptions();
       // Fetch list ruangan jika belum
       const field=document.getElementById('rapatSelectRuangan');
       field.disabled=true;field.replaceChildren(new Option('Memuat ruangan...', ''));
@@ -1567,6 +1567,7 @@
       modal.classList.add('hidden');
       modal.classList.remove('flex');
       document.getElementById('formJadwalRapat').reset();
+      resetRapatPimpinanAutoFill();
     }
 
     function submitJadwalRapat(e) {
