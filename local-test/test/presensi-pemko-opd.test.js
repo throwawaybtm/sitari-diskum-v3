@@ -475,6 +475,7 @@ test('TLD Presensi (visitRosterMode) and Diskum flows continue submitting cleanl
   context.onPresensiAgendaChange();
   assert.equal(fields.inputWilayahPemko.required, false);
   fields.selectTamuRombongan.value = 'ketua';
+  fields.inputJabatanTamu.value = 'Kepala Bidang';
   context.submitPresensiForm({ preventDefault() {} });
   assert.equal(submitted.length, 1);
   assert.equal(submitted[0].payload.kategori_peserta, 'Tamu_Luar');

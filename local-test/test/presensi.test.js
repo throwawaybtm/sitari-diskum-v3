@@ -96,12 +96,12 @@ test('Diskum choices filter by department, clear stale selections and keep missi
 test('outside visitor attendance submits the visible name and institution without hidden OPD fields', () => {
   const {context,fields,alerts}=loadPage();
   context.setKategoriPeserta('Tamu_Luar');
-  fields.selectRapat.value='7001'; fields.inputNamaTamu.value='Tamu Kunjungan';fields.inputInstansiTamu.value='Instansi Luar';
+  fields.selectRapat.value='7001'; fields.inputNamaTamu.value='Tamu Kunjungan';fields.inputInstansiTamu.value='Instansi Luar';fields.inputJabatanTamu.value='Kepala Seksi';
   let payload;
   context.callBackend=(name,args,success)=>{payload=args[0];success({success:true,message:'Tersimpan'});};
   context.submitPresensiForm({preventDefault(){}});
   assert.ok(payload,alerts.join('; '));assert.equal(payload.nama,'Tamu Kunjungan');
-  assert.equal(payload.nama_opd,'Instansi Luar');assert.equal(payload.kategori_peserta,'Tamu_Luar');
+  assert.equal(payload.nama_opd,'Instansi Luar');assert.equal(payload.jabatan,'Kepala Seksi');assert.equal(payload.kategori_peserta,'Tamu_Luar');
   assert.equal(fields.selectOpdPemko.required,false);
 });
 
@@ -112,12 +112,12 @@ test('booked TLD attendance uses registered-name selection and canonical institu
   context.callBackend=(name,args,success)=>success({success:true,data:{instansi:'Instansi Terdaftar',locked:false,roster:[{id:'ketua',nama:'Ketua Valid',peran:'Ketua Rombongan',attended:false}]}});
   context.onPresensiAgendaChange();
   assert.equal(fields.visitRosterMessage.textContent,'');
-  assert.equal(fields.inputNamaTamu.required,false);assert.equal(fields.selectTamuRombongan.required,true);
+  assert.equal(fields.inputNamaTamu.required,false);assert.equal(fields.selectTamuRombongan.required,true);assert.equal(fields.inputJabatanTamu.required,true);
   assert.equal(fields.inputInstansiTamu.readOnly,true);
-  fields.selectTamuRombongan.value='ketua';fields.inputNamaTamu.value='Unknown';
+  fields.selectTamuRombongan.value='ketua';fields.inputNamaTamu.value='Unknown';fields.inputJabatanTamu.value='Ketua Rombongan';
   let payload;context.callBackend=(name,args,success)=>{payload=args[0];success({success:true,message:'Saved'});};
   context.submitPresensiForm({preventDefault(){}});
-  assert.equal(payload.nama,'Ketua Valid');assert.equal(payload.member_id,'ketua');assert.equal(payload.nama_opd,'Instansi Terdaftar');
+  assert.equal(payload.nama,'Ketua Valid');assert.equal(payload.member_id,'ketua');assert.equal(payload.nama_opd,'Instansi Terdaftar');assert.equal(payload.jabatan,'Ketua Rombongan');
 });
 
 

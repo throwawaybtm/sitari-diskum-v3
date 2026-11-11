@@ -14,7 +14,15 @@ function visitArchiveSources_(data,notula) {
 function escapeVisitPdfHtml_(text){return String(text??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function buildVisitAttendanceHtml_(data) {
   const e=escapeVisitPdfHtml_,v=data.visit,b=data.workflow.booking||{};
-  return '<html><head><meta charset="utf-8"><style>@page{size:A4;margin:22mm}body{font:11pt Arial;color:#172f38}h1{font-size:17pt}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #9cabb1;padding:8px;text-align:left}thead{display:table-header-group}tr{page-break-inside:avoid}</style></head><body><h1>Daftar Hadir Kunjungan</h1><p>SI-TARI DISKUM<br>'+e(v.kode_kunjungan)+'<br>'+e(v.instansi)+'<br>'+e(v.keperluan)+'<br>'+e(String(b.tanggal||v.tanggal_kunjungan).split('-').reverse().join('-'))+'</p><table><thead><tr><th>No.</th><th>Nama</th><th>Jabatan</th></tr></thead><tbody>'+data.attendance.map((a,i)=>'<tr><td>'+(i+1)+'</td><td>'+e(a.nama)+'</td><td>'+e(a.jabatan||'-')+'</td></tr>').join('')+'</tbody></table></body></html>';
+  let rows=Array.isArray(data.attendance)?data.attendance:[];
+  if(typeof sortAttendanceRecords_==='function'){
+    let employees=data.employees;
+    if(!employees&&rows.some(r=>{if(String(r&&r.member_id||'').trim())return false;const cat=String(r&&(r.kategori??r.kategori_peserta)||'').trim();return !cat||cat==='Diskum'||cat==='Internal';})){
+      if(typeof readMasterEmployeesForOrder_==='function')employees=readMasterEmployeesForOrder_(typeof getSpreadsheet==='function'?getSpreadsheet():null);
+    }
+    rows=sortAttendanceRecords_(rows,'Asia/Jakarta',employees?{employees}:undefined);
+  }
+  return '<html><head><meta charset="utf-8"><style>@page{size:A4;margin:22mm}body{font:11pt Arial;color:#172f38}h1{font-size:17pt}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #9cabb1;padding:8px;text-align:left}thead{display:table-header-group}tr{page-break-inside:avoid}</style></head><body><h1>Daftar Hadir Kunjungan</h1><p>SI-TARI DISKUM<br>'+e(v.kode_kunjungan)+'<br>'+e(v.instansi)+'<br>'+e(v.keperluan)+'<br>'+e(String(b.tanggal||v.tanggal_kunjungan).split('-').reverse().join('-'))+'</p><table><thead><tr><th>No.</th><th>Nama</th><th>Jabatan</th></tr></thead><tbody>'+rows.map((a,i)=>'<tr><td>'+(i+1)+'</td><td>'+e(a.nama)+'</td><td>'+e(a.jabatan||'-')+'</td></tr>').join('')+'</tbody></table></body></html>';
 }
 function generateVisitAttendancePdf_(data) {
   const blob=HtmlService.createHtmlOutput(buildVisitAttendanceHtml_(data)).getBlob().getAs(MimeType.PDF).setName('Daftar_Hadir_'+data.visit.kode_kunjungan+'.pdf');

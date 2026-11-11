@@ -21,7 +21,7 @@ test('a new TLD follows the full workflow through calendar QR attendance and pap
   const agenda=store.responses.getRapatCalendar.data.find(item=>item.id===data.workflow.booking.id);
   assert.equal(agenda.kode_kunjungan,code);
   assert.equal(store.handleMutation('saveVisitWorkflow',{kode_kunjungan:code,version:data.workflow.version,action:'arrival'}).success,false);
-  assert.equal(store.handleMutation('submitPresensiRapat',{rapat_id:agenda.id,member_id:'ketua',kategori_peserta:'Tamu_Luar'}).success,true);
+  assert.equal(store.handleMutation('submitPresensiRapat',{rapat_id:agenda.id,member_id:'ketua',kategori_peserta:'Tamu_Luar',jabatan:'Ketua Rombongan'}).success,true);
   data=store.handleMutation('getVisitWorkflow',{kode_kunjungan:code}).data;
   assert.equal(data.attendance.length,1);
   act('arrival'); act('evidence',{files:{foto:file}}); act('finish',{note:'Kegiatan selesai.'});
@@ -43,7 +43,7 @@ test('QR and manual attendance share the registered roster, deduplicate check-in
   const roster=store.handleMutation('getVisitAttendanceRoster',{rapat_id:id}).data.roster;
   assert.deepEqual(Array.from(roster,m=>m.nama),['Ketua Valid','Anggota A, S.E.','Anggota B, S.Kom.']);
   assert.equal(store.handleMutation('submitPresensiRapat',{rapat_id:id,nama:'Unknown'}).success,false);
-  for(let i=0;i<2;i++)assert.equal(store.handleMutation('submitPresensiRapat',{rapat_id:id,member_id:'ketua',nama:'Forged'}).success,true);
+  for(let i=0;i<2;i++)assert.equal(store.handleMutation('submitPresensiRapat',{rapat_id:id,member_id:'ketua',nama:'Forged',jabatan:'Ketua Rombongan'}).success,true);
   assert.equal(store.handleMutation('getVisitWorkflow',{kode_kunjungan:code}).data.attendance.length,1);
   assert.equal(store.handleMutation('submitManualVisitAttendance',{rapat_id:id,member_ids:[roster[1].id,'unknown']}).success,false);
   const saved=store.handleMutation('submitManualVisitAttendance',{rapat_id:id,member_ids:[roster[1].id,roster[2].id]});

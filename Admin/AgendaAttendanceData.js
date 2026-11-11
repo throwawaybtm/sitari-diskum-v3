@@ -67,8 +67,8 @@ function buildAttendanceHierarchyLookup_(employees) {
   return { leaderByNip, leaderByName, empByNip, empByName };
 }
 function resolveAttendanceHierarchyRank_(record, lookup) {
-  const category = String(record.kategori || '').trim();
-  if (category && category !== 'Diskum' && category !== 'Internal') {
+  const category = String(record.kategori ?? record.kategori_peserta ?? '').trim();
+  if ((category && category !== 'Diskum' && category !== 'Internal') || String(record.member_id || '').trim()) {
     return { tier: 2, primary: 0, secondary: 0 };
   }
   const nip = normalizeAttendanceNip_(record.nip);
@@ -83,38 +83,76 @@ function resolveAttendanceHierarchyRank_(record, lookup) {
   if (empRank) return { tier: 1, primary: empRank.unitRank, secondary: empRank.empIdx };
   return { tier: 2, primary: 0, secondary: 0 };
 }
-function agendaAttendanceTime_(value,spreadsheetTimezone) {
+function agendaAttendanceTimeParts_(value,spreadsheetTimezone) {
   try {
-    let canonical='';
+    let display='',sort='';
     if(Object.prototype.toString.call(value)==='[object Date]'){
-      if(!Number.isFinite(value.getTime()))return '';
+      if(!Number.isFinite(value.getTime()))return {display:'',sort:''};
       // Legacy cells were created from a WIB wall-time string in the sheet's timezone.
-      canonical=Utilities.formatDate(value,spreadsheetTimezone||'Asia/Jakarta','yyyy-MM-dd HH:mm');
+      display=Utilities.formatDate(value,spreadsheetTimezone||'Asia/Jakarta','yyyy-MM-dd HH:mm');
+      const sec=String(value.getUTCSeconds()).padStart(2,'0');
+      sort=display.length===16?display+':'+sec:display;
     }else{
       const text=String(value||'').trim();
       if(/T.*(?:Z|[+-]\d{2}:?\d{2})$/i.test(text)){
-        const instant=new Date(text);if(!Number.isFinite(instant.getTime()))return '';
-        canonical=Utilities.formatDate(instant,'Asia/Jakarta','yyyy-MM-dd HH:mm');
+        const instant=new Date(text);if(!Number.isFinite(instant.getTime()))return {display:'',sort:''};
+        display=Utilities.formatDate(instant,'Asia/Jakarta','yyyy-MM-dd HH:mm');
+        const sec=String(instant.getUTCSeconds()).padStart(2,'0');
+        sort=display.length===16?display+':'+sec:display;
       }else{
-        const match=text.match(/^(\d{4}-\d{2}-\d{2})[ T]([01]\d|2[0-3]):([0-5]\d)(?::\d{2}(?:\.\d+)?)?$/);
-        if(match)canonical=match[1]+' '+match[2]+':'+match[3];
+        let match=text.match(/^(\d{4}-\d{2}-\d{2})[ T]([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d)(?:\.\d+)?)?$/);
+        if(match){
+          display=match[1]+' '+match[2]+':'+match[3];
+          sort=display+':'+(match[4]||'00');
+        }else{
+          match=text.match(/^(\d{2})-(\d{2})-(\d{4})[ T]([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?$/);
+          if(match){
+            display=match[3]+'-'+match[2]+'-'+match[1]+' '+match[4]+':'+match[5];
+            sort=display+':'+(match[6]||'00');
+          }
+        }
       }
     }
-    return canonical;
-  }catch(error){return '';}
+    return {display,sort};
+  }catch(error){return {display:'',sort:''};}
 }
-function makeAgendaAttendanceList_(records,spreadsheetTimezone,hierarchyOptions) {
+function agendaAttendanceTime_(value,spreadsheetTimezone) {
+  return agendaAttendanceTimeParts_(value,spreadsheetTimezone).display;
+}
+function sortAttendanceRecords_(records,spreadsheetTimezone,hierarchyOptions) {
+  const list=Array.isArray(records)?records:[];
   const employees=hierarchyOptions&&Array.isArray(hierarchyOptions.employees)
     ?hierarchyOptions.employees
     :(typeof DISKUM_EMPLOYEE_DIRECTORY!=='undefined'&&Array.isArray(DISKUM_EMPLOYEE_DIRECTORY)?DISKUM_EMPLOYEE_DIRECTORY:[]);
   const lookup=buildAttendanceHierarchyLookup_(employees);
-  return records.map((record,index)=>{
-    const rank=resolveAttendanceHierarchyRank_(record,lookup);
-    const namaOpd=String(record.nama_opd||record.bidang||'').trim()||'-';
-    return {nama:String(record.nama||'-'),nama_opd:namaOpd,time:agendaAttendanceTime_(record.waktu,spreadsheetTimezone),index:index,tier:rank.tier,primary:rank.primary,secondary:rank.secondary};
+  return list.map((record,index)=>{
+    const item=record&&typeof record==='object'?record:{};
+    const rank=resolveAttendanceHierarchyRank_(item,lookup);
+    const timeSource=item.rawWaktu!==undefined?item.rawWaktu:item.waktu;
+    const timeParts=agendaAttendanceTimeParts_(timeSource,spreadsheetTimezone);
+    const rawId=item.id;
+    const parsedId=(rawId!==undefined&&rawId!==null&&String(rawId).trim()!=='')?Number(rawId):NaN;
+    return {
+      record:item,
+      time:timeParts.display,
+      sortTime:timeParts.sort,
+      recordId:Number.isFinite(parsedId)?parsedId:null,
+      index:index,
+      tier:rank.tier,
+      primary:rank.primary,
+      secondary:rank.secondary
+    };
   })
-    .sort((a,b)=>(a.tier-b.tier)||(a.primary-b.primary)||(a.secondary-b.secondary)||(a.time||'9999').localeCompare(b.time||'9999')||a.index-b.index)
-    .map((record,index)=>({no:index+1,nama:record.nama,nama_opd:record.nama_opd,tanggal:record.time?record.time.slice(0,10).split('-').reverse().join('-'):'-',jam:record.time?record.time.slice(11,16):'-'}));
+    .sort((a,b)=>(a.tier-b.tier)||(a.primary-b.primary)||(a.secondary-b.secondary)||(a.sortTime||'9999').localeCompare(b.sortTime||'9999')||((a.recordId!==null&&b.recordId!==null)?(a.recordId-b.recordId):0)||a.index-b.index)
+    .map(entry=>Object.assign({},entry.record,{_canonicalTime:entry.time}));
+}
+function makeAgendaAttendanceList_(records,spreadsheetTimezone,hierarchyOptions) {
+  return sortAttendanceRecords_(records,spreadsheetTimezone,hierarchyOptions)
+    .map((record,index)=>{
+      const namaOpd=String(record.nama_opd||record.bidang||'').trim()||'-';
+      const time=record._canonicalTime||'';
+      return {no:index+1,nama:String(record.nama||'-'),nama_opd:namaOpd,tanggal:time?time.slice(0,10).split('-').reverse().join('-'):'-',jam:time?time.slice(11,16):'-'};
+    });
 }
 function getAgendaAttendance(payload) {
   try {
@@ -125,7 +163,7 @@ function getAgendaAttendance(payload) {
     if(!meeting)throw new Error('Agenda tidak ditemukan.');
     const sheet=ss.getSheetByName('Data_Presensi');
     const rows=sheet&&sheet.getLastRow()>1?sheet.getRange(2,1,sheet.getLastRow()-1,10).getValues():[];
-    const records=rows.filter(row=>String(row[1])===id).map(row=>({kategori:row[3],nama:row[4],nip:row[5],jabatan:row[6],bidang:row[7],waktu:row[9]}));
+    const records=rows.filter(row=>String(row[1])===id).map(row=>({id:row[0],kategori:row[3],nama:row[4],nip:row[5],jabatan:row[6],bidang:row[7],waktu:row[9]}));
     const employees=readMasterEmployeesForOrder_(ss);
     const attendance=makeAgendaAttendanceList_(records,ss.getSpreadsheetTimeZone(),{employees});
     return {success:true,data:{agenda:{id:meeting[0],judul_rapat:String(meeting[2]||'')},total:attendance.length,attendance:attendance}};

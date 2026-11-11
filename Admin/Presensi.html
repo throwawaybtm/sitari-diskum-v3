@@ -197,9 +197,9 @@
 
           <div id="sectionTamu" class="space-y-3 hidden">
             <div id="visitRosterField" hidden><label for="selectTamuRombongan" class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Anggota Rombongan <span class="text-rose-600">*</span></label><select id="selectTamuRombongan" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm"><option value="">Pilih nama terdaftar</option></select><p id="visitRosterMessage" class="text-xs text-slate-500 mt-2" aria-live="polite"></p></div>
-            <div id="freeTamuName"><label for="inputNamaTamu" class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Lengkap <span class="text-rose-600">*</span></label><input id="inputNamaTamu" type="text" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm" placeholder="Nama peserta kunjungan"></div>
-            <div><label for="inputInstansiTamu" class="block text-xs font-bold text-slate-700 uppercase mb-1">Instansi Asal <span class="text-rose-600">*</span></label><input id="inputInstansiTamu" type="text" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm" placeholder="Nama instansi asal"></div>
-            <div><label for="inputJabatanTamu" class="block text-xs font-bold text-slate-700 uppercase mb-1">Jabatan</label><input id="inputJabatanTamu" type="text" maxlength="150" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm" placeholder="Jabatan pada instansi asal"></div>
+            <div id="freeTamuName"><label for="inputNamaTamu" class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Lengkap <span class="text-rose-600">*</span></label><input id="inputNamaTamu" type="text" oninput="if (typeof this.setCustomValidity === 'function') this.setCustomValidity('')" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm" placeholder="Nama peserta kunjungan"></div>
+            <div><label for="inputInstansiTamu" class="block text-xs font-bold text-slate-700 uppercase mb-1">Instansi Asal <span class="text-rose-600">*</span></label><input id="inputInstansiTamu" type="text" oninput="if (typeof this.setCustomValidity === 'function') this.setCustomValidity('')" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm" placeholder="Nama instansi asal"></div>
+            <div><label for="inputJabatanTamu" class="block text-xs font-bold text-slate-700 uppercase mb-1">Jabatan <span class="text-rose-600" aria-hidden="true">*</span></label><input id="inputJabatanTamu" type="text" maxlength="150" oninput="if (typeof this.setCustomValidity === 'function') this.setCustomValidity('')" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm" placeholder="Jabatan pada instansi asal"></div>
           </div>
 
           <div>
@@ -423,9 +423,18 @@
       document.getElementById('selectBidangDiskum').required = kat === 'Diskum';
       document.getElementById('selectOpdPemko').required = kat === 'OPD_Pemko';
       document.getElementById('inputNamaPemko').required = kat === 'OPD_Pemko';
-      document.getElementById('inputNamaTamu').required = kat === 'Tamu_Luar' && !visitRosterMode;
+      const namaTamu = document.getElementById('inputNamaTamu');
+      const instansiTamu = document.getElementById('inputInstansiTamu');
+      const jabatanTamu = document.getElementById('inputJabatanTamu');
+      namaTamu.required = kat === 'Tamu_Luar' && !visitRosterMode;
       document.getElementById('selectTamuRombongan').required = kat === 'Tamu_Luar' && visitRosterMode;
-      document.getElementById('inputInstansiTamu').required = kat === 'Tamu_Luar';
+      instansiTamu.required = kat === 'Tamu_Luar';
+      jabatanTamu.required = kat === 'Tamu_Luar';
+      if ((kat !== 'Tamu_Luar' || visitRosterMode) && typeof namaTamu.setCustomValidity === 'function') namaTamu.setCustomValidity('');
+      if (kat !== 'Tamu_Luar') {
+        if (typeof instansiTamu.setCustomValidity === 'function') instansiTamu.setCustomValidity('');
+        if (typeof jabatanTamu.setCustomValidity === 'function') jabatanTamu.setCustomValidity('');
+      }
       document.getElementById('sectionTamu').classList[kat === 'Tamu_Luar' ? 'remove' : 'add']('hidden');
       document.getElementById('btnKatTamu').className = 'py-3 px-4 rounded-xl border-2 font-bold text-xs ' + (kat === 'Tamu_Luar' ? 'border-teal-600 bg-teal-50 text-teal-900' : 'border-slate-200 bg-white text-slate-700');
       const btnDiskum = document.getElementById('btnKatDiskum');
@@ -517,6 +526,19 @@
         if (wilayahInput && typeof wilayahInput.setCustomValidity === 'function') {
           wilayahInput.setCustomValidity(isPemkoWilayahType(opdCheck) && !String(wilayahInput.value || '').trim() ? ('Nama ' + opdCheck + ' wajib diisi.') : '');
         }
+      } else if (currentKategori === 'Tamu_Luar') {
+        const namaTamu = document.getElementById('inputNamaTamu');
+        const instansiTamu = document.getElementById('inputInstansiTamu');
+        const jabatanTamu = document.getElementById('inputJabatanTamu');
+        if (namaTamu && typeof namaTamu.setCustomValidity === 'function') {
+          namaTamu.setCustomValidity(!visitRosterMode && !String(namaTamu.value || '').trim() ? 'Nama lengkap wajib diisi.' : '');
+        }
+        if (instansiTamu && typeof instansiTamu.setCustomValidity === 'function') {
+          instansiTamu.setCustomValidity(!String(instansiTamu.value || '').trim() ? 'Instansi asal wajib diisi.' : '');
+        }
+        if (jabatanTamu && typeof jabatanTamu.setCustomValidity === 'function') {
+          jabatanTamu.setCustomValidity(!String(jabatanTamu.value || '').trim() ? 'Jabatan wajib diisi.' : '');
+        }
       }
       if (!document.getElementById('formPresensi').reportValidity()) return;
       const rapatId = document.getElementById('selectRapat').value;
@@ -549,8 +571,8 @@
         nama = visitRosterMode ? (member?member.nama:'') : document.getElementById('inputNamaTamu').value.trim();
         namaOpd = document.getElementById('inputInstansiTamu').value.trim();
         jabatan = document.getElementById('inputJabatanTamu').value.trim();
-        if (!nama || !namaOpd) {
-          alert('Isi nama dan instansi asal.'); btn.disabled=false;
+        if (!nama || !namaOpd || !jabatan) {
+          alert('Isi nama, instansi asal, dan jabatan.'); btn.disabled=false;
           btn.innerHTML='<i class="fa-solid fa-paper-plane mr-2"></i> Simpan Kehadiran Presensi Digital'; return;
         }
       } else {

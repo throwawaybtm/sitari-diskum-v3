@@ -935,10 +935,20 @@ function savePresensiRapat_(p, source) {
   const visitData=visitAttendanceForAgenda_(meeting);
   if(visitData) {
     const person=resolveVisitAttendee_(visitData.visit,p);
+    const jabatan=String(p.jabatan||'').trim().slice(0,150);
+    if(source!=='Admin'&&!jabatan)return {success:false,error:'Jabatan wajib diisi.'};
     if(hasVisitAttendance_(visitData.attendance,person))return {success:true,message:'Presensi nama ini sudah tercatat.'};
-    p=Object.assign({},p,person,{nip:'',jabatan:String(p.jabatan||'').trim()||'-'});
+    p=Object.assign({},p,person,{nip:'',jabatan:jabatan||'-'});
   } else if (p && p.kategori_peserta === 'OPD_Pemko') {
     try { p = normalizePemkoAttendanceOpd_(p); } catch (error) { return { success: false, error: error.message }; }
+  } else if (p && p.kategori_peserta === 'Tamu_Luar') {
+    const nama=String(p.nama||'').trim();
+    const namaOpd=String(p.nama_opd||'').trim();
+    const jabatan=String(p.jabatan||'').trim().slice(0,150);
+    if(!nama)return {success:false,error:'Nama peserta wajib diisi.'};
+    if(!namaOpd)return {success:false,error:'Instansi asal wajib diisi.'};
+    if(!jabatan)return {success:false,error:'Jabatan wajib diisi.'};
+    p=Object.assign({},p,{nama:nama,nama_opd:namaOpd,jabatan:jabatan});
   }
   const ss = getSpreadsheet();
   const sheet = ss.getSheetByName('Data_Presensi');

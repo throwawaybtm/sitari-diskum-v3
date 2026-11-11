@@ -34,7 +34,8 @@ function createVisitWorkflow({ visitors, meetings, sppd, rooms, employees = [], 
       states.set(code, state);
     }
     const state = states.get(code);
-    const entries=attendance.filter(item=>state.booking&&String(item.rapat_id)===String(state.booking.id));
+    const rawEntries=attendance.filter(item=>state.booking&&String(item.rapat_id)===String(state.booking.id));
+    const entries=model.sortAttendanceRecords_(rawEntries,'Asia/Jakarta',{employees});
     const data={ visit, workflow: state, stage: model.visitWorkflowStage_(state),
       attendance: entries,
       roster:model.getVisitRoster_(visit).map(member=>({...member,attended:model.hasVisitAttendance_(entries,{member_id:member.id,nama:member.nama})})),
@@ -49,11 +50,13 @@ function createVisitWorkflow({ visitors, meetings, sppd, rooms, employees = [], 
   function appendVisitAttendance(data,payload,source) {
     if(data.workflow.arrival||data.workflow.status==='Selesai')throw new Error('Presensi kunjungan ini sudah divalidasi.');
     const person=model.resolveVisitAttendee_(data.visit,payload);
+    const jabatan=String(payload.jabatan||'').trim().slice(0,150);
+    if(source!=='Admin'&&!jabatan)throw new Error('Jabatan wajib diisi.');
     const entries=attendance.filter(a=>String(a.rapat_id)===String(data.workflow.booking.id));
     if(model.hasVisitAttendance_(entries,person))return;
     const meeting=meetings.find(m=>String(m.id)===String(data.workflow.booking.id));
     const times=model.attendanceWriteTimes_(meeting,payload,source,currentTime().toISOString());
-    attendance.push({...person,jabatan:payload.jabatan||'-',rapat_id:data.workflow.booking.id,waktu:times.attendance,recorded_at:times.recorded,source});
+    attendance.push({...person,jabatan:jabatan||'-',rapat_id:data.workflow.booking.id,waktu:times.attendance,recorded_at:times.recorded,source});
     if(source==='Admin'){const meeting=meetings.find(m=>String(m.id)===String(data.workflow.booking.id));if(meeting)meeting.manual_attendance=true;}
   }
   function syncVisitWorkflowFromAgenda(meeting, mode, meta = {}) {
@@ -175,7 +178,7 @@ function createVisitWorkflow({ visitors, meetings, sppd, rooms, employees = [], 
       }
       if(fn==='getAgendaAttendance'){
         const meeting=meetings.find(row=>String(row.id)===String(payload.rapat_id));if(!meeting)throw new Error('Agenda tidak ditemukan.');
-        const records=attendance.filter(row=>String(row.rapat_id)===String(meeting.id)).map(row=>({kategori:row.kategori_peserta,nama:row.nama,nip:row.nip,jabatan:row.jabatan,bidang:row.nama_opd,waktu:row.waktu}));
+        const records=attendance.filter(row=>String(row.rapat_id)===String(meeting.id)).map(row=>({id:row.id,kategori:row.kategori||row.kategori_peserta,nama:row.nama,nip:row.nip,jabatan:row.jabatan,bidang:row.nama_opd,waktu:row.waktu}));
         const list=model.makeAgendaAttendanceList_(records,'Asia/Jakarta',{employees});return {success:true,data:{agenda:{id:meeting.id,judul_rapat:meeting.judul_rapat},total:list.length,attendance:list}};
       }
       if(fn==='saveAgendaPhotos'){
@@ -321,7 +324,16 @@ function createVisitWorkflow({ visitors, meetings, sppd, rooms, employees = [], 
         if (!meeting || !String(payload.nama || '').trim()) throw new Error('Pilih agenda dan isi nama peserta.');
         const frozen = [...states.values()].find(state => state.booking && String(state.booking.id) === String(meeting.id) && (state.arrival || state.status === 'Selesai'));
         if (frozen) throw new Error('Presensi kunjungan ini sudah divalidasi.');
-        const normalizedPayload = payload.kategori_peserta === 'OPD_Pemko' ? model.normalizePemkoAttendanceOpd_(payload) : payload;
+        let normalizedPayload = payload.kategori_peserta === 'OPD_Pemko' ? model.normalizePemkoAttendanceOpd_(payload) : payload;
+        if (normalizedPayload && normalizedPayload.kategori_peserta === 'Tamu_Luar') {
+          const nama = String(normalizedPayload.nama || '').trim();
+          const namaOpd = String(normalizedPayload.nama_opd || '').trim();
+          const jabatan = String(normalizedPayload.jabatan || '').trim().slice(0, 150);
+          if (!nama) throw new Error('Nama peserta wajib diisi.');
+          if (!namaOpd) throw new Error('Instansi asal wajib diisi.');
+          if (!jabatan) throw new Error('Jabatan wajib diisi.');
+          normalizedPayload = { ...normalizedPayload, nama, nama_opd: namaOpd, jabatan };
+        }
         attendance.push({ ...normalizedPayload, nama: String(normalizedPayload.nama).trim(), waktu: times.attendance,recorded_at:times.recorded,source });
         return { success: true, message: 'Presensi disimpan sementara di server lokal.' };
       }
@@ -336,10 +348,11 @@ function createVisitWorkflow({ visitors, meetings, sppd, rooms, employees = [], 
           notifyContact:previous=>previous&&previous.success?previous:{success:true,simulated:true,at:currentTime().toISOString()},
           generateAttendance:()=>{
             const {jsPDF}=require('./vendor/jspdf.umd.min.js'),doc=new jsPDF();let y=25;
+            const rows=model.sortAttendanceRecords_(data.attendance,'Asia/Jakarta',{employees});
             doc.setFontSize(16);doc.text('Daftar Hadir Kunjungan',20,y);y+=12;doc.setFontSize(10);
             doc.text(data.visit.kode_kunjungan,20,y);y+=8;doc.text('Tanggal kegiatan: '+String(data.workflow.booking&&data.workflow.booking.tanggal||data.visit.tanggal_kunjungan).split('-').reverse().join('-'),20,y);y+=10;
             const header=()=>{doc.setFont('helvetica','bold');doc.text('No.',20,y);doc.text('Nama',35,y);doc.text('Jabatan',125,y);doc.setFont('helvetica','normal');y+=8;};header();
-            data.attendance.forEach((a,i)=>{const name=doc.splitTextToSize(a.nama,82),job=doc.splitTextToSize(a.jabatan||'-',65),height=Math.max(name.length,job.length)*5+5;if(y+height>275){doc.addPage();y=25;header();}doc.text(String(i+1),20,y);doc.text(name,35,y);doc.text(job,125,y);y+=height;});
+            rows.forEach((a,i)=>{const name=doc.splitTextToSize(a.nama,82),job=doc.splitTextToSize(a.jabatan||'-',65),height=Math.max(name.length,job.length)*5+5;if(y+height>275){doc.addPage();y=25;header();}doc.text(String(i+1),20,y);doc.text(name,35,y);doc.text(job,125,y);y+=height;});
             return saveFile({name:'Daftar_Hadir_'+code+'.pdf',data:'data:application/pdf;base64,'+Buffer.from(doc.output('arraybuffer')).toString('base64')},'daftar-hadir');
           },
           notify: previous => recipients.map(pic => previous.find(n => n.pic === pic && n.success) || { pic, success: true, simulated: true, at: currentTime().toISOString() }),

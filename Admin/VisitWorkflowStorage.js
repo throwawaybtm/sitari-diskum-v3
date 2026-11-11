@@ -19,6 +19,49 @@ function visitWorkflowSheet_(ss, create) {
   return sheet;
 }
 
+function readVisitBookingAttendance_(ss, bookingId) {
+  const attendanceSheet = bookingId ? ss.getSheetByName('Data_Presensi') : null;
+  const attendanceRows = attendanceSheet && attendanceSheet.getLastRow() > 1
+    ? attendanceSheet.getRange(2, 1, attendanceSheet.getLastRow() - 1, attendanceSheet.getLastColumn()).getValues()
+    : [];
+  const rawRecords = attendanceRows
+    .filter(row => String(row[1]) === String(bookingId))
+    .map(row => ({
+      id: row[0],
+      kategori: row[3],
+      nama: row[4],
+      nip: row[5],
+      jabatan: row[6] || '-',
+      nama_opd: row[7],
+      member_id: row[10] || '',
+      source: row[11] || 'QR',
+      rawWaktu: row[9],
+      waktu: row[9] instanceof Date ? Utilities.formatDate(row[9], 'Asia/Jakarta', 'dd-MM-yyyy HH:mm') : String(row[9])
+    }));
+  let ordered = rawRecords;
+  if (typeof sortAttendanceRecords_ === 'function') {
+    const needsEmployees = rawRecords.some(r => {
+      if (String(r.member_id || '').trim()) return false;
+      const cat = String(r.kategori || '').trim();
+      return !cat || cat === 'Diskum' || cat === 'Internal';
+    });
+    const employees = needsEmployees && typeof readMasterEmployeesForOrder_ === 'function'
+      ? readMasterEmployeesForOrder_(ss)
+      : [];
+    const tz = ss && typeof ss.getSpreadsheetTimeZone === 'function' ? ss.getSpreadsheetTimeZone() : 'Asia/Jakarta';
+    ordered = sortAttendanceRecords_(rawRecords.map(r => Object.assign({}, r, { waktu: r.rawWaktu })), tz, { employees });
+  }
+  return ordered.map(row => ({
+    nama: row.nama,
+    jabatan: row.jabatan,
+    nama_opd: row.nama_opd,
+    kategori: row.kategori,
+    member_id: row.member_id,
+    source: row.source,
+    waktu: row.rawWaktu instanceof Date ? Utilities.formatDate(row.rawWaktu, 'Asia/Jakarta', 'dd-MM-yyyy HH:mm') : String(row.rawWaktu)
+  }));
+}
+
 function readVisitWorkflow_(code, spreadsheet, options) {
   const ss = spreadsheet || getSpreadsheet();
   const visit = getVisitByCode_(ss,code);
@@ -32,11 +75,9 @@ function readVisitWorkflow_(code, spreadsheet, options) {
       if (old.values[5+index]) workflow.files[kind] = {name:kind,url:old.values[5+index]};
     });
   }
-  const attendanceSheet = !options||options.attendance!==false?ss.getSheetByName('Data_Presensi'):null;
-  const attendanceRows = (!options||options.attendance!==false) && workflow.booking && attendanceSheet && attendanceSheet.getLastRow() > 1
-    ? attendanceSheet.getRange(2,1,attendanceSheet.getLastRow()-1,attendanceSheet.getLastColumn()).getValues() : [];
-  const attendance = attendanceRows.filter(row => String(row[1]) === String(workflow.booking.id))
-    .map(row => ({nama:row[4],jabatan:row[6]||'-',nama_opd:row[7],member_id:row[10]||'',source:row[11]||'QR',waktu:row[9] instanceof Date ? Utilities.formatDate(row[9],'Asia/Jakarta','dd-MM-yyyy HH:mm') : String(row[9])}));
+  const attendance = (!options||options.attendance!==false) && workflow.booking
+    ? readVisitBookingAttendance_(ss, workflow.booking.id)
+    : [];
   return { visit:visit, workflow:workflow, stage:visitWorkflowStage_(workflow), attendance:attendance,
     roster:getVisitRoster_(visit).map(member=>Object.assign({},member,{attended:hasVisitAttendance_(attendance,{member_id:member.id,nama:member.nama})})),
     rooms:!options||options.rooms!==false?readMeetingRoomOptions_(ss):[], simulated:false, storageRow:found?found.row:null };
@@ -53,9 +94,7 @@ function getVisitWorkflow(payload) {
       if(data.workflow.status!=='Selesai'&&tab>data.stage||data.workflow.status==='Non-SPPD'&&tab!==0)throw new Error('Tahap belum tersedia.');
       if(tab===2)data.rooms=readCachedMeetingRoomOptions_(ss);
       if(tab===3||tab===4){
-        const sheet=ss.getSheetByName('Data_Presensi');
-        const rows=data.workflow.booking&&sheet&&sheet.getLastRow()>1?sheet.getRange(2,1,sheet.getLastRow()-1,sheet.getLastColumn()).getValues():[];
-        data.attendance=rows.filter(r=>String(r[1])===String(data.workflow.booking.id)).map(r=>({nama:r[4],jabatan:r[6]||'-',nama_opd:r[7],member_id:r[10]||'',source:r[11]||'QR',waktu:r[9] instanceof Date?Utilities.formatDate(r[9],'Asia/Jakarta','dd-MM-yyyy HH:mm'):String(r[9])}));
+        data.attendance=data.workflow.booking?readVisitBookingAttendance_(ss,data.workflow.booking.id):[];
         data.roster=getVisitRoster_(data.visit).map(member=>Object.assign({},member,{attended:hasVisitAttendance_(data.attendance,{member_id:member.id,nama:member.nama})}));
       }
       data.tab=tab;data.loadedTabs=[tab];data.limited=true;
