@@ -6,7 +6,7 @@ This harness displays the current Admin app with fictional local preview records
 
 Preview preference (1 November 2026): use **VS Code's integrated browser** for local and deployed app reviews. Open `http://127.0.0.1:4173/mobile-preview` there to inspect Admin, TLD, TDD and Presensi at different widths. This preview tests responsive layout; it does not emulate a phone camera, Safari, or a coarse touch pointer. Verify those separately on a physical phone when needed.
 
-From `C:\Users\riyan\Documents\Si Tari` run:
+From the repository root (after following `docs/LOCAL_SETUP.md`), run:
 
 ```powershell
 node local-test/server.js

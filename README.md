@@ -23,9 +23,10 @@ Admin stores `PUBLIC_FORMS_BASE_URL`, `TAMU_LUAR_URL` and `TAMU_FO_URL` in Scrip
 
 ## Build, test and deploy
 
-From the workspace root:
+From the workspace root (after bootstrapping local gitignored templates/data per [`docs/LOCAL_SETUP.md`](docs/LOCAL_SETUP.md)):
 
 ```powershell
+node local-test/setup-local.js --from-templates
 node maintenance/build-public.js 30
 node --test local-test/test/*.test.js
 ```
