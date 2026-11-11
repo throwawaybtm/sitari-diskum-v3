@@ -1891,22 +1891,26 @@
         showToast('error', 'URL Belum Diatur', 'Atur Script Property TAMU_LUAR_URL pada project Admin.');
         return;
       }
-      window.open(TAMU_LUAR_URL, '_top');
+      const opened = window.open(TAMU_LUAR_URL, '_blank', 'noopener,noreferrer');
+      if (opened && typeof opened === 'object') opened.opener = null;
     }
     function openFormTamuFoTab() {
       if (!TAMU_FO_URL) {
         showToast('error', 'URL Belum Diatur', 'Atur Script Property TAMU_FO_URL pada project Admin.');
         return;
       }
-      window.open(TAMU_FO_URL, '_top');
+      const opened = window.open(TAMU_FO_URL, '_blank', 'noopener,noreferrer');
+      if (opened && typeof opened === 'object') opened.opener = null;
     }
     function openLayarPresensiTab() {
       const url = APP_URL + '?page=presensi';
-      window.open(url, '_top');
+      const opened = window.open(url, '_blank', 'noopener,noreferrer');
+      if (opened && typeof opened === 'object') opened.opener = null;
     }
     function openLayarPresensiTabWithId(id) {
       const url = APP_URL + '?page=presensi&id=' + id;
-      window.open(url, '_top');
+      const opened = window.open(url, '_blank', 'noopener,noreferrer');
+      if (opened && typeof opened === 'object') opened.opener = null;
     }
 
     function setupQrImages() {
