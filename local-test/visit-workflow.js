@@ -11,6 +11,7 @@ function createVisitWorkflow({ visitors, meetings, sppd, rooms, employees = [], 
   const documents = new Map();
   const attendance = [];
   const notulas = new Map();
+  const visitPhotos = new Map();
   let fileSerial = 0;
   function saveFile(file, kind) {
     const info = model.validateVisitFile_(file);
@@ -107,9 +108,71 @@ function createVisitWorkflow({ visitors, meetings, sppd, rooms, employees = [], 
     visitState.version = (Number(visitState.version) || 0) + 1;
   }
 
+  function findActiveVisitAgenda(code) {
+    const key = 'VISIT-' + code;
+    return meetings.find(m => m.status !== 'Dibatalkan' && (String(m.kode_kunjungan || '') === code || String(m.kode_rapat || '') === key)) || null;
+  }
+
+  function syncSharedVisitPhotos(code, agenda) {
+    const unscheduled = visitPhotos.get(code) || [];
+    if (!agenda) return unscheduled;
+    if (unscheduled.length) {
+      agenda.photos = model.mergeUniquePhotos_(agenda.photos || [], unscheduled);
+      visitPhotos.delete(code);
+    }
+    if (!Array.isArray(agenda.photos)) agenda.photos = [];
+    return agenda.photos;
+  }
+
+  function readTddEdit(code) {
+    const visit = visitors.find(item => item.kode_kunjungan === code);
+    if (!visit || !model.isTddVisit_(visit)) throw new Error('Kunjungan tamu dalam daerah tidak ditemukan.');
+    const agenda = findActiveVisitAgenda(code);
+    const photos = syncSharedVisitPhotos(code, agenda);
+    return {
+      visit,
+      agenda,
+      photos,
+      locked: Boolean(agenda && model.isMeetingLocked_(agenda)),
+      simulated: true
+    };
+  }
+
   function handle(fn, payload) {
-    if (!['getVisitWorkflow','saveVisitWorkflow','submitPresensiRapat','submitAdminPresensiRapat','simpanJadwalRapat','updateJadwalRapat','lockAgendaRapat','cancelAgendaRapat','postponeAgendaRapat','rescheduleAgendaRapat','getVisitAttendanceRoster','submitManualVisitAttendance','saveAgendaNotula','saveAgendaPhotos','getAgendaPhotoDocument','getAgendaAttendance','getVisitArchiveDocument'].includes(fn)) return null;
+    if (!['getVisitWorkflow','saveVisitWorkflow','getTddVisitEdit','saveTddPhotos','getTddPhotoDocument','submitPresensiRapat','submitAdminPresensiRapat','simpanJadwalRapat','updateJadwalRapat','lockAgendaRapat','cancelAgendaRapat','postponeAgendaRapat','rescheduleAgendaRapat','getVisitAttendanceRoster','submitManualVisitAttendance','saveAgendaNotula','saveAgendaPhotos','getAgendaPhotoDocument','getAgendaAttendance','getVisitArchiveDocument'].includes(fn)) return null;
     try {
+      if(fn==='getTddVisitEdit'){
+        const code=String(payload&&payload.kode_kunjungan||'').trim();
+        return {success:true,data:readTddEdit(code)};
+      }
+      if(fn==='saveTddPhotos'){
+        const code=String(payload&&payload.kode_kunjungan||'').trim();
+        const visit=visitors.find(item=>item.kode_kunjungan===code);
+        if(!visit||!model.isTddVisit_(visit))throw new Error('Kunjungan tamu dalam daerah tidak ditemukan.');
+        const agenda=findActiveVisitAgenda(code);
+        if(agenda){
+          if(agenda.status==='Dibatalkan')throw new Error('Agenda yang dibatalkan tidak dapat diubah.');
+          if(agenda.status==='Ditunda')throw new Error('Agenda rapat berstatus Ditunda. Jadwalkan ulang terlebih dahulu sebelum mengunggah dokumentasi.');
+          if(model.isMeetingLocked_(agenda))throw new Error('Agenda rapat sudah dikunci. Foto bersifat hanya-baca.');
+          const current=syncSharedVisitPhotos(code,agenda);
+          model.validateMeetingPhotoBatch_(payload&&payload.files,current.length);
+          agenda.photos=current.concat(payload.files.map(file=>Object.assign(saveFile(file,'foto-kunjungan'),{label:'Foto Agenda Kunjungan'})));
+        }else{
+          const current=visitPhotos.get(code)||[];
+          model.validateMeetingPhotoBatch_(payload&&payload.files,current.length);
+          visitPhotos.set(code,current.concat(payload.files.map(file=>Object.assign(saveFile(file,'foto-kunjungan'),{label:'Foto Agenda Kunjungan'}))));
+        }
+        return {success:true,data:readTddEdit(code)};
+      }
+      if(fn==='getTddPhotoDocument'){
+        const code=String(payload&&payload.kode_kunjungan||'').trim();
+        const data=readTddEdit(code);
+        if(!Number.isInteger(payload&&payload.index))throw new Error('Foto tidak ditemukan.');
+        const photo=data.photos[payload.index],doc=photo&&documents.get(String(photo.url).split('/').pop());
+        if(!doc)throw new Error('Foto tidak ditemukan.');
+        if(!String(doc.mime||'').startsWith('image/'))throw new Error('Dokumen bukan foto.');
+        return {success:true,data:{name:photo.name,mime:doc.mime,base64:doc.buffer.toString('base64')}};
+      }
       if(fn==='getAgendaAttendance'){
         const meeting=meetings.find(row=>String(row.id)===String(payload.rapat_id));if(!meeting)throw new Error('Agenda tidak ditemukan.');
         const records=attendance.filter(row=>String(row.rapat_id)===String(meeting.id)).map(row=>({kategori:row.kategori_peserta,nama:row.nama,nip:row.nip,jabatan:row.jabatan,bidang:row.nama_opd,waktu:row.waktu}));
@@ -120,7 +183,9 @@ function createVisitWorkflow({ visitors, meetings, sppd, rooms, employees = [], 
         if(meeting.status==='Ditunda')throw new Error('Agenda rapat berstatus Ditunda. Jadwalkan ulang terlebih dahulu sebelum mengunggah dokumentasi.');
         if(model.isMeetingLocked_(meeting))throw new Error('Agenda rapat sudah dikunci. Foto bersifat hanya-baca.');
         const internal=model.isInternalMeeting_(meeting),kind=internal?'foto-rapat':'foto-kunjungan',label=internal?'Foto Rapat Internal':'Foto Agenda Kunjungan';
-        model.validateMeetingPhotoBatch_(payload.files,(meeting.photos||[]).length);meeting.photos=(meeting.photos||[]).concat(payload.files.map(file=>Object.assign(saveFile(file,kind),{label})));return {success:true,data:meeting.photos};
+        const visitCode=!internal?(meeting.kode_kunjungan||(String(meeting.kode_rapat||'').startsWith('VISIT-')?String(meeting.kode_rapat).slice(6):'')):'';
+        const current=visitCode?syncSharedVisitPhotos(visitCode,meeting):(meeting.photos||[]);
+        model.validateMeetingPhotoBatch_(payload.files,current.length);meeting.photos=current.concat(payload.files.map(file=>Object.assign(saveFile(file,kind),{label})));return {success:true,data:meeting.photos};
       }
       if(fn==='getAgendaPhotoDocument'){
         const meeting=meetings.find(m=>String(m.id)===String(payload.rapat_id));if(!meeting||meeting.status==='Dibatalkan'||!Number.isInteger(payload.index))throw new Error('Foto tidak ditemukan.');
@@ -207,6 +272,10 @@ function createVisitWorkflow({ visitors, meetings, sppd, rooms, employees = [], 
         if(meeting.status==='Dibatalkan')throw new Error('Agenda yang dibatalkan tidak dapat diubah.');
         if(model.isMeetingLocked_(meeting))throw new Error('Agenda rapat sudah dikunci dan tidak dapat dibatalkan.');
         meeting.status='Dibatalkan';
+        const code=meeting.kode_kunjungan||(String(meeting.kode_rapat||'').startsWith('VISIT-')?String(meeting.kode_rapat).slice(6):'');
+        if(code&&Array.isArray(meeting.photos)&&meeting.photos.length){
+          visitPhotos.set(code,model.mergeUniquePhotos_(visitPhotos.get(code)||[],meeting.photos));
+        }
         syncVisitWorkflowFromAgenda(meeting,'cancel');
         return {success:true,message:'Agenda rapat berhasil dibatalkan.',data:{id:meeting.id,kode_rapat:meeting.kode_rapat,status:'Dibatalkan'}};
       }
@@ -252,7 +321,8 @@ function createVisitWorkflow({ visitors, meetings, sppd, rooms, employees = [], 
         if (!meeting || !String(payload.nama || '').trim()) throw new Error('Pilih agenda dan isi nama peserta.');
         const frozen = [...states.values()].find(state => state.booking && String(state.booking.id) === String(meeting.id) && (state.arrival || state.status === 'Selesai'));
         if (frozen) throw new Error('Presensi kunjungan ini sudah divalidasi.');
-        attendance.push({ ...payload, nama: String(payload.nama).trim(), waktu: times.attendance,recorded_at:times.recorded,source });
+        const normalizedPayload = payload.kategori_peserta === 'OPD_Pemko' ? model.normalizePemkoAttendanceOpd_(payload) : payload;
+        attendance.push({ ...normalizedPayload, nama: String(normalizedPayload.nama).trim(), waktu: times.attendance,recorded_at:times.recorded,source });
         return { success: true, message: 'Presensi disimpan sementara di server lokal.' };
       }
       const code = String(payload.kode_kunjungan || '');
@@ -313,4 +383,4 @@ function createVisitWorkflow({ visitors, meetings, sppd, rooms, employees = [], 
     seedAgendaNotula(id,document){notulas.set(String(id),document);const meeting=meetings.find(m=>String(m.id)===String(id));if(meeting)meeting.notula=document;},
     seedVisit(visit,state,people=[]){states.set(visit.kode_kunjungan,state);people.forEach(person=>{attendance.push(person);if(person.source==='Admin'){const meeting=meetings.find(m=>String(m.id)===String(person.rapat_id));if(meeting)meeting.manual_attendance=true;}});} };
 }
-module.exports = { createVisitWorkflow };
+module.exports = { createVisitWorkflow, PEMKO_OPD_OPTIONS: model.getPemkoOpdOptions_() };

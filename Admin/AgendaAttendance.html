@@ -6,8 +6,8 @@
   #agendaAttendanceModal table {width:100%;table-layout:fixed;border-collapse:collapse;font-size:14px;}
   #agendaAttendanceModal th {background:#f8fafc;text-align:center;color:#64748b;}
   #agendaAttendanceModal th,#agendaAttendanceModal td {padding:10px 6px;border-bottom:1px solid #e2e8f0;vertical-align:middle;}
-  #agendaAttendanceModal td:not(:nth-child(2)) {text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums;}
-  #agendaAttendanceModal td:nth-child(2) {overflow-wrap:anywhere;}
+  #agendaAttendanceModal td:nth-child(1),#agendaAttendanceModal td:nth-child(4),#agendaAttendanceModal td:nth-child(5) {text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums;}
+  #agendaAttendanceModal td:nth-child(2),#agendaAttendanceModal td:nth-child(3) {overflow-wrap:anywhere;}
   @media (max-width:767.98px), (max-width:1023.98px) and (hover:none) and (pointer:coarse) {
     #agendaAttendanceModal {max-height:94dvh;}
     #agendaAttendanceModal .attendance-view-body {padding:10px;}
@@ -22,7 +22,7 @@
     <p id="agendaAttendanceName" class="font-semibold mb-3"></p>
     <div class="flex items-center justify-between gap-3 mb-3"><p id="agendaAttendanceCount" role="status" class="text-sm text-slate-600"></p><button id="agendaAttendanceRefresh" type="button" onclick="loadAgendaAttendance(agendaAttendanceId)" class="px-3 py-2 rounded-xl bg-teal-50 text-teal-800 text-sm font-semibold"><i class="fa-solid fa-rotate-right mr-1"></i>Refresh</button></div>
     <p id="agendaAttendanceError" role="alert" class="text-rose-700 mb-3" hidden></p>
-    <table aria-label="Daftar presensi agenda"><colgroup><col style="width:9%"><col style="width:43%"><col style="width:30%"><col style="width:18%"></colgroup><thead><tr><th scope="col">No.</th><th scope="col">Nama</th><th scope="col">Tanggal</th><th scope="col">Jam</th></tr></thead><tbody id="agendaAttendanceRows"></tbody></table>
+    <table aria-label="Daftar presensi agenda"><colgroup><col style="width:7%"><col style="width:27%"><col style="width:32%"><col style="width:21%"><col style="width:13%"></colgroup><thead><tr><th scope="col">No.</th><th scope="col">Nama</th><th scope="col">OPD / Instansi</th><th scope="col">Tanggal</th><th scope="col">Jam</th></tr></thead><tbody id="agendaAttendanceRows"></tbody></table>
     <div id="agendaAttendanceManualWrap" hidden class="mt-4 pt-4 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
       <p id="agendaAttendanceManualNote" class="text-xs text-slate-500">Catat kehadiran tamu kunjungan secara manual.</p>
       <button id="agendaAttendanceManualBtn" type="button" onclick="openManualAttendanceFromAgenda()" class="px-4 py-2.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold inline-flex items-center justify-center shrink-0"><i class="fa-solid fa-user-check mr-1.5"></i>Presensi Manual</button>
@@ -63,13 +63,13 @@
   async function loadAgendaAttendance(id) {
     const request=++agendaAttendanceRequest;
     const body=document.getElementById('agendaAttendanceRows'),count=document.getElementById('agendaAttendanceCount'),error=document.getElementById('agendaAttendanceError'),refresh=document.getElementById('agendaAttendanceRefresh');
-    body.innerHTML='<tr><td colspan="4" class="text-slate-500">Memuat presensi...</td></tr>';count.textContent='Memuat...';error.hidden=true;refresh.disabled=true;
+    body.innerHTML='<tr><td colspan="5" class="text-slate-500">Memuat presensi...</td></tr>';count.textContent='Memuat...';error.hidden=true;refresh.disabled=true;
     try {
       const data=await visitRpc('getAgendaAttendance',{rapat_id:id});if(request!==agendaAttendanceRequest)return;
       const rows=Array.isArray(data.attendance)?data.attendance:[];
       document.getElementById('agendaAttendanceName').textContent=data.agenda.judul_rapat;
       count.textContent=rows.length+' presensi tercatat';
-      body.innerHTML=rows.length?rows.map(row=>`<tr><td>${escapeHtml(row.no)}</td><td>${escapeHtml(row.nama)}</td><td>${escapeHtml(row.tanggal)}</td><td>${escapeHtml(row.jam)}</td></tr>`).join(''):'<tr><td colspan="4" class="text-slate-500">Belum ada presensi untuk agenda ini.</td></tr>';
+      body.innerHTML=rows.length?rows.map(row=>`<tr><td>${escapeHtml(row.no)}</td><td>${escapeHtml(row.nama)}</td><td>${escapeHtml(row.nama_opd||row.bidang||'-')}</td><td>${escapeHtml(row.tanggal)}</td><td>${escapeHtml(row.jam)}</td></tr>`).join(''):'<tr><td colspan="5" class="text-slate-500">Belum ada presensi untuk agenda ini.</td></tr>';
     }catch(problem){if(request!==agendaAttendanceRequest)return;count.textContent='Presensi gagal dimuat';error.textContent=problem.message||'Silakan coba lagi.';error.hidden=false;body.innerHTML='';}
     finally{if(request===agendaAttendanceRequest)refresh.disabled=false;}
   }

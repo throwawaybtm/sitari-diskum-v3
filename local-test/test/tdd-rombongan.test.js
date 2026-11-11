@@ -210,7 +210,8 @@ test('Admin dashboard, modal, search and backward compatibility handle TDD Ketua
   assert.match(bukuTamuRow, /Ketua Rombongan TDD/);
   assert.match(bukuTamuRow, /\(2 Orang\)/);
   assert.match(bukuTamuRow, /Non-SPPD/);
-  assert.match(bukuTamuRow, /<button type="button" disabled[^>]*>[^]*EDIT/);
+  assert.match(bukuTamuRow, /<button type="button"[^>]*onclick="openTddEdit\(this\.dataset\.kode\)"[^>]*>[^]*EDIT/);
+  assert.doesNotMatch(bukuTamuRow, /<button type="button" disabled/);
 });
 
 test('solo visitor (Total Orang = 1), group member counts, and TLD validation parity match', () => {

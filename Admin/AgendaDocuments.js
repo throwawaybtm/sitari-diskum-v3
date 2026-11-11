@@ -33,12 +33,73 @@ function saveAgendaNotula(payload) {
 function isInternalMeeting_(agenda) {
   return !agenda.kode_kunjungan&&!String(agenda.kode_rapat||'').startsWith('VISIT-');
 }
+function photoIdentityKey_(photo) {
+  if(!photo||typeof photo!=='object')return '';
+  const url=String(photo.url||'').trim();
+  if(!url)return '';
+  if(typeof visitDriveFileId_==='function'){const id=visitDriveFileId_(url);if(id)return 'drive:'+id;}
+  return 'url:'+url;
+}
+function mergeUniquePhotos_(primary,secondary) {
+  const out=Array.isArray(primary)?primary.slice():[];
+  const seen=new Set(out.map(photoIdentityKey_).filter(Boolean));
+  (Array.isArray(secondary)?secondary:[]).forEach(photo=>{
+    if(!photo||typeof photo!=='object')return;
+    const key=photoIdentityKey_(photo);
+    if(key&&seen.has(key))return;
+    if(key)seen.add(key);
+    out.push(photo);
+  });
+  return out;
+}
+function visitPhotoStorageKey_(code) {
+  return 'VISIT-'+String(code||'').trim();
+}
 function getAgendaPhotosMap_(ss) {
   const sheet=(ss||getSpreadsheet()).getSheetByName('Foto_Agenda'),result={};
-  if(sheet&&sheet.getLastRow()>1)sheet.getRange(2,1,sheet.getLastRow()-1,3).getValues().forEach(row=>{result[String(row[0])]=JSON.parse(row[1]||'[]');});
+  if(sheet&&sheet.getLastRow()>1)sheet.getRange(2,1,sheet.getLastRow()-1,3).getValues().forEach(row=>{
+    const key=String(row[0]==null?'':row[0]).trim();
+    if(!key)return;
+    const parsed=JSON.parse(row[1]||'[]');
+    result[key]=result[key]?mergeUniquePhotos_(result[key],parsed):parsed;
+  });
   return result;
 }
 function getAgendaPhotos_(id,ss) {return getAgendaPhotosMap_(ss)[String(id)]||[];}
+function writeAgendaPhotosRow_(ss,key,photos) {
+  let sheet=ss.getSheetByName('Foto_Agenda');
+  if(!sheet){sheet=ss.insertSheet('Foto_Agenda');sheet.appendRow(['Agenda ID','Foto JSON','Diperbarui']);}
+  const rows=sheet.getLastRow()>1?sheet.getRange(2,1,sheet.getLastRow()-1,3).getValues():[];
+  const index=rows.findIndex(row=>String(row[0])===String(key)),values=[key,JSON.stringify(photos),new Date().toISOString()];
+  if(index>=0)sheet.getRange(index+2,1,1,3).setValues([values]);else sheet.appendRow(values);
+}
+function transferVisitAgendaPhotos_(ss,fromKey,toKey) {
+  const sheet=ss.getSheetByName('Foto_Agenda');
+  if(!sheet||sheet.getLastRow()<2)return [];
+  const rows=sheet.getRange(2,1,sheet.getLastRow()-1,3).getValues();
+  const fromIndexes=[],toIndexes=[];
+  rows.forEach((row,idx)=>{
+    const k=String(row[0]==null?'':row[0]).trim();
+    if(k===String(fromKey))fromIndexes.push(idx);
+    if(k===String(toKey))toIndexes.push(idx);
+  });
+  let toPhotos=[],fromPhotos=[];
+  toIndexes.forEach(idx=>{toPhotos=mergeUniquePhotos_(toPhotos,JSON.parse(rows[idx][1]||'[]'));});
+  fromIndexes.forEach(idx=>{fromPhotos=mergeUniquePhotos_(fromPhotos,JSON.parse(rows[idx][1]||'[]'));});
+  const merged=mergeUniquePhotos_(toPhotos,fromPhotos);
+  if(!fromIndexes.length&&toIndexes.length<=1)return merged;
+  const now=new Date().toISOString(),keepIdx=toIndexes.length?toIndexes[0]:fromIndexes[0];
+  sheet.getRange(keepIdx+2,1,1,3).setValues([[toKey,JSON.stringify(merged),now]]);
+  toIndexes.concat(fromIndexes).forEach(idx=>{if(idx!==keepIdx)sheet.getRange(idx+2,1,1,3).setValues([['','[]',now]]);});
+  return merged;
+}
+function consolidateVisitAgendaPhotos_(ss,visitKey,agendaId) {
+  return transferVisitAgendaPhotos_(ss,visitKey,agendaId);
+}
+function detachVisitAgendaPhotos_(ss,kodeRapat,agendaId) {
+  if(String(kodeRapat||'').indexOf('VISIT-')!==0)return;
+  transferVisitAgendaPhotos_(ss,agendaId,String(kodeRapat));
+}
 function getAgendaScheduleHistoryMap_(ss) {
   const sheet=(ss||getSpreadsheet()).getSheetByName('Riwayat_Agenda'),result={};
   if(sheet&&sheet.getLastRow()>1)sheet.getRange(2,1,sheet.getLastRow()-1,3).getValues().forEach(row=>{result[String(row[0])]=JSON.parse(row[1]||'[]');});
@@ -72,28 +133,71 @@ function saveAgendaPhotos(payload) {
     if(agenda.status==='Ditunda')throw new Error('Agenda rapat berstatus Ditunda. Jadwalkan ulang terlebih dahulu sebelum mengunggah dokumentasi.');
     if(isMeetingLocked_(agenda))throw new Error('Agenda rapat sudah dikunci. Foto bersifat hanya-baca.');
     const internal=isInternalMeeting_(agenda),kind=internal?'foto-rapat':'foto-kunjungan',label=internal?'Foto Rapat Internal':'Foto Agenda Kunjungan';
-    const ss=getSpreadsheet(),current=getAgendaPhotos_(agenda.id,ss);
+    const ss=getSpreadsheet();
+    const visitKey=!internal&&String(agenda.kode_rapat||'').indexOf('VISIT-')===0?String(agenda.kode_rapat):'';
+    const current=visitKey?consolidateVisitAgendaPhotos_(ss,visitKey,agenda.id):getAgendaPhotos_(agenda.id,ss);
     validateMeetingPhotoBatch_(payload.files,current.length);
     const photos=current.concat(payload.files.map(file=>Object.assign(saveVisitWorkflowFile_(file,agenda.kode_rapat,kind),{label:label})));
-    let sheet=ss.getSheetByName('Foto_Agenda');
-    if(!sheet){sheet=ss.insertSheet('Foto_Agenda');sheet.appendRow(['Agenda ID','Foto JSON','Diperbarui']);}
-    const rows=sheet.getLastRow()>1?sheet.getRange(2,1,sheet.getLastRow()-1,3).getValues():[];
-    const index=rows.findIndex(row=>String(row[0])===String(agenda.id)),values=[agenda.id,JSON.stringify(photos),new Date().toISOString()];
-    if(index>=0)sheet.getRange(index+2,1,1,3).setValues([values]);else sheet.appendRow(values);
+    writeAgendaPhotosRow_(ss,agenda.id,photos);
     return {success:true,data:photos};
   }catch(error){return {success:false,error:error.message};}finally{lock.releaseLock();}
+}
+function readAgendaPhotoDocument_(photos,index) {
+  if(!Number.isInteger(index)||index<0||index>=photos.length)throw new Error('Foto tidak ditemukan.');
+  const photo=photos[index],id=visitDriveFileId_(photo.url);
+  if(!id)throw new Error('Tautan foto tidak valid.');
+  const file=DriveApp.getFileById(id),blob=file.getBlob(),mime=blob.getContentType();
+  if(!mime.startsWith('image/'))throw new Error('Dokumen bukan foto.');
+  return {name:photo.name||file.getName(),mime:mime,base64:Utilities.base64Encode(blob.getBytes())};
 }
 function getAgendaPhotoDocument(payload) {
   try {
     requireVisitAdmin_();
     const agenda=getRapatCalendar().data.find(row=>String(row.id)===String(payload.rapat_id));
     if(!agenda)throw new Error('Agenda rapat tidak ditemukan.');
-    const photos=getAgendaPhotos_(agenda.id);
-    if(!Number.isInteger(payload.index)||payload.index<0||payload.index>=photos.length)throw new Error('Foto tidak ditemukan.');
-    const photo=photos[payload.index],id=visitDriveFileId_(photo.url);
-    if(!id)throw new Error('Tautan foto tidak valid.');
-    const file=DriveApp.getFileById(id),blob=file.getBlob(),mime=blob.getContentType();
-    if(!mime.startsWith('image/'))throw new Error('Dokumen bukan foto.');
-    return {success:true,data:{name:photo.name||file.getName(),mime: mime,base64:Utilities.base64Encode(blob.getBytes())}};
+    const photosMap=getAgendaPhotosMap_(getSpreadsheet());
+    const rowPhotos=photosMap[String(agenda.id)]||[];
+    const visitKey=!isInternalMeeting_(agenda)&&String(agenda.kode_rapat||'').indexOf('VISIT-')===0?String(agenda.kode_rapat):'';
+    const photos=visitKey&&photosMap[visitKey]?mergeUniquePhotos_(rowPhotos,photosMap[visitKey]):rowPhotos;
+    return {success:true,data:readAgendaPhotoDocument_(photos,payload.index)};
+  }catch(error){return {success:false,error:error.message};}
+}
+function findActiveVisitAgenda_(code) {
+  const key=visitPhotoStorageKey_(code);
+  return getRapatCalendar().data.find(row=>row.status!=='Dibatalkan'&&(String(row.kode_rapat||'')===key||String(row.kode_kunjungan||'')===String(code)))||null;
+}
+function saveTddPhotos(payload) {
+  let lock;
+  try {
+    requireVisitAdmin_();
+    lock=LockService.getScriptLock();lock.waitLock(30000);
+    const code=String(payload&&payload.kode_kunjungan||'').trim();
+    const ss=getSpreadsheet(),visit=code?getVisitByCode_(ss,code):null;
+    if(!visit||!isTddVisit_(visit))throw new Error('Kunjungan tamu dalam daerah tidak ditemukan.');
+    const agenda=findActiveVisitAgenda_(code),visitKey=visitPhotoStorageKey_(code);
+    if(agenda){
+      if(agenda.status==='Dibatalkan')throw new Error('Agenda yang dibatalkan tidak dapat diubah.');
+      if(agenda.status==='Ditunda')throw new Error('Agenda rapat berstatus Ditunda. Jadwalkan ulang terlebih dahulu sebelum mengunggah dokumentasi.');
+      if(isMeetingLocked_(agenda))throw new Error('Agenda rapat sudah dikunci. Foto bersifat hanya-baca.');
+    }
+    const storageKey=agenda?agenda.id:visitKey;
+    const current=agenda?consolidateVisitAgendaPhotos_(ss,visitKey,agenda.id):getAgendaPhotos_(visitKey,ss);
+    validateMeetingPhotoBatch_(payload&&payload.files,current.length);
+    const saveCode=agenda&&agenda.kode_rapat?agenda.kode_rapat:visitKey;
+    const photos=current.concat(payload.files.map(file=>Object.assign(saveVisitWorkflowFile_(file,saveCode,'foto-kunjungan'),{label:'Foto Agenda Kunjungan'})));
+    writeAgendaPhotosRow_(ss,storageKey,photos);
+    if(agenda)agenda.photos=photos;
+    return {success:true,data:{visit:visit,agenda:agenda,photos:photos,locked:Boolean(agenda&&isMeetingLocked_(agenda)),simulated:false}};
+  }catch(error){return {success:false,error:error.message};}finally{if(lock)lock.releaseLock();}
+}
+function getTddPhotoDocument(payload) {
+  try {
+    requireVisitAdmin_();
+    const code=String(payload&&payload.kode_kunjungan||'').trim();
+    const ss=getSpreadsheet(),visit=code?getVisitByCode_(ss,code):null;
+    if(!visit||!isTddVisit_(visit))throw new Error('Kunjungan tamu dalam daerah tidak ditemukan.');
+    const agenda=findActiveVisitAgenda_(code),photosMap=getAgendaPhotosMap_(ss),visitKey=visitPhotoStorageKey_(code);
+    const photos=agenda?mergeUniquePhotos_(photosMap[String(agenda.id)]||[],photosMap[visitKey]||[]):(photosMap[visitKey]||[]);
+    return {success:true,data:readAgendaPhotoDocument_(photos,payload&&payload.index)};
   }catch(error){return {success:false,error:error.message};}
 }

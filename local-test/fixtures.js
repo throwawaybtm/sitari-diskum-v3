@@ -4,7 +4,7 @@ const fs=require('node:fs'),path=require('node:path');
 const { prepareVisit, getPublicDestinations } = require('./tld-directory');
 const { prepareVisit: prepareTddVisit } = require('./tdd-directory');
 const { normalize: normalizeMeetingRooms } = require('./meeting-rooms');
-const { createVisitWorkflow } = require('./visit-workflow');
+const { createVisitWorkflow, PEMKO_OPD_OPTIONS } = require('./visit-workflow');
 const { jsPDF } = require('./vendor/jspdf.umd.min.js');
 
 function jakartaDate(date) {
@@ -230,10 +230,7 @@ function createFixtureStore(now = new Date(), options = {}) {
       { id: 8002, nip: '-', nama: 'Bayu Saputro, S.E.', jabatan: 'Analis Usaha Mikro', bidang: 'Usaha Mikro' },
       { id: 8003, nip: '-', nama: 'Vina Oktaviani', jabatan: 'Pengelola Administrasi', bidang: 'Sekretariat' }
     ],
-    opd: [
-      { id: 4001, nama_opd: 'Dinas Perdagangan Kota Batam', kategori: 'Pemko Batam' },
-      { id: 4002, nama_opd: 'Badan Perencanaan Pembangunan Daerah Kota Batam', kategori: 'Pemko Batam' }
-    ],
+    opd: PEMKO_OPD_OPTIONS.map((nama_opd, idx) => ({ id: 4001 + idx, nama_opd, kategori: 'Pemko Batam' })),
     ruangan: [
       { id: 6001, nama_ruangan: 'Ruang Rapat Utama Diskum', kapasitas: 50, fasilitas: 'Proyektor', lokasi: 'Lantai 1', warna: 'blue' },
       { id: 6002, nama_ruangan: 'Ruangan Bidang Koperasi & UMKM', kapasitas: 5, fasilitas: 'TV', lokasi: 'Lantai 1', warna: 'emerald' },

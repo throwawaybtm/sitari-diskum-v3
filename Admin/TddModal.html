@@ -1,0 +1,385 @@
+<style>
+  #tddEditModal { position:fixed; inset:0; z-index:120; padding:24px; background:rgba(15,23,42,.65); backdrop-filter:blur(6px); align-items:center; justify-content:center; }
+  #tddEditModal:not([hidden]) { display:flex; }
+  #tddEditModal[hidden] { display:none; }
+  #tddEditModal .tdd-dialog { background:#fff; color:#334155; border-radius:24px; width:100%; max-width:860px; max-height:90vh; display:flex; flex-direction:column; box-shadow:0 24px 80px #0f172a40; overflow:hidden; }
+  #tddEditModal .tdd-modal-head { padding:24px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; gap:16px; }
+  #tddEditModal h3 { font-size:20px; font-weight:800; color:#143238; }
+  #tddEditModal .tdd-eyebrow { color:#0d9488; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.1em; margin-bottom:4px; }
+  #tddEditModal .tdd-close { width:36px; height:36px; border-radius:10px; background:#f1f5f9; flex-shrink:0; }
+  #tddEditModal .tdd-content { padding:24px; overflow-y:auto; font-size:12px; display:grid; gap:18px; }
+  #tddEditModal [hidden] { display:none!important; }
+  #tddEditModal .tdd-section { border:1px solid #e2e8f0; border-radius:16px; padding:16px; background:#fff; display:grid; gap:12px; }
+  #tddEditModal .tdd-section-title { font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:#143238; display:flex; align-items:center; gap:8px; }
+  #tddEditModal .tdd-note { padding:12px 14px; background:#ecfdf5; color:#11504a; border-radius:12px; line-height:1.6; }
+  #tddEditModal .tdd-lock-banner { padding:12px 14px; background:#fffbeb; border:1px solid #fde68a; color:#92400e; border-radius:12px; font-weight:600; display:flex; align-items:center; gap:8px; line-height:1.5; }
+  #tddEditModal .tdd-detail-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+  #tddEditModal .tdd-detail-grid dt { display:block; font-size:10px; font-weight:800; text-transform:uppercase; color:#64748b; margin-bottom:5px; }
+  #tddEditModal dd { white-space:pre-line; overflow-wrap:anywhere; line-height:1.6; }
+  #tddEditModal .tdd-error { color:#be123c; background:#fff1f2; padding:12px 24px; font-size:12px; }
+  #tddEditModal .tdd-photo-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+  #tddEditModal .tdd-photo-card { border:1px solid #e2e8f0; border-radius:14px; padding:10px; background:#f8fafc; min-width:0; display:flex; flex-direction:column; gap:8px; }
+  #tddEditModal .tdd-photo-frame { aspect-ratio:1 / 1; width:100%; border-radius:10px; background:#fff; overflow:hidden; display:flex; align-items:center; justify-content:center; border:1px solid #e2e8f0; }
+  #tddEditModal .tdd-photo-frame img { width:100%; height:100%; object-fit:contain; }
+  #tddEditModal .tdd-photo-fallback { text-align:center; padding:12px; color:#94a3b8; font-size:11px; }
+  .tdd-camera { display:none; }
+  @media (max-width:767.98px), (max-width:1023.98px) and (hover:none) and (pointer:coarse) {
+    #tddEditModal button, #tddEditModal a { min-height:44px; }
+    .tdd-camera { display:inline-flex; }
+  }
+  @media (max-width:767.98px) {
+    #tddEditModal { padding:12px; }
+    #tddEditModal .tdd-dialog { max-height:92dvh; border-radius:20px; }
+    #tddEditModal .tdd-modal-head, #tddEditModal .tdd-content { padding:16px; }
+    #tddEditModal .tdd-detail-grid, #tddEditModal .tdd-photo-grid { grid-template-columns:minmax(0,1fr); }
+  }
+</style>
+<div id="tddEditModal" hidden>
+  <div class="tdd-dialog" role="dialog" aria-modal="true" aria-labelledby="tddModalTitle">
+    <div class="tdd-modal-head">
+      <div>
+        <div class="tdd-eyebrow"><i class="fa-solid fa-user mr-1" aria-hidden="true"></i> Pengelolaan Kunjungan</div>
+        <h3 id="tddModalTitle">Kunjungan Tamu Dalam Daerah</h3>
+        <p id="tddModalSubtitle" class="text-xs text-slate-500 mt-1"></p>
+      </div>
+      <button type="button" class="tdd-close" onclick="closeTddEdit()" aria-label="Tutup modal"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div id="tddModalError" class="tdd-error" role="alert" hidden></div>
+    <div id="tddModalContent" class="tdd-content"></div>
+  </div>
+</div>
+<script>
+  let tddModalData = null;
+  let tddModalLoading = false;
+  let tddModalRequest = 0;
+  let tddModalFocus = null;
+  let tddModalBodyOverflow = '';
+  let tddPhotosBusy = false;
+
+  function tddPreviewElement(tag, attributes) {
+    // Build embedded media through the DOM: GAS rewrites literal media tags in inline scripts.
+    const element = document.createElement(tag);
+    Object.keys(attributes).forEach(name => element.setAttribute(name, attributes[name]));
+    return element.outerHTML;
+  }
+
+  function renderTddDetailGrid(visit) {
+    const date = String(visit.tanggal_kunjungan || '').replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$3-$2-$1');
+    const details = [
+      ['Nama Instansi Asal', visit.instansi],
+      ['Alamat Instansi', visit.alamat],
+      ['Ketua Rombongan', visit.ketua_nama],
+      ['Jumlah Orang', visit.jumlah_orang],
+      ['Bidang Tujuan', visit.tujuan_bidang || 'Belum ditugaskan'],
+      ['Penerima Tamu', visit.lo_nama || 'Belum ditugaskan'],
+      ['Agenda', visit.keperluan],
+      ['WhatsApp Narahubung', visit.narahubung_hp],
+      ['Waktu Kunjungan', (date + ' ' + (visit.jam_kunjungan || '')).trim()],
+      ['Daftar Anggota Rombongan', visit.pengikut_list]
+    ];
+    return '<dl class="tdd-detail-grid">' + details.map(([label, value]) =>
+      '<div><dt>' + label + '</dt><dd>' + escapeHtml(String(value ?? '').trim() ? value : '-') + '</dd></div>'
+    ).join('') + '</dl>';
+  }
+
+  function renderTddSnapshot(visit, checking) {
+    const message = checking
+      ? '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Memeriksa data terbaru...'
+      : 'Data terbaru belum dapat diperiksa. Informasi di bawah berasal dari Buku Tamu.';
+    if (!visit) {
+      return checking
+        ? '<p role="status" class="text-center text-sm text-slate-500 py-10"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Memuat data kunjungan...</p>'
+        : '';
+    }
+    return '<div class="tdd-note" role="status">' + message + '</div>' +
+      '<div class="tdd-section"><h4 class="tdd-section-title"><i class="fa-solid fa-address-card text-teal-700"></i>Data Kunjungan TDD</h4>' +
+      renderTddDetailGrid(visit) + '</div>';
+  }
+
+  function tddPhotoThumbnailUrl(url) {
+    const text = String(url || '');
+    const id = text.match(/\/d\/([-\w]+)|[?&]id=([-\w]+)/);
+    return id ? 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(id[1] || id[2]) + '&sz=w400' : text;
+  }
+
+  function tddIsValidPhotoUrl(url) {
+    return /^(https:\/\/|\/local-doc\/)/i.test(String(url || ''));
+  }
+
+  function tddSyncAgendaCache(agenda, photos) {
+    if (!agenda || typeof allRapatData === 'undefined' || !Array.isArray(allRapatData)) return;
+    const idx = allRapatData.findIndex(item => String(item.id) === String(agenda.id));
+    if (idx < 0) return;
+    const merged = Object.assign({}, agenda, Array.isArray(photos) ? { photos } : {});
+    allRapatData[idx] = Object.assign({}, allRapatData[idx], merged);
+    if (typeof renderMeetingsList === 'function') renderMeetingsList(allRapatData);
+  }
+
+  function tddAgendaStatusBadge(agenda) {
+    if (!agenda) return '';
+    const locked = typeof isMeetingLocked === 'function'
+      ? isMeetingLocked(agenda)
+      : Boolean(agenda.locked === true || String(agenda.status || '').trim().toLowerCase() === 'terkunci');
+    const raw = String(agenda.status || 'Terjadwal').trim();
+    if (locked) return '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-200 text-slate-800"><i class="fa-solid fa-lock" aria-hidden="true"></i>Terkunci</span>';
+    if (raw === 'Ditunda') return '<span class="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-900">Ditunda</span>';
+    if (raw === 'Selesai' || agenda.notula) return '<span class="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800">Selesai</span>';
+    return '<span class="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-100 text-blue-800">' + escapeHtml(raw || 'Terjadwal') + '</span>';
+  }
+
+  function renderTddAgendaSection(data) {
+    const agenda = data && data.agenda;
+    if (!agenda) return '';
+    const dateLabel = String(agenda.tanggal || '').replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$3-$2-$1');
+    const timeLabel = agenda.jam_mulai && agenda.jam_selesai ? agenda.jam_mulai + ' - ' + agenda.jam_selesai + ' WIB' : '-';
+    const locked = Boolean(data.locked);
+    const postponed = String(agenda.status || '').trim() === 'Ditunda';
+    const note = locked
+      ? 'Agenda terkunci. Jadwal dan dokumentasi foto bersifat hanya-baca.'
+      : postponed
+        ? 'Agenda rapat berstatus Ditunda. Jadwalkan ulang melalui menu Jadwal Rapat → Edit Rapat.'
+        : 'Agenda kunjungan ini terhubung ke Jadwal Rapat. Perubahan jadwal, penundaan, pembatalan, E-notula, dan penguncian dikelola dari menu Jadwal Rapat.';
+    return '<div id="tddAgendaSection" class="tdd-section">' +
+      '<div class="flex flex-wrap items-center justify-between gap-2">' +
+      '<h4 class="tdd-section-title"><i class="fa-solid fa-calendar-check text-teal-700"></i>Agenda Rapat Terkait</h4>' +
+      tddAgendaStatusBadge(agenda) +
+      '</div>' +
+      '<div class="tdd-note">' + escapeHtml(note) + '</div>' +
+      '<dl class="tdd-detail-grid">' +
+      '<div><dt>Kode Agenda</dt><dd>' + escapeHtml(agenda.kode_rapat || '-') + '</dd></div>' +
+      '<div><dt>Judul Agenda</dt><dd>' + escapeHtml(agenda.judul_rapat || '-') + '</dd></div>' +
+      '<div><dt>Ruangan</dt><dd>' + escapeHtml(agenda.nama_ruangan || '-') + '</dd></div>' +
+      '<div><dt>Tanggal &amp; Jam</dt><dd>' + escapeHtml((dateLabel || '-') + ' · ' + timeLabel) + '</dd></div>' +
+      '</dl></div>';
+  }
+
+  function renderTddPhotoCards(photos) {
+    if (!Array.isArray(photos) || !photos.length) {
+      return '<p class="text-xs text-slate-500">Belum ada foto.</p>';
+    }
+    return photos.map((photo, index) => {
+      const validUrl = tddIsValidPhotoUrl(photo && photo.url);
+      const thumb = validUrl ? tddPhotoThumbnailUrl(photo.url) : '';
+      const previewHtml = validUrl
+        ? tddPreviewElement('img', {
+            src: thumb,
+            alt: photo.name || 'Foto kunjungan',
+            loading: 'lazy',
+            onerror: "this.hidden=true;if(this.nextElementSibling)this.nextElementSibling.hidden=false;"
+          }) + '<span class="tdd-photo-fallback" hidden>Pratinjau tidak tersedia. Klik Lihat atau Unduh.</span>'
+        : '<span class="tdd-photo-fallback">Tautan foto tidak valid.</span>';
+      const viewBtn = validUrl
+        ? '<a href="' + escapeHtml(photo.url) + '" target="_blank" rel="noopener" class="p-2 rounded-lg bg-teal-50 text-teal-800 text-center text-xs font-semibold">Lihat</a>'
+        : '<span class="p-2 rounded-lg bg-slate-100 text-slate-400 text-center text-xs font-semibold">Lihat</span>';
+      const downloadBtn = '<button type="button" data-index="' + index + '" onclick="downloadTddPhoto(Number(this.dataset.index),this)" class="p-2 rounded-lg bg-sky-50 text-sky-800 text-xs font-semibold">Unduh</button>';
+      return '<div class="tdd-photo-card"><div class="tdd-photo-frame">' + previewHtml + '</div>' +
+        '<p class="text-xs break-all text-slate-700 font-medium">' + escapeHtml(photo && photo.name || 'Foto Kunjungan') + '</p>' +
+        '<div class="grid grid-cols-2 gap-2 mt-auto">' + viewBtn + downloadBtn + '</div></div>';
+    }).join('');
+  }
+
+  function renderTddPhotoSection(data) {
+    const photos = Array.isArray(data.photos) ? data.photos : [];
+    const locked = Boolean(data.locked);
+    const postponed = Boolean(data.agenda && String(data.agenda.status || '').trim() === 'Ditunda');
+    const uploadBlocked = locked || postponed;
+    const maxReached = photos.length >= 10;
+    const controlsDisabled = uploadBlocked || tddPhotosBusy || maxReached;
+    const syncHint = data.agenda
+      ? 'Foto tersinkronisasi dengan menu Jadwal Rapat → Edit Rapat.'
+      : 'Foto tersimpan pada kunjungan TDD ini dan dapat dilihat atau diunduh kembali.';
+    const uploadNote = maxReached
+      ? 'Maksimal 10 foto telah tercapai.'
+      : 'Pilih 1–5 foto per unggahan (maksimal 5 MB/foto, 10 MB/unggahan, 10 foto/kunjungan). ' + syncHint;
+    const blockedNote = locked
+      ? '<p class="text-xs text-amber-800 font-semibold">Agenda terkunci. Pengunggahan foto dinonaktifkan; foto tetap dapat dilihat dan diunduh.</p>'
+      : postponed
+        ? '<p class="text-xs text-amber-800 font-semibold">Agenda rapat berstatus Ditunda. Jadwalkan ulang di Jadwal Rapat sebelum mengunggah foto.</p>'
+        : '';
+
+    return '<div id="tddPhotoSection" class="tdd-section">' +
+      '<div class="flex flex-wrap items-center justify-between gap-2">' +
+      '<h4 class="tdd-section-title"><i class="fa-solid fa-camera text-teal-700"></i>Dokumentasi Foto Kunjungan</h4>' +
+      '<span class="text-[11px] font-semibold text-slate-500">' + photos.length + '/10 foto</span>' +
+      '</div>' +
+      '<div id="tddPhotoList" class="tdd-photo-grid">' + renderTddPhotoCards(photos) + '</div>' +
+      blockedNote +
+      '<div id="tddPhotoUpload" ' + (uploadBlocked ? 'hidden' : '') + ' class="pt-2 border-t border-slate-100 space-y-2">' +
+      '<p id="tddPhotoHint" class="text-[11px] leading-snug text-slate-600">' + escapeHtml(uploadNote) + '</p>' +
+      '<input id="tddPhotoFiles" type="file" multiple hidden accept="image/jpeg,image/png,image/webp,image/heic,image/heif" onchange="saveTddPhotos(this)" ' + (controlsDisabled ? 'disabled' : '') + '>' +
+      '<input id="tddPhotoCamera" type="file" hidden accept="image/*" capture="environment" onchange="saveTddPhotos(this)" ' + (controlsDisabled ? 'disabled' : '') + '>' +
+      '<div class="flex flex-wrap gap-2">' +
+      '<button type="button" id="tddPhotoUploadBtn" onclick="document.getElementById(\'tddPhotoFiles\').click()" class="px-3.5 py-2 rounded-lg bg-gradient-to-r from-[#11504a] to-[#143238] text-white text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed" ' + (controlsDisabled ? 'disabled' : '') + '><i class="fa-solid fa-upload mr-1.5"></i>Unggah Foto</button>' +
+      '<button type="button" id="tddPhotoCameraBtn" onclick="document.getElementById(\'tddPhotoCamera\').click()" class="tdd-camera items-center px-3.5 py-2 rounded-lg bg-teal-50 text-teal-800 text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed" ' + (controlsDisabled ? 'disabled' : '') + '><i class="fa-solid fa-camera mr-1.5"></i>Ambil Gambar</button>' +
+      '</div>' +
+      '<p id="tddPhotoProgress" role="status" class="text-[11px] text-teal-800">' + (tddPhotosBusy ? 'Menyimpan foto…' : '') + '</p>' +
+      '</div></div>';
+  }
+
+  function renderTddModal() {
+    const data = tddModalData;
+    if (!data || !data.visit) return;
+    const visit = data.visit;
+    const agenda = data.agenda;
+    const locked = Boolean(data.locked);
+    const statusSuffix = agenda ? (locked ? ' · Terkunci' : ' · ' + (agenda.status || 'Terjadwal')) : '';
+    document.getElementById('tddModalSubtitle').textContent = (visit.kode_kunjungan || '') + ' · Non-SPPD' + statusSuffix;
+    document.getElementById('tddModalError').hidden = true;
+    const lockBanner = locked
+      ? '<div id="tddModalLockBanner" class="tdd-lock-banner"><i class="fa-solid fa-lock" aria-hidden="true"></i><span>Agenda kunjungan ini sudah dikunci. Jadwal dan dokumentasi foto bersifat hanya-baca; foto tetap dapat dilihat atau diunduh.</span></div>'
+      : '';
+    const detailSection = '<div class="tdd-section"><h4 class="tdd-section-title"><i class="fa-solid fa-address-card text-teal-700"></i>Data Kunjungan TDD</h4>' +
+      renderTddDetailGrid(visit) + '</div>';
+    document.getElementById('tddModalContent').innerHTML = lockBanner + detailSection + renderTddAgendaSection(data) + renderTddPhotoSection(data);
+  }
+
+  async function openTddEdit(code) {
+    if (tddPhotosBusy) return;
+    const request = ++tddModalRequest;
+    tddModalLoading = true;
+    tddModalData = null;
+    const modal = document.getElementById('tddEditModal');
+    if (modal.hidden) {
+      tddModalFocus = document.activeElement;
+      tddModalBodyOverflow = document.body.style.overflow;
+    }
+    document.body.style.overflow = 'hidden';
+    modal.hidden = false;
+    const snapshot = typeof allTamuData !== 'undefined' && Array.isArray(allTamuData)
+      ? allTamuData.find(v => String(v.kode_kunjungan) === String(code))
+      : null;
+    document.getElementById('tddModalTitle').textContent = 'Kunjungan Tamu Dalam Daerah';
+    document.getElementById('tddModalSubtitle').textContent = (code || '') + ' · Non-SPPD';
+    document.getElementById('tddModalError').hidden = true;
+    document.getElementById('tddModalContent').innerHTML = renderTddSnapshot(snapshot, true);
+    document.querySelector('#tddEditModal .tdd-close').focus();
+    try {
+      const data = await visitRpc('getTddVisitEdit', { kode_kunjungan: code });
+      if (request !== tddModalRequest) return;
+      tddModalData = data;
+      renderTddModal();
+    } catch (error) {
+      if (request !== tddModalRequest) return;
+      document.getElementById('tddModalContent').innerHTML = renderTddSnapshot(snapshot, false);
+      const box = document.getElementById('tddModalError');
+      box.textContent = error.message || 'Gagal memuat data kunjungan TDD.';
+      box.hidden = false;
+    } finally {
+      if (request === tddModalRequest) {
+        tddModalLoading = false;
+      }
+    }
+  }
+
+  function closeTddEdit() {
+    if (tddPhotosBusy) return;
+    ++tddModalRequest;
+    tddModalLoading = false;
+    document.getElementById('tddEditModal').hidden = true;
+    document.body.style.overflow = tddModalBodyOverflow;
+    if (tddModalFocus && tddModalFocus.isConnected) tddModalFocus.focus();
+    tddModalData = null;
+  }
+
+  async function saveTddPhotos(input) {
+    if (tddPhotosBusy || tddModalLoading || !tddModalData) return;
+    const files = Array.from(input && input.files || []);
+    if (!files.length) return;
+    if (tddModalData.locked) {
+      input.value = '';
+      showToast('error', 'Agenda terkunci', 'Agenda sudah dikunci. Foto bersifat hanya-baca.');
+      return;
+    }
+    if (tddModalData.agenda && String(tddModalData.agenda.status || '').trim() === 'Ditunda') {
+      input.value = '';
+      showToast('error', 'Agenda ditunda', 'Agenda rapat berstatus Ditunda. Jadwalkan ulang terlebih dahulu.');
+      return;
+    }
+    const currentCount = Array.isArray(tddModalData.photos) ? tddModalData.photos.length : 0;
+    const getMime = file => typeof visitFileMime === 'function' ? visitFileMime(file) : String(file.type || '').toLowerCase();
+    if (
+      files.length > 5 ||
+      files.length + currentCount > 10 ||
+      files.some(file => file.size > 5 * 1024 * 1024) ||
+      files.reduce((sum, file) => sum + file.size, 0) > 10 * 1024 * 1024 ||
+      files.some(file => !String(getMime(file) || '').startsWith('image/'))
+    ) {
+      input.value = '';
+      showToast('error', 'Foto tidak valid', 'Pilih 1–5 foto, maksimal 5 MB/foto, 10 MB/unggahan dan 10 foto/kunjungan.');
+      return;
+    }
+    tddPhotosBusy = true;
+    renderTddModal();
+    try {
+      const encoded = [];
+      for (const file of files) {
+        const dataUrl = typeof encodeVisitUploadFile === 'function'
+          ? await encodeVisitUploadFile(file, 'Foto gagal dibaca.')
+          : await new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(String(reader.result));
+              reader.onerror = () => reject(new Error('Foto gagal dibaca.'));
+              reader.readAsDataURL(file);
+            });
+        encoded.push({ name: file.name, data: dataUrl });
+      }
+      const updated = await visitRpc('saveTddPhotos', {
+        kode_kunjungan: tddModalData.visit.kode_kunjungan,
+        files: encoded
+      });
+      tddModalData = updated;
+      tddSyncAgendaCache(updated.agenda, updated.photos);
+      showToast('success', 'Foto tersimpan', updated.agenda ? 'Foto tersimpan dan tersinkronisasi dengan Jadwal Rapat.' : 'Foto tersimpan pada kunjungan TDD.');
+    } catch (error) {
+      showToast('error', 'Foto gagal disimpan', error.message || 'Gagal mengunggah foto.');
+    } finally {
+      if (input) input.value = '';
+      tddPhotosBusy = false;
+      renderTddModal();
+    }
+  }
+
+  async function downloadTddPhoto(index, button) {
+    if (!tddModalData || !tddModalData.visit) return;
+    if (button) button.disabled = true;
+    try {
+      const file = await visitRpc('getTddPhotoDocument', {
+        kode_kunjungan: tddModalData.visit.kode_kunjungan,
+        index
+      });
+      const bytes = Uint8Array.from(atob(file.base64), char => char.charCodeAt(0));
+      const url = URL.createObjectURL(new Blob([bytes], { type: file.mime }));
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = file.name;
+      anchor.click();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (error) {
+      showToast('error', 'Unduh gagal', error.message || 'Foto gagal diunduh.');
+    } finally {
+      if (button) button.disabled = false;
+    }
+  }
+
+  document.addEventListener('keydown', event => {
+    const modal = document.getElementById('tddEditModal');
+    if (!modal || modal.hidden) return;
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeTddEdit();
+    }
+    if (event.key === 'Tab') {
+      const items = [...modal.querySelectorAll('button:not(:disabled),a[href]')].filter(el => el.getClientRects().length);
+      const first = items[0], last = items[items.length - 1];
+      if (!first) return;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+  });
+</script>
+

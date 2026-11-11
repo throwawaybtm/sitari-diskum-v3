@@ -33,13 +33,7 @@
               alt="Lambang Kota Batam" class="w-full h-full object-contain">
           </div>
           <div class="brand-copy">
-            <div class="header-title-row flex items-center space-x-2">
-              <h1 class="text-xl font-extrabold tracking-tight text-white leading-tight">SI-TARI DISKUM</h1>
-              <button id="headerRefreshData" type="button" onclick="refreshHeaderData()" aria-label="Refresh data"
-                title="Refresh data" class="header-refresh-button"><i id="headerRefreshIcon"
-                  class="fa-solid fa-rotate-right" aria-hidden="true"></i><span class="header-refresh-label">Refresh
-                  Data</span></button>
-            </div>
+            <h1 class="text-xl font-extrabold tracking-tight text-white leading-tight">SI-TARI DISKUM</h1>
             <p class="text-xs text-emerald-100/90 font-medium">Sistem Informasi Tamu &amp; Rapat Internal Dinas Koperasi dan Usaha Mikro</p>
           </div>
         </div>
@@ -476,7 +470,19 @@
               class="px-3 py-2 rounded-xl bg-teal-50 text-teal-800 text-xs font-bold disabled:opacity-40"><i
                 class="fa-solid fa-image mr-1"></i>Image (PNG)</button></div>
         </div>
-        <div class="mt-4 max-h-[28rem] overflow-auto rounded-2xl border border-slate-100">
+        <div id="monthlyGuestFilterBar" role="group" aria-label="Filter jenis tamu"
+          class="inline-flex flex-wrap items-center gap-1.5 mt-4 p-1 rounded-2xl bg-slate-100 border border-slate-200/80">
+          <button type="button" id="monthlyFilterAll" data-guest-filter="all"
+            onclick="setMonthlyGuestFilter('all')" aria-pressed="true"
+            class="monthly-guest-filter-btn active-filter px-3.5 py-1.5 rounded-xl text-xs font-bold transition">Semua</button>
+          <button type="button" id="monthlyFilterTld" data-guest-filter="tld"
+            onclick="setMonthlyGuestFilter('tld')" aria-pressed="false"
+            class="monthly-guest-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-bold transition">TLD</button>
+          <button type="button" id="monthlyFilterTdd" data-guest-filter="tdd"
+            onclick="setMonthlyGuestFilter('tdd')" aria-pressed="false"
+            class="monthly-guest-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-bold transition">TDD</button>
+        </div>
+        <div id="monthlyReportTableWrapper" class="mt-4 max-h-[28rem] overflow-auto rounded-2xl border border-slate-100">
           <table class="w-full text-xs text-left">
             <thead class="bg-slate-50 text-slate-600 sticky top-0">
               <tr>
@@ -666,6 +672,7 @@
 
   <?!= include('AttendancePolicy'); ?>
   <?!= include('VisitModal'); ?>
+  <?!= include('TddModal'); ?>
   <?!= include('ArchiveClient'); ?>
   <?!= include('Tools'); ?>
   <?!= include('MeetingPhotos'); ?>
@@ -1199,22 +1206,6 @@
       }
     }
 
-    async function refreshHeaderData() {
-      const button = document.getElementById('headerRefreshData'), icon = document.getElementById('headerRefreshIcon');
-      if (!button || button.disabled) return;
-      button.disabled = true; button.setAttribute('aria-busy', 'true'); icon.classList.add('fa-spin');
-      try {
-        const results = await loadAllDashboard();
-        const success = results.every(Boolean);
-        showToast(success ? 'success' : 'error', success ? 'Data diperbarui' : 'Sebagian data gagal dimuat', success ? 'Ringkasan, buku tamu, dan jadwal rapat telah diperbarui.' : 'Periksa koneksi dan coba lagi.');
-        return success;
-      } catch (error) {
-        showToast('error', 'Data gagal diperbarui', 'Periksa koneksi dan coba lagi.'); return false;
-      } finally {
-        button.disabled = false; button.removeAttribute('aria-busy'); icon.classList.remove('fa-spin');
-      }
-    }
-
     function loadAllDashboard(options = {}) {
       const requests = [];
       const request = (name, args, success, failure) => requests.push(new Promise(resolve => {
@@ -1438,7 +1429,23 @@
       });
     }
 
+    function isTddVisit(visit) {
+      if (!visit || typeof visit !== 'object') return false;
+      const rawType = String(visit.tipe_tamu || '').trim().toLowerCase();
+      if (rawType === 'dalam_daerah_fo' || rawType === 'tdd') return true;
+      if (rawType) return false;
+      const code = String(visit.kode_kunjungan || '').trim().toUpperCase();
+      return /^(?:TDD|TM-FO)-/.test(code);
+    }
+
     function renderVisitRow(t, recent = false) {
+      const statusLabel = getVisitStatus(t).label;
+      const isTdd = typeof isTddVisit === 'function'
+        ? isTddVisit(t)
+        : (String(t && t.tipe_tamu || '').trim().toLowerCase() === 'dalam_daerah_fo' || (!String(t && t.tipe_tamu || '').trim() && /^(?:TDD|TM-FO)-/i.test(String(t && t.kode_kunjungan || '').trim())));
+      const actionCell = recent
+        ? `<td class="px-4 py-3.5 text-center"><button type="button" data-kode="${escapeHtml(t.kode_kunjungan)}" data-readonly="${statusLabel === 'Non-SPPD'}" onclick="openRecentVisitDetail(this.dataset.kode,this.dataset.readonly === 'true')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-bold">Detail</button></td>`
+        : `<td class="px-4 py-3.5 text-center">${isTdd ? `<button type="button" data-kode="${escapeHtml(t.kode_kunjungan)}" onclick="openTddEdit(this.dataset.kode)" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-[11px] shadow-sm transition"><i class="fa-solid fa-pen-to-square mr-1"></i> EDIT</button>` : statusLabel === 'Non-SPPD' ? `<button type="button" disabled class="px-3 py-1.5 bg-slate-100 text-slate-400 rounded-xl font-bold text-[11px] cursor-not-allowed"><i class="fa-solid fa-pen-to-square mr-1"></i> EDIT</button>` : `<button type="button" data-kode="${escapeHtml(t.kode_kunjungan)}" onclick="openVisitWorkflow(this.dataset.kode)" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-[11px] shadow-sm transition"><i class="fa-solid ${statusLabel === 'Selesai' ? 'fa-eye' : 'fa-pen-to-square'} mr-1"></i> ${statusLabel === 'Selesai' ? 'VIEW' : 'EDIT'}</button>`} </td>`;
       return `
         <tr class="hover:bg-slate-50 transition border-b border-slate-100">
           <td class="px-4 py-3.5">
@@ -1450,7 +1457,7 @@
           <td class="px-4 py-3.5">${renderBidangBadges(t.tujuan_bidang)}${!String(t.tujuan_bidang || '').trim() ? '<span class="mobile-field-empty hidden">Belum ditentukan</span>' : ''}<p class="text-[10px] text-slate-500 line-clamp-1 max-w-xs">${escapeHtml(t.keperluan)}</p></td>
           <td class="px-4 py-3.5"><span class="font-bold text-emerald-900 block">${escapeHtml(t.lo_nama || 'Belum Ditugaskan').replace(/; /g, '<br>')}</span></td>
           <td class="px-4 py-3.5 text-center">${renderVisitStatus(t)}</td>
-          ${recent ? `<td class="px-4 py-3.5 text-center"><button type="button" data-kode="${escapeHtml(t.kode_kunjungan)}" data-readonly="${getVisitStatus(t).label === 'Non-SPPD'}" onclick="openRecentVisitDetail(this.dataset.kode,this.dataset.readonly === 'true')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-bold">Detail</button></td>` : `<td class="px-4 py-3.5 text-center">${getVisitStatus(t).label === 'Non-SPPD' ? `<button type="button" disabled class="px-3 py-1.5 bg-slate-100 text-slate-400 rounded-xl font-bold text-[11px] cursor-not-allowed"><i class="fa-solid fa-pen-to-square mr-1"></i> EDIT</button>` : `<button type="button" data-kode="${escapeHtml(t.kode_kunjungan)}" onclick="openVisitWorkflow(this.dataset.kode)" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-[11px] shadow-sm transition"><i class="fa-solid ${getVisitStatus(t).label === 'Selesai' ? 'fa-eye' : 'fa-pen-to-square'} mr-1"></i> ${getVisitStatus(t).label === 'Selesai' ? 'VIEW' : 'EDIT'}</button>`} </td>`}
+          ${actionCell}
         </tr>
       `;
     }
@@ -1966,9 +1973,19 @@
       const photoHint = document.getElementById('meetingEditPhotoHint');
       if (photoSection) photoSection.hidden = false;
       if (photoHeading) photoHeading.textContent = internal ? 'Foto Rapat Internal' : 'Foto Agenda Kunjungan';
+      const visitCode = String(meeting.kode_kunjungan || (String(meeting.kode_rapat || '').startsWith('VISIT-') ? String(meeting.kode_rapat).slice(6) : ''));
+      const linkedVisit = visitCode && typeof allTamuData !== 'undefined' && Array.isArray(allTamuData)
+        ? allTamuData.find(v => String(v.kode_kunjungan) === visitCode)
+        : null;
+      const isTddAgenda = !internal && (
+        (linkedVisit && typeof isTddVisit === 'function' && isTddVisit(linkedVisit)) ||
+        /^(?:TDD|TM-FO)-/i.test(visitCode)
+      );
       if (photoHint) photoHint.textContent = internal
         ? 'Wajib minimal 1 foto sebelum E-notula. Maksimal 5 MB/foto, 10 MB/unggahan, 10 foto/agenda.'
-        : 'Opsional untuk dokumentasi agenda kunjungan (maksimal 5 MB/foto, 10 MB/unggahan, 10 foto/agenda). Foto SPPD terpisah di menu Buku Tamu → EDIT (tab SPPD).';
+        : isTddAgenda
+          ? 'Opsional untuk dokumentasi agenda kunjungan (maksimal 5 MB/foto, 10 MB/unggahan, 10 foto/agenda). Foto tersinkronisasi dengan menu Buku Tamu → EDIT.'
+          : 'Opsional untuk dokumentasi agenda kunjungan (maksimal 5 MB/foto, 10 MB/unggahan, 10 foto/agenda). Foto SPPD terpisah di menu Buku Tamu → EDIT (tab SPPD).';
       if (typeof renderMeetingEditPhotos === 'function') renderMeetingEditPhotos(meeting);
       const notulaInfo = document.getElementById('meetingEditNotulaInfo');
       if (notulaInfo) {

@@ -152,3 +152,12 @@ function resolveVisitAttendee_(visit,payload) {
 function hasVisitAttendance_(entries,member) {
   return entries.some(a=>a.member_id===member.member_id||normalizeVisitName_(a.nama)===normalizeVisitName_(member.nama));
 }
+
+function isTddVisit_(visit) {
+  if (!visit || typeof visit !== 'object') return false;
+  const rawType = String(visit.tipe_tamu || '').trim().toLowerCase();
+  if (rawType === 'dalam_daerah_fo' || rawType === 'tdd') return true;
+  if (rawType) return false;
+  const code = String(visit.kode_kunjungan || '').trim().toUpperCase();
+  return /^(?:TDD|TM-FO)-/.test(code);
+}

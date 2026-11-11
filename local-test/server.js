@@ -21,6 +21,7 @@ function renderAdminHtml({ baseUrl = 'http://127.0.0.1:4173' } = {}) {
   let html = fs.readFileSync(path.join(adminDir, 'Index.html'), 'utf8');
   for(const name of ['ArchiveClient','AgendaSearch','RapatPimpinan','Tools','AttendancePolicy','MobileBase','MeetingPhotos','AgendaAttendance','BookingCalendar'])html=replaceAllLiteral(html,"<?!= include('"+name+"'); ?>",fs.readFileSync(path.join(adminDir,name+'.html'),'utf8'));
   html = replaceAllLiteral(html, "<?!= include('VisitModal'); ?>", fs.readFileSync(path.join(adminDir, 'VisitModal.html'), 'utf8'));
+  html = replaceAllLiteral(html, "<?!= include('TddModal'); ?>", fs.readFileSync(path.join(adminDir, 'TddModal.html'), 'utf8'));
   html = replaceAllLiteral(html, "<?!= include('VisitAttendance'); ?>", fs.readFileSync(path.join(adminDir, 'VisitAttendance.html'), 'utf8'));
   const tamuFoUrl = `${baseUrl}/tamu-fo`;
   const tamuLuarUrl = `${baseUrl}/tamu-luar`;
@@ -213,7 +214,7 @@ function createLocalTestServer({ now = () => new Date() } = {}) {
 
         const functionName = decodeURIComponent(url.pathname.slice('/api/'.length));
         // Two 5 MiB documents expand to about 14 MiB in base64.
-        const payload = await readJsonBody(request, ['registerTamuLuar', 'saveVisitWorkflow','saveAgendaNotula','saveAgendaPhotos'].includes(functionName) ? 15 * 1024 * 1024 : BODY_LIMIT_BYTES);
+        const payload = await readJsonBody(request, ['registerTamuLuar', 'saveVisitWorkflow','saveAgendaNotula','saveAgendaPhotos','saveTddPhotos'].includes(functionName) ? 15 * 1024 * 1024 : BODY_LIMIT_BYTES);
         const readResponse = store.responses[functionName];
         if (readResponse) {
           sendJson(response, 200, readResponse);

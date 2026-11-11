@@ -7,7 +7,7 @@
   </div>
 </div>
 <script>
-  let lastGuestQrType='fo',guestQrReturnFocus=null,guestQrBodyOverflow='',monthlyReportBusy=false;
+  let lastGuestQrType='fo',guestQrReturnFocus=null,guestQrBodyOverflow='',monthlyReportBusy=false,monthlyGuestFilter='all';
   function openGuestQr(type) {
     const url=type==='fo'?TAMU_FO_URL:TAMU_LUAR_URL;if(!url){showToast('error','URL belum tersedia','Atur tautan formulir pada konfigurasi Admin.');return;}
     lastGuestQrType=type;guestQrReturnFocus=document.activeElement;guestQrBodyOverflow=document.body.style.overflow;
@@ -16,21 +16,79 @@
     document.getElementById('guestQrModal').hidden=false;document.getElementById('guestQrModal').style.display='flex';document.body.style.overflow='hidden';document.getElementById('guestQrClose').focus();
   }
   function closeGuestQr(){const modal=document.getElementById('guestQrModal');if(modal.hidden)return;modal.hidden=true;modal.style.display='none';document.body.style.overflow=guestQrBodyOverflow;if(guestQrReturnFocus?.isConnected)guestQrReturnFocus.focus();}
-  function monthlyGuestRows(records,month) {
+  function normalizeMonthlyGuestFilter(filter) {
+    const value=String(filter??'').trim().toLowerCase();
+    if(value==='all'||value==='semua')return 'all';
+    if(value==='tld'||value==='luar_daerah')return 'tld';
+    if(value==='tdd'||value==='dalam_daerah_fo')return 'tdd';
+    return '';
+  }
+  function resolveMonthlyGuestFilter(filter) {
+    return filter===undefined||filter===null||String(filter).trim()===''?'all':normalizeMonthlyGuestFilter(filter);
+  }
+  function monthlyReportTitle(filter='all') {
+    const activeFilter=resolveMonthlyGuestFilter(filter);
+    if(activeFilter==='tld')return 'Laporan Tamu Bulanan - Tamu Luar Daerah (TLD)';
+    if(activeFilter==='tdd')return 'Laporan Tamu Bulanan - Tamu Dalam Daerah (TDD)';
+    return 'Laporan Tamu Bulanan';
+  }
+  function monthlyReportFileName(month,filter='all') {
+    const activeFilter=resolveMonthlyGuestFilter(filter);
+    const suffix=activeFilter==='tld'?'_TLD':activeFilter==='tdd'?'_TDD':'';
+    return 'Laporan_Tamu_'+monthlyReportMonthLabel(month)+suffix;
+  }
+  function monthlyGuestType(record) {
+    if(!record||typeof record!=='object')return '';
+    const rawType=String(record.tipe_tamu??'').trim().toLowerCase();
+    if(rawType==='luar_daerah'||rawType==='tld')return 'tld';
+    if(rawType==='dalam_daerah_fo'||rawType==='tdd')return 'tdd';
+    if(rawType)return '';
+    const code=String(record.kode_kunjungan??'').trim().toUpperCase();
+    if(/^(?:TLD|TM-LUAR)-/.test(code))return 'tld';
+    if(/^(?:TDD|TM-FO)-/.test(code))return 'tdd';
+    return '';
+  }
+  function monthlyGuestRows(records,month,filter='all') {
     if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month||''))return [];
-    return records.filter(v=>String(v.tanggal_kunjungan||'').slice(0,7)===month).slice().sort((a,b)=>String(a.tanggal_kunjungan+' '+a.jam_kunjungan).localeCompare(String(b.tanggal_kunjungan+' '+b.jam_kunjungan))).map((v,i)=>({no:i+1,nama:v.ketua_nama||'-',agenda:v.keperluan||'-'}));
+    const activeFilter=resolveMonthlyGuestFilter(filter);
+    if(!activeFilter)return [];
+    return (Array.isArray(records)?records:[])
+      .filter(v=>{
+        if(!v||String(v.tanggal_kunjungan||'').slice(0,7)!==month)return false;
+        return activeFilter==='all'||monthlyGuestType(v)===activeFilter;
+      })
+      .slice()
+      .sort((a,b)=>String(a.tanggal_kunjungan+' '+a.jam_kunjungan).localeCompare(String(b.tanggal_kunjungan+' '+b.jam_kunjungan)))
+      .map((v,i)=>({no:i+1,nama:v.ketua_nama||'-',agenda:v.keperluan||'-'}));
   }
   function monthlyReportMonthLabel(month){return /^(\d{4})-(\d{2})$/.test(month||'')?month.slice(5)+'-'+month.slice(0,4):'-';}
-  function renderMonthlyReport() {
-    const input=document.getElementById('reportMonth'),body=document.getElementById('monthlyReportRows');if(!input||!body)return;
-    const rows=monthlyGuestRows(allTamuData,input.value);
-    document.getElementById('monthlyReportCount').textContent=rows.length+' kunjungan · '+monthlyReportMonthLabel(input.value);
-    body.innerHTML=rows.length?rows.map(r=>`<tr class="border-b border-slate-100"><td class="px-4 py-3 text-center">${r.no}</td><td class="px-4 py-3 font-semibold">${escapeHtml(r.nama)}</td><td class="px-4 py-3">${escapeHtml(r.agenda)}</td></tr>`).join(''):'<tr><td colspan="3" class="text-center text-slate-400 p-6">Tidak ada kunjungan pada bulan ini.</td></tr>';
-    ['monthlyPdf','monthlyImage'].forEach(id=>{document.getElementById(id).disabled=monthlyReportBusy||!rows.length;});
+  function updateMonthlyGuestFilterButtons() {
+    [['monthlyFilterAll','all'],['monthlyFilterTld','tld'],['monthlyFilterTdd','tdd']].forEach(([id,type])=>{
+      const btn=document.getElementById(id);if(!btn)return;
+      const active=monthlyGuestFilter===type;
+      if(btn.classList)btn.classList.toggle('active-filter',active);
+      if(typeof btn.setAttribute==='function')btn.setAttribute('aria-pressed',active?'true':'false');
+    });
   }
-  function buildMonthlyReportCanvases(rows,month) {
-    const pages=[],width=1240,height=1754,left=40,cols=[60,380,720];let canvas,ctx,y;
-    function page(){canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;ctx=canvas.getContext('2d');if(!ctx)throw new Error('Ekspor gambar tidak tersedia pada browser ini.');ctx.fillStyle='#fff';ctx.fillRect(0,0,width,height);ctx.fillStyle='#143238';ctx.font='bold 32px Arial';ctx.fillText('Laporan Tamu Bulanan',left,62);ctx.font='20px Arial';ctx.fillText('SI-TARI DISKUM · '+monthlyReportMonthLabel(month),left,98);ctx.fillStyle='#11504a';ctx.fillRect(left,125,1160,52);ctx.fillStyle='#fff';ctx.font='bold 20px Arial';['No.','Nama Ketua Rombongan','Agenda'].forEach((title,i)=>ctx.fillText(title,left+cols.slice(0,i).reduce((a,b)=>a+b,0)+12,158));y=177;pages.push(canvas);}
+  function setMonthlyGuestFilter(filter) {
+    const next=normalizeMonthlyGuestFilter(filter);if(!next)return;
+    monthlyGuestFilter=next;renderMonthlyReport();
+  }
+  function renderMonthlyReport() {
+    updateMonthlyGuestFilterButtons();
+    const input=document.getElementById('reportMonth'),body=document.getElementById('monthlyReportRows');if(!input||!body)return;
+    const source=typeof allTamuData!=='undefined'?allTamuData:[];
+    const rows=monthlyGuestRows(source,input.value,monthlyGuestFilter);
+    const filterSuffix=monthlyGuestFilter==='all'?'':' '+monthlyGuestFilter.toUpperCase();
+    const countEl=document.getElementById('monthlyReportCount');
+    if(countEl)countEl.textContent=rows.length+' kunjungan'+filterSuffix+' · '+monthlyReportMonthLabel(input.value);
+    const emptyText=monthlyGuestFilter==='all'?'Tidak ada kunjungan pada bulan ini.':'Tidak ada kunjungan '+monthlyGuestFilter.toUpperCase()+' pada bulan ini.';
+    body.innerHTML=rows.length?rows.map(r=>`<tr class="border-b border-slate-100"><td class="px-4 py-3 text-center">${r.no}</td><td class="px-4 py-3 font-semibold">${escapeHtml(r.nama)}</td><td class="px-4 py-3">${escapeHtml(r.agenda)}</td></tr>`).join(''):`<tr><td colspan="3" class="text-center text-slate-400 p-6">${emptyText}</td></tr>`;
+    ['monthlyPdf','monthlyImage'].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=monthlyReportBusy||!rows.length;});
+  }
+  function buildMonthlyReportCanvases(rows,month,filter='all') {
+    const pages=[],width=1240,height=1754,left=40,cols=[60,380,720],title=monthlyReportTitle(filter);let canvas,ctx,y;
+    function page(){canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;ctx=canvas.getContext('2d');if(!ctx)throw new Error('Ekspor gambar tidak tersedia pada browser ini.');ctx.fillStyle='#fff';ctx.fillRect(0,0,width,height);ctx.fillStyle='#143238';ctx.font='bold 32px Arial';ctx.fillText(title,left,62);ctx.font='20px Arial';ctx.fillText('SI-TARI DISKUM · '+monthlyReportMonthLabel(month),left,98);ctx.fillStyle='#11504a';ctx.fillRect(left,125,1160,52);ctx.fillStyle='#fff';ctx.font='bold 20px Arial';['No.','Nama Ketua Rombongan','Agenda'].forEach((label,i)=>ctx.fillText(label,left+cols.slice(0,i).reduce((a,b)=>a+b,0)+12,158));y=177;pages.push(canvas);}
     function wrap(text,max){const lines=[];let line='';for(const char of String(text)){if(char==='\n'||ctx.measureText(line+char).width>max){lines.push(line);line=char==='\n'?'':char;}else line+=char;}lines.push(line);return lines;}
     page();ctx.font='20px Arial';
     for(const row of rows){ctx.font='20px Arial';const name=wrap(row.nama,356),agenda=wrap(row.agenda,696),lineCount=Math.max(name.length,agenda.length),rowHeight=lineCount*28+24;
@@ -43,12 +101,13 @@
     pages.forEach((p,i)=>{const c=p.getContext('2d');c.fillStyle='#64748b';c.font='18px Arial';c.fillText(rows.length+' kunjungan',40,1715);c.fillText((i+1)+' / '+pages.length,1120,1715);});return pages;
   }
   async function exportMonthlyReport(type) {
-    if(monthlyReportBusy)return;const month=document.getElementById('reportMonth').value,rows=monthlyGuestRows(allTamuData,month);if(!rows.length)return;
+    if(monthlyReportBusy)return;const month=document.getElementById('reportMonth')?.value,source=typeof allTamuData!=='undefined'?allTamuData:[];const rows=monthlyGuestRows(source,month,monthlyGuestFilter);if(!rows.length)return;
     monthlyReportBusy=true;renderMonthlyReport();
     try{
-      const pages=buildMonthlyReportCanvases(rows,month),name='Laporan_Tamu_'+monthlyReportMonthLabel(month);
+      const pages=buildMonthlyReportCanvases(rows,month,monthlyGuestFilter),name=monthlyReportFileName(month,monthlyGuestFilter);
       if(type==='pdf'){
         if(typeof jspdf==='undefined')throw new Error('Pustaka PDF belum termuat.');const pdf=new jspdf.jsPDF({unit:'pt',format:'a4'});
+        if(typeof pdf.setProperties==='function')pdf.setProperties({title:monthlyReportTitle(monthlyGuestFilter)});
         pages.forEach((canvas,i)=>{if(i)pdf.addPage();pdf.addImage(canvas.toDataURL('image/png'),'PNG',18,18,559.28,791.89);});pdf.save(name+'.pdf');
       }else{
         let images=pages;

@@ -123,20 +123,41 @@ function saveVisitWorkflowFile_(file,code,kind) {
   return {name:file.name||name,url:saved.getUrl(),mime:info.mime,size:info.size};
 }
 
+function createVisitAgendaRow_(ss,visit,booking,rooms,meetings,title) {
+  const sheet=ss.getSheetByName('Data_Rapat'), key='VISIT-'+visit.kode_kunjungan;
+  const checked=validateVisitBooking_(booking,visit,rooms,meetings);
+  const allIds=sheet.getLastRow()>1?sheet.getRange(2,1,sheet.getLastRow()-1,1).getValues().map(row=>row[0]):[];
+  const id=nextVisitAgendaId_(allIds);
+  const agendaTitle=title||('Kunjungan '+visit.instansi);
+  const bidang=visit.tujuan_bidang||'Sekretariat';
+  const pimpinan=visit.lo_nama||'Petugas Piket FO';
+  const jumlah=Number(visit.jumlah_orang)||1;
+  const agendaText=visit.keperluan||agendaTitle;
+  appendMeetingRow_(sheet,[id,key,agendaTitle,checked.ruangan_id,checked.nama_ruangan,checked.tanggal,checked.jam_mulai,checked.jam_selesai,bidang,pimpinan,jumlah,agendaText,'Terjadwal',Utilities.formatDate(new Date(),'Asia/Jakarta','yyyy-MM-dd HH:mm:ss')]);
+  return Object.assign({},checked,{id:id,kode_rapat:key,judul_rapat:agendaTitle,kode_kunjungan:visit.kode_kunjungan,penyelenggara_bidang:bidang,pimpinan_rapat:pimpinan,jumlah_peserta:jumlah,agenda:agendaText,status:'Terjadwal',locked:false});
+}
+
 function bookVisitAgenda_(visit,booking,rooms) {
-  const ss=getSpreadsheet(), sheet=ss.getSheetByName('Data_Rapat');
+  const ss=getSpreadsheet();
   const meetings=getRapatCalendar().data, key='VISIT-'+visit.kode_kunjungan;
   const existing=meetings.find(m=>m.kode_rapat===key);
   if(existing) {
     if(String(existing.ruangan_id)===String(booking.ruangan_id)&&existing.tanggal===booking.tanggal&&existing.jam_mulai===booking.jam_mulai&&existing.jam_selesai===booking.jam_selesai) return existing;
     throw new Error('Agenda kunjungan sudah memiliki pemesanan ruangan. Muat ulang data.');
   }
-  const checked=validateVisitBooking_(booking,visit,rooms,meetings);
-  const allIds=sheet.getLastRow()>1?sheet.getRange(2,1,sheet.getLastRow()-1,1).getValues().map(row=>row[0]):[];
-  const id=nextVisitAgendaId_(allIds);
-  const title='Kunjungan '+visit.instansi;
-  appendMeetingRow_(sheet,[id,key,title,checked.ruangan_id,checked.nama_ruangan,checked.tanggal,checked.jam_mulai,checked.jam_selesai,visit.tujuan_bidang,visit.lo_nama,visit.jumlah_orang,visit.keperluan,'Terjadwal',Utilities.formatDate(new Date(),'Asia/Jakarta','yyyy-MM-dd HH:mm:ss')]);
-  return Object.assign({},checked,{id:id,kode_rapat:key,judul_rapat:title,kode_kunjungan:visit.kode_kunjungan});
+  return createVisitAgendaRow_(ss,visit,booking,rooms,meetings,'Kunjungan '+visit.instansi);
+}
+
+function getTddVisitEdit(payload) {
+  try {
+    requireVisitAdmin_();
+    const code=String(payload&&payload.kode_kunjungan||'').trim();
+    const ss=getSpreadsheet(), visit=code?getVisitByCode_(ss,code):null;
+    if(!visit||!isTddVisit_(visit))throw new Error('Kunjungan tamu dalam daerah tidak ditemukan.');
+    const agenda=findActiveVisitAgenda_(code), visitKey=visitPhotoStorageKey_(code);
+    const photos=agenda?mergeUniquePhotos_(agenda.photos||[],getAgendaPhotos_(visitKey,ss)):getAgendaPhotos_(visitKey,ss);
+    return {success:true,data:{visit:visit,agenda:agenda,photos:photos,locked:Boolean(agenda&&isMeetingLocked_(agenda)),simulated:false}};
+  }catch(error){return {success:false,error:error.message};}
 }
 
 function syncVisitSppdEvidence_(ss,code,state) {

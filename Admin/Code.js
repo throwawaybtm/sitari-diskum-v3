@@ -366,18 +366,99 @@ function cachedMasterRead_(ss,kind,read) {
 function invalidateMasterReadCache_(ss) {
   try {const cache=CacheService.getScriptCache();['all','rooms'].forEach(kind=>cache.remove('si-tari:master:v2:'+ss.getId()+':'+kind));}catch(error){}
 }
+const PEMKO_OPD_OPTIONS_ = [
+  'Asisten Pemerintahan dan Kesejahteraan Rakyat',
+  'Asisten Administrasi Umum',
+  'Asisten Perekonomian dan Pembangunan',
+  'Sekretariat Daerah Kota Batam',
+  'Sekretariat DPRD Kota Batam',
+  'Inspektorat Daerah Kota Batam',
+  'Badan Kepegawaian Dan Pengembangan Sumber Daya Manusia Kota Batam',
+  'Badan Pendapatan Daerah Kota Batam',
+  'Badan Pengelolaan Keuangan Dan Aset Daerah Kota Batam',
+  'Badan Perencanaan Pembangunan Daerah Kota Batam',
+  'Dinas Kependudukan Dan Pencatatan Sipil Kota Batam',
+  'Dinas Kesehatan Kota Batam',
+  'Dinas Penanaman Modal Dan Pelayanan Terpadu Satu Pintu Kota Batam',
+  'Dinas Pendidikan Kota Batam',
+  'Dinas Pertanahan Kota Batam',
+  'Dinas Perumahan, Kawasan Permukiman Dan Pertanaman Kota Batam',
+  'Badan Kesatuan Bangsa Dan Politik Kota Batam',
+  'Badan Penanggulangan Bencana Daerah Kota Batam',
+  'Badan Riset Dan Inovasi Daerah Kota Batam',
+  'Dinas Bina Marga Dan Sumber Daya Air Kota Batam',
+  'Dinas Cipta Karya Dan Tata Ruang Kota Batam',
+  'Dinas Kebudayaan Dan Pariwisata Kota Batam',
+  'Dinas Kepemudaan Dan Olahraga Kota Batam',
+  'Dinas Ketahanan Pangan Dan Pertanian Kota Batam',
+  'Dinas Komunikasi Dan Informatika Kota Batam',
+  'Dinas Lingkungan Hidup Kota Batam',
+  'Dinas Pemadam Kebakaran Dan Penyelamatan Kota Batam',
+  'Dinas Pemberdayaan Perempuan, Perlindungan Anak, Pengendalian Penduduk Dan Keluarga Berencana Kota Batam',
+  'Dinas Perhubungan Kota Batam',
+  'Dinas Perikanan Kota Batam',
+  'Dinas Perindustrian Dan Perdagangan Kota Batam',
+  'Dinas Perpustakaan Dan Kearsipan Kota Batam',
+  'Dinas Sosial Dan Pemberdayaan Masyarakat Kota Batam',
+  'Dinas Tenaga Kerja Kota Batam',
+  'Rumah Sakit Umum Daerah Embung Fatimah Kota Batam',
+  'Satuan Polisi Pamong Praja Kota Batam',
+  'Kelurahan',
+  'Kecamatan'
+];
+
+function getPemkoOpdOptions_() {
+  return PEMKO_OPD_OPTIONS_.slice();
+}
+
+function formatPemkoOpdName_(category, specificName) {
+  const opd = String(category || '').trim();
+  if (opd !== 'Kelurahan' && opd !== 'Kecamatan') return opd;
+  const raw = String(specificName || '').trim();
+  if (!raw) return '';
+  const stripped = raw.replace(new RegExp('^' + opd + '\\b[\\s:.-]*', 'i'), '').trim();
+  return opd + ' - ' + (stripped || raw);
+}
+
+function normalizePemkoAttendanceOpd_(p) {
+  if (!p || p.kategori_peserta !== 'OPD_Pemko') return p;
+  const hasStructured = p.opd_pemko !== undefined || p.opd_pemko_wilayah !== undefined;
+  if (hasStructured) {
+    const opd = String(p.opd_pemko || '').trim();
+    if (!opd || PEMKO_OPD_OPTIONS_.indexOf(opd) === -1) {
+      throw new Error('Pilih OPD Pemko Batam yang tersedia.');
+    }
+    if (opd === 'Kelurahan' || opd === 'Kecamatan') {
+      const detail = String(p.opd_pemko_wilayah || '').trim();
+      if (!detail) throw new Error('Nama ' + opd + ' wajib diisi.');
+      return Object.assign({}, p, { nama_opd: formatPemkoOpdName_(opd, detail) });
+    }
+    return Object.assign({}, p, { nama_opd: opd });
+  }
+  const rawOpd = String(p.nama_opd || '').trim();
+  if (!rawOpd || rawOpd === 'OPD Pemko Batam') {
+    throw new Error('Pilih OPD Pemko Batam yang tersedia.');
+  }
+  if (rawOpd === 'Kelurahan' || rawOpd === 'Kecamatan') {
+    throw new Error('Nama ' + rawOpd + ' wajib diisi.');
+  }
+  const emptyDetail = /^(Kelurahan|Kecamatan)\s*[:\-–—]\s*$/i.exec(rawOpd);
+  if (emptyDetail) {
+    const kind = emptyDetail[1].charAt(0).toUpperCase() + emptyDetail[1].slice(1).toLowerCase();
+    throw new Error('Nama ' + kind + ' wajib diisi.');
+  }
+  return Object.assign({}, p, { nama_opd: rawOpd });
+}
+
 function readMasterData_(ss) {
   const sheetPegawai = ss.getSheetByName('Master_Pegawai');
-  const sheetOPD = ss.getSheetByName('Master_OPD');
   const sheetRuangan = ss.getSheetByName('Master_Ruangan');
 
   const pegawai = sheetPegawai && sheetPegawai.getLastRow() > 1 
     ? sheetPegawai.getRange(2, 1, sheetPegawai.getLastRow() - 1, sheetPegawai.getLastColumn()).getValues().map(r => ({ id: r[0], nip: r[1], nama: r[2], jabatan: r[3], bidang: r[4], pangkat:r[8]||'' }))
     : [];
 
-  const opd = sheetOPD && sheetOPD.getLastRow() > 1
-    ? sheetOPD.getRange(2, 1, sheetOPD.getLastRow() - 1, sheetOPD.getLastColumn()).getValues().map(r => ({ id: r[0], nama_opd: r[1], kategori: r[2] }))
-    : [];
+  const opd = PEMKO_OPD_OPTIONS_.map((nama_opd, idx) => ({ id: idx + 1, nama_opd: nama_opd, kategori: 'Pemko Batam' }));
 
   const ruangan = sheetRuangan && sheetRuangan.getLastRow() > 1
     ? sheetRuangan.getRange(2, 1, sheetRuangan.getLastRow() - 1, sheetRuangan.getLastColumn()).getValues().map(r => ({ id: r[0], nama_ruangan: r[1], kapasitas: r[2], fasilitas: r[3], lokasi: r[4], warna: r[5] }))
@@ -499,10 +580,15 @@ function getRapatCalendar() {
   const list = rows.filter(r => r[12] !== 'Dibatalkan').map(r => {
     const doc=docsByAgendaId.get(String(r[0]));
     const rawStatus = String(r[12] || '');
+    const visitKey = String(r[1] || '').indexOf('VISIT-') === 0 ? String(r[1]) : '';
+    const rowPhotos = photos[String(r[0])] || [];
+    const mergedPhotos = visitKey && photos[visitKey] && typeof mergeUniquePhotos_ === 'function'
+      ? mergeUniquePhotos_(rowPhotos, photos[visitKey])
+      : rowPhotos;
     return {
     id: r[0],
     manual_attendance: manualAgendaIds.has(String(r[0])),
-    photos: photos[String(r[0])]||[],
+    photos: mergedPhotos,
     schedule_history: historyMap[String(r[0])]||[],
     kode_rapat: r[1],
     kode_kunjungan: String(r[1] || '').indexOf('VISIT-') === 0 ? String(r[1]).slice(6) : '',
@@ -767,6 +853,9 @@ function cancelAgendaRapat(payload) {
     const rapatId = payload && (payload.rapat_id != null ? payload.rapat_id : payload.id);
     const target = findEditableMeetingRow_(ss, rapatId);
     target.sheetRapat.getRange(target.sheetRow, 13).setValue('Dibatalkan');
+    if (typeof detachVisitAgendaPhotos_ === 'function') {
+      detachVisitAgendaPhotos_(ss, target.agenda.kode_rapat, target.agenda.id);
+    }
     syncVisitBookingState_(ss, target.agenda.kode_rapat, 'cancel', null, { agendaId: target.agenda.id });
     return { success: true, message: 'Agenda rapat berhasil dibatalkan.', data: { id: target.agenda.id, kode_rapat: target.agenda.kode_rapat, status: 'Dibatalkan' } };
   });
@@ -848,6 +937,8 @@ function savePresensiRapat_(p, source) {
     const person=resolveVisitAttendee_(visitData.visit,p);
     if(hasVisitAttendance_(visitData.attendance,person))return {success:true,message:'Presensi nama ini sudah tercatat.'};
     p=Object.assign({},p,person,{nip:'',jabatan:String(p.jabatan||'').trim()||'-'});
+  } else if (p && p.kategori_peserta === 'OPD_Pemko') {
+    try { p = normalizePemkoAttendanceOpd_(p); } catch (error) { return { success: false, error: error.message }; }
   }
   const ss = getSpreadsheet();
   const sheet = ss.getSheetByName('Data_Presensi');

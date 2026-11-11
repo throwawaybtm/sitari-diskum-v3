@@ -110,10 +110,11 @@ function makeAgendaAttendanceList_(records,spreadsheetTimezone,hierarchyOptions)
   const lookup=buildAttendanceHierarchyLookup_(employees);
   return records.map((record,index)=>{
     const rank=resolveAttendanceHierarchyRank_(record,lookup);
-    return {nama:String(record.nama||'-'),time:agendaAttendanceTime_(record.waktu,spreadsheetTimezone),index:index,tier:rank.tier,primary:rank.primary,secondary:rank.secondary};
+    const namaOpd=String(record.nama_opd||record.bidang||'').trim()||'-';
+    return {nama:String(record.nama||'-'),nama_opd:namaOpd,time:agendaAttendanceTime_(record.waktu,spreadsheetTimezone),index:index,tier:rank.tier,primary:rank.primary,secondary:rank.secondary};
   })
     .sort((a,b)=>(a.tier-b.tier)||(a.primary-b.primary)||(a.secondary-b.secondary)||(a.time||'9999').localeCompare(b.time||'9999')||a.index-b.index)
-    .map((record,index)=>({no:index+1,nama:record.nama,tanggal:record.time?record.time.slice(0,10).split('-').reverse().join('-'):'-',jam:record.time?record.time.slice(11,16):'-'}));
+    .map((record,index)=>({no:index+1,nama:record.nama,nama_opd:record.nama_opd,tanggal:record.time?record.time.slice(0,10).split('-').reverse().join('-'):'-',jam:record.time?record.time.slice(11,16):'-'}));
 }
 function getAgendaAttendance(payload) {
   try {

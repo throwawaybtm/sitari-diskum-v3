@@ -18,18 +18,6 @@
     font-family: 'JetBrains Mono', monospace;
   }
 
-  .header-refresh-button {display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:32px;min-height:32px;padding:6px 9px;border:1px solid #ffffff40;border-radius:9px;color:#d1fae5;background:#ffffff14;font-size:11px;font-weight:700;flex-shrink:0;}
-  .header-refresh-button:hover {background:#ffffff28;}
-  .header-refresh-button:disabled {opacity:.6;cursor:wait;}
-  .header-refresh-button:focus-visible {outline:2px solid #6ee7b7;outline-offset:2px;}
-  @media (max-width:767.98px), (max-width:1023.98px) and (hover:none) and (pointer:coarse) {
-    .header-refresh-label {display:none;}
-    .header-refresh-button {position:relative;z-index:1;padding:6px;}
-    .header-title-row {gap:5px;}
-    .header-title-row > :not([hidden]) ~ :not([hidden]) {margin-left:0;}
-  }
-  @media (max-width:360px) {.brand-copy .header-title-row h1 {font-size:16px!important;}}
-
   /* Glassmorphism Card Style */
   .glass-card {
     background: rgba(255, 255, 255, 0.92);
@@ -144,6 +132,11 @@
   #tamuTableWrapper th[aria-sort="descending"] .tamu-sort-icon { color: #11504a; }
   #tamuTableWrapper th[aria-sort="ascending"] .sort-down,
   #tamuTableWrapper th[aria-sort="descending"] .sort-up { display: none; }
+
+  .monthly-guest-filter-btn { color: #475569; background: transparent; cursor: pointer; }
+  .monthly-guest-filter-btn:hover { color: #0f172a; background: rgba(255, 255, 255, 0.7); }
+  .monthly-guest-filter-btn.active-filter { background: linear-gradient(to right, #11504a, #143238); color: #ffffff; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.14); }
+  .monthly-guest-filter-btn:focus-visible { outline: 2px solid #0d9488; outline-offset: 2px; }
 
   @media (max-width: 767.98px), (max-width: 1023.98px) and (hover: none) and (pointer: coarse) {
     html {
@@ -601,7 +594,8 @@
     #section-qrcode :is(button,input) {min-height:44px;}
     #monthlyReportCard > .flex > .flex {display:grid;gap:10px;width:100%;grid-template-columns:1fr 1fr;}
     #monthlyReportCard label,#reportMonth {grid-column:1 / -1;}
-    #monthlyReportCard > div:nth-child(2) {max-height:none;overflow:visible;}
+    #monthlyGuestFilterBar {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%;gap:6px;margin-top:10px;}
+    #monthlyReportTableWrapper {max-height:none;overflow:visible;}
     #monthlyReportCard :is(table,tbody,tr) {display:block;width:100%;}
     #monthlyReportCard thead {display:none;}
     #monthlyReportRows tr {padding:12px;border-bottom:1px solid #e2e8f0;}
@@ -760,7 +754,7 @@
     #monthlyPdf {grid-column:1 / 3;}
     #monthlyImage {grid-column:3 / -1;}
     #monthlyReportCard :is(button,label) {font-size:14px!important;}
-    #monthlyReportCard > div:nth-child(2) {margin-top:10px;}
+    #monthlyReportTableWrapper {margin-top:10px;}
     #monthlyReportRows tr {display:grid;grid-template-columns:24px minmax(0,1fr);column-gap:6px;padding:8px;}
     #monthlyReportRows td {padding:3px!important;}
     #monthlyReportRows td:not([colspan]):first-child {grid-column:1;grid-row:1 / 3;padding-top:6px!important;font-weight:700;}

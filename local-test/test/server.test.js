@@ -53,6 +53,7 @@ test('renders the approved SI-TARI header and uniform dashboard summary presenta
   assert.match(header, /alt="Lambang Kota Batam"/);
   assert.doesNotMatch(header, /Cloud Edition/);
   assert.doesNotMatch(header, /desktop-header-actions|mobile-quick-actions/);
+  assert.doesNotMatch(html, /headerRefreshData|headerRefreshIcon|refreshHeaderData/);
 
   assert.match(html, /onclick="openFormTamuLuarTab\(\)"/);
   assert.match(html, /onclick="openFormTamuFoTab\(\)"/);
