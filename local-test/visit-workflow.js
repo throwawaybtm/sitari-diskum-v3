@@ -142,7 +142,7 @@ function createVisitWorkflow({ visitors, meetings, sppd, rooms, employees = [], 
   }
 
   function handle(fn, payload) {
-    if (!['getVisitWorkflow','saveVisitWorkflow','getTddVisitEdit','saveTddPhotos','getTddPhotoDocument','submitPresensiRapat','submitAdminPresensiRapat','simpanJadwalRapat','updateJadwalRapat','lockAgendaRapat','cancelAgendaRapat','postponeAgendaRapat','rescheduleAgendaRapat','getVisitAttendanceRoster','submitManualVisitAttendance','saveAgendaNotula','saveAgendaPhotos','getAgendaPhotoDocument','getAgendaAttendance','getVisitArchiveDocument'].includes(fn)) return null;
+    if (!['getVisitWorkflow','saveVisitWorkflow','getTddVisitEdit','saveTddPhotos','getTddPhotoDocument','submitPresensiRapat','submitAdminPresensiRapat','simpanJadwalRapat','updateJadwalRapat','lockAgendaRapat','cancelAgendaRapat','postponeAgendaRapat','rescheduleAgendaRapat','getVisitAttendanceRoster','submitManualVisitAttendance','getAgendaNotulaContext','saveAgendaNotula','saveAgendaPhotos','getAgendaPhotoDocument','getAgendaAttendance','getVisitArchiveDocument'].includes(fn)) return null;
     try {
       if(fn==='getTddVisitEdit'){
         const code=String(payload&&payload.kode_kunjungan||'').trim();
@@ -194,13 +194,26 @@ function createVisitWorkflow({ visitors, meetings, sppd, rooms, employees = [], 
         const meeting=meetings.find(m=>String(m.id)===String(payload.rapat_id));if(!meeting||meeting.status==='Dibatalkan'||!Number.isInteger(payload.index))throw new Error('Foto tidak ditemukan.');
         const photo=(meeting.photos||[])[payload.index],doc=photo&&documents.get(String(photo.url).split('/').pop());if(!doc)throw new Error('Foto tidak ditemukan.');return {success:true,data:{name:photo.name,mime:doc.mime,base64:doc.buffer.toString('base64')}};
       }
+      if(fn==='getAgendaNotulaContext'){
+        const rapatId=payload&&(payload.rapat_id!=null?payload.rapat_id:payload.id);
+        const meeting=meetings.find(m=>String(m.id)===String(rapatId));
+        if(!meeting||meeting.status==='Dibatalkan')throw new Error('Agenda rapat tidak ditemukan.');
+        const records=attendance.filter(row=>String(row.rapat_id)===String(meeting.id)).map(row=>({id:row.id,kategori:row.kategori||row.kategori_peserta,nama:row.nama,nip:row.nip,jabatan:row.jabatan,bidang:row.nama_opd,waktu:row.waktu,member_id:row.member_id||''}));
+        const visitCode=String(meeting.kode_kunjungan||(String(meeting.kode_rapat||'').startsWith('VISIT-')?String(meeting.kode_rapat).slice(6):''));
+        const visitState=visitCode?states.get(visitCode):null;
+        const visitNote=visitState&&visitState.note?visitState.note:'';
+        const meetingView=Object.assign({},meeting,{notula:notulas.get(String(meeting.id))||meeting.notula||null});
+        return {success:true,data:model.buildAgendaNotulaContextData_(meetingView,records,employees,visitNote)};
+      }
       if(fn==='saveAgendaNotula'){
         const meeting=meetings.find(m=>String(m.id)===String(payload.rapat_id));if(!meeting||meeting.status==='Dibatalkan')throw new Error('Agenda tidak ditemukan.');
         const internal=model.isInternalMeeting_(meeting);
         if(meeting.status==='Ditunda')throw new Error('Agenda rapat berstatus Ditunda. Jadwalkan ulang terlebih dahulu sebelum mengunggah E-notula.');
         if(model.isMeetingLocked_(meeting))throw new Error('Agenda rapat sudah dikunci. E-notula bersifat hanya-baca.');
         if(internal&&!(meeting.photos||[]).length)throw new Error('Unggah minimal satu foto rapat sebelum E-notula.');
-        const doc=saveFile(payload.file,'E-notula');notulas.set(String(meeting.id),doc);meeting.notula=doc;meeting.status='Selesai';return {success:true,data:doc};
+        const doc=saveFile(payload.file,'E-notula');
+        if(payload&&payload.template_data&&typeof payload.template_data==='object'){doc.generated=true;doc.template_data=model.sanitizeNotulaTemplateData_(payload.template_data);}
+        notulas.set(String(meeting.id),doc);meeting.notula=doc;meeting.status='Selesai';return {success:true,data:doc};
       }
       if(fn==='updateJadwalRapat'){
         const rapatId=payload&&(payload.rapat_id!=null?payload.rapat_id:payload.id);

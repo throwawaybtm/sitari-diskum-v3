@@ -1,4 +1,109 @@
 /** E-notula stored separately from agenda columns, preserving existing room/calendar schema. */
+function cleanNotulaField_(value) {
+  const text=String(value==null?'':value).trim();
+  return text==='-'?'':text;
+}
+function normalizeNotulaName_(value) {
+  if(typeof normalizeAttendanceName_==='function')return normalizeAttendanceName_(value);
+  return String(value||'').toLowerCase().replace(/[.,]/g,'').replace(/\s+/g,' ').trim();
+}
+function readNotulaEmployeeRows_(ss) {
+  const sheet=ss&&typeof ss.getSheetByName==='function'?ss.getSheetByName('Master_Pegawai'):null;
+  if(sheet&&typeof sheet.getLastRow==='function'&&sheet.getLastRow()>1){
+    const width=typeof sheet.getLastColumn==='function'?Math.max(5,Math.min(9,sheet.getLastColumn())):9;
+    const rows=sheet.getRange(2,1,sheet.getLastRow()-1,width).getValues();
+    const valid=rows
+      .filter(r=>String(r[2]||'').trim())
+      .map(r=>({nip:cleanNotulaField_(r[1]),nama:String(r[2]||'').trim(),jabatan:cleanNotulaField_(r[3]),bidang:cleanNotulaField_(r[4]),pangkat:cleanNotulaField_(r[8])}));
+    if(valid.length)return valid;
+  }
+  return typeof DISKUM_EMPLOYEE_DIRECTORY!=='undefined'&&Array.isArray(DISKUM_EMPLOYEE_DIRECTORY)
+    ?DISKUM_EMPLOYEE_DIRECTORY.map(e=>({nip:cleanNotulaField_(e.nip),nama:String(e.nama||'').trim(),jabatan:cleanNotulaField_(e.jabatan),bidang:cleanNotulaField_(e.bidang),pangkat:cleanNotulaField_(e.pangkat)}))
+    :[];
+}
+function findNotulaEmployeeMatch_(name,employees) {
+  const key=normalizeNotulaName_(cleanNotulaField_(name));
+  if(!key)return null;
+  const list=Array.isArray(employees)?employees:[];
+  const found=list.find(e=>normalizeNotulaName_(e.nama)===key);
+  if(found){
+    return {nama:found.nama,jabatan:cleanNotulaField_(found.jabatan),pangkat:cleanNotulaField_(found.pangkat),nip:cleanNotulaField_(found.nip)};
+  }
+  if(typeof OFFICIAL_LEADERSHIP_ORDER_!=='undefined'&&Array.isArray(OFFICIAL_LEADERSHIP_ORDER_)){
+    const leader=OFFICIAL_LEADERSHIP_ORDER_.find(e=>normalizeNotulaName_(e.nama)===key);
+    if(leader)return {nama:leader.nama,jabatan:'',pangkat:'',nip:cleanNotulaField_(leader.nip)};
+  }
+  return null;
+}
+function sanitizeNotulaTemplateData_(raw) {
+  const src=raw&&typeof raw==='object'?raw:{};
+  const keys=[
+    ['sidang_rapat',500],['hari_tanggal',200],['surat_undangan',500],['waktu_sidang_rapat',200],
+    ['acara',10000],['ketua',300],['sekretaris',300],['pencatat',300],
+    ['peserta',20000],['kegiatan',50000],
+    ['ttd_jabatan',300],['ttd_nama',300],['ttd_pangkat',200],['ttd_nip',100]
+  ];
+  const out={};
+  keys.forEach(([key,limit])=>{
+    out[key]=String(src[key]==null?'':src[key]).replace(/\r\n/g,'\n').slice(0,limit);
+  });
+  return out;
+}
+function buildAgendaNotulaContextData_(agenda,attendanceRecords,employees,visitNote) {
+  const tz='Asia/Jakarta';
+  const list=Array.isArray(attendanceRecords)?attendanceRecords:[];
+  const ordered=typeof sortAttendanceRecords_==='function'
+    ?sortAttendanceRecords_(list,tz,{employees:employees})
+    :list.slice();
+  const participants=ordered.map(r=>({
+    nama:cleanNotulaField_(r.nama),
+    jabatan:cleanNotulaField_(r.jabatan),
+    nama_opd:cleanNotulaField_(r.nama_opd||r.bidang),
+    kategori:cleanNotulaField_(r.kategori||r.kategori_peserta)
+  })).filter(p=>p.nama);
+  const pimpinanMatch=findNotulaEmployeeMatch_(agenda.pimpinan_rapat,employees);
+  const directory=(Array.isArray(employees)?employees:[]).map(e=>({
+    nama:String(e.nama||'').trim(),
+    jabatan:cleanNotulaField_(e.jabatan),
+    pangkat:cleanNotulaField_(e.pangkat),
+    nip:cleanNotulaField_(e.nip)
+  })).filter(e=>e.nama);
+  return {
+    agenda:agenda,
+    locked:typeof isMeetingLocked_==='function'?isMeetingLocked_(agenda):Boolean(agenda&&(agenda.locked===true||String(agenda.status||'').trim().toLowerCase()==='terkunci')),
+    participants:participants,
+    pimpinanMatch:pimpinanMatch,
+    employees:directory,
+    notula:agenda.notula||null,
+    visitNote:String(visitNote||'').trim()
+  };
+}
+function getAgendaNotulaContext(payload) {
+  try {
+    requireVisitAdmin_();
+    const rapatId=payload&&(payload.rapat_id!=null?payload.rapat_id:payload.id);
+    const agenda=getRapatCalendar().data.find(r=>String(r.id)===String(rapatId));
+    if(!agenda)throw new Error('Agenda rapat tidak ditemukan.');
+    if(agenda.status==='Dibatalkan')throw new Error('Agenda yang dibatalkan tidak dapat diubah.');
+    const ss=getSpreadsheet();
+    const employees=readNotulaEmployeeRows_(ss);
+    const attSheet=ss.getSheetByName('Data_Presensi');
+    const attWidth=attSheet&&typeof attSheet.getLastColumn==='function'?Math.min(12,attSheet.getLastColumn()||10):10;
+    const attRows=attSheet&&attSheet.getLastRow()>1?attSheet.getRange(2,1,attSheet.getLastRow()-1,attWidth).getValues():[];
+    const records=attRows
+      .filter(row=>String(row[1])===String(agenda.id))
+      .map(row=>({id:row[0],kategori:row[3],nama:row[4],nip:row[5],jabatan:row[6],bidang:row[7],waktu:row[9],member_id:row[10]||''}));
+    let visitNote='';
+    const visitCode=String(agenda.kode_kunjungan||(String(agenda.kode_rapat||'').indexOf('VISIT-')===0?String(agenda.kode_rapat).slice(6):''));
+    if(visitCode&&typeof visitWorkflowSheet_==='function'&&typeof findRecordByColumn_==='function'){
+      const wfSheet=visitWorkflowSheet_(ss,false);
+      const wfRec=wfSheet?findRecordByColumn_(wfSheet,1,visitCode,4):null;
+      const wfState=wfRec?JSON.parse(wfRec.values[2]||'{}'):null;
+      if(wfState&&wfState.note)visitNote=String(wfState.note||'').trim();
+    }
+    return {success:true,data:buildAgendaNotulaContextData_(agenda,records,employees,visitNote)};
+  }catch(error){return {success:false,error:error.message};}
+}
 function getAgendaNotula_(id,spreadsheet) {
   if(!id)return null;
   const sheet=(spreadsheet||getSpreadsheet()).getSheetByName('Dokumen_Agenda');
@@ -18,6 +123,10 @@ function saveAgendaNotula(payload) {
     if(internal&&!getAgendaPhotos_(agenda.id).length)throw new Error('Unggah minimal satu foto rapat sebelum menyelesaikan agenda melalui E-notula.');
     validateVisitFile_(payload.file);
     const document=saveVisitWorkflowFile_(payload.file,agenda.kode_rapat,'e-notula');
+    if(payload&&payload.template_data&&typeof payload.template_data==='object'){
+      document.generated=true;
+      document.template_data=sanitizeNotulaTemplateData_(payload.template_data);
+    }
     const ss=getSpreadsheet();let sheet=ss.getSheetByName('Dokumen_Agenda');
     if(!sheet){sheet=ss.insertSheet('Dokumen_Agenda');sheet.appendRow(['Agenda ID','Dokumen JSON','Diperbarui']);}
     const rows=sheet.getLastRow()>1?sheet.getRange(2,1,sheet.getLastRow()-1,3).getValues():[];

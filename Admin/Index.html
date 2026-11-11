@@ -674,6 +674,7 @@
   <?!= include('VisitModal'); ?>
   <?!= include('TddModal'); ?>
   <?!= include('ArchiveClient'); ?>
+  <?!= include('NotulaPdf'); ?>
   <?!= include('Tools'); ?>
   <?!= include('MeetingPhotos'); ?>
   <?!= include('AgendaAttendance'); ?>
@@ -832,10 +833,16 @@
                 <input id="meetingEditNotulaFile" type="file" hidden
                   accept="application/pdf,image/jpeg,image/png,image/webp,image/heic,image/heif"
                   onchange="saveMeetingEditNotula(this)">
-                <button type="button" id="btnUploadEditNotula"
-                  onclick="document.getElementById('meetingEditNotulaFile').click()"
-                  class="w-full sm:w-auto px-3 py-2 rounded-lg bg-sky-50 hover:bg-sky-100 border border-sky-200/70 text-sky-800 disabled:bg-slate-100 disabled:border-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-xs font-bold"><i
-                    class="fa-solid fa-file-arrow-up mr-1.5"></i>Unggah E-notula</button>
+                <div class="flex flex-wrap gap-1.5">
+                  <button type="button" id="btnCreateEditNotula"
+                    onclick="openNotulaComposer(editingRapatId)"
+                    class="w-full sm:w-auto px-3 py-2 rounded-lg bg-gradient-to-r from-[#11504a] to-[#143238] text-white disabled:bg-none disabled:bg-slate-100 disabled:border disabled:border-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-xs font-bold"><i
+                      class="fa-solid fa-file-signature mr-1.5"></i>Buat E-Notula</button>
+                  <button type="button" id="btnUploadEditNotula"
+                    onclick="document.getElementById('meetingEditNotulaFile').click()"
+                    class="w-full sm:w-auto px-3 py-2 rounded-lg bg-sky-50 hover:bg-sky-100 border border-sky-200/70 text-sky-800 disabled:bg-slate-100 disabled:border-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-xs font-bold"><i
+                      class="fa-solid fa-file-arrow-up mr-1.5"></i>Unggah E-notula</button>
+                </div>
                 <p id="meetingNotulaProgress" role="status" class="mt-1.5 text-[11px] text-sky-800"></p>
               </div>
             </div>
@@ -1994,6 +2001,7 @@
           : '<p class="text-xs text-slate-500">Belum ada E-notula.</p>';
       }
       const notulaUpload = document.getElementById('meetingEditNotulaUpload');
+      const btnCreateNotula = document.getElementById('btnCreateEditNotula');
       const btnNotula = document.getElementById('btnUploadEditNotula');
       const notulaProgress = document.getElementById('meetingNotulaProgress');
       const hasPhotos = Boolean(meeting.photos && meeting.photos.length);
@@ -2003,6 +2011,11 @@
       const postponed = rawStatus === 'Ditunda';
       const completed = rawStatus === 'Selesai' || rawStatus === 'Terlaksana' || Boolean(meeting.notula);
       if (notulaUpload) notulaUpload.hidden = locked || postponed;
+      if (btnCreateNotula) {
+        btnCreateNotula.disabled = locked || postponed || notulaBusy || !photoReady;
+        btnCreateNotula.title = postponed ? 'Jadwalkan ulang rapat sebelum membuat E-notula.' : photoReady ? (meeting.notula && meeting.notula.generated ? 'Edit E-Notula Resmi' : 'Buat E-Notula Resmi') : 'Unggah foto rapat terlebih dahulu.';
+        btnCreateNotula.innerHTML = `<i class="fa-solid fa-file-signature mr-1.5"></i>${meeting.notula && meeting.notula.generated ? 'Edit E-Notula' : 'Buat E-Notula'}`;
+      }
       if (btnNotula) {
         btnNotula.disabled = locked || postponed || notulaBusy || !photoReady;
         btnNotula.title = postponed ? 'Jadwalkan ulang rapat sebelum mengunggah E-notula.' : photoReady ? (meeting.notula ? 'Ganti E-notula' : 'Unggah E-notula') : 'Unggah foto rapat terlebih dahulu.';
