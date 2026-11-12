@@ -1,6 +1,43 @@
 /** GAS storage adapter. Local tests use local-test/visit-workflow.js instead. */
+const PUBLIC_DEV_ENV_CONFIG_ = Object.freeze({
+  enabled: true, // Explicit personal development switch; set false before client production release.
+  disableFonnte: true, // Keep Fonnte WhatsApp delivery centrally disabled while in public dev mode.
+  scriptId: '1jrzdwzt6xg-J1WcgY23FHET5eqJqOCZBcjcRmk3DUE5faGEYQyyJsob0',
+  ownerEmail: 'riyanbwirawanto@gmail.com',
+  spreadsheetId: '1c0HZKs1OfvCFd8naEz1gQz6y8BxGZ_VBr7S3k5miBo8'
+});
+
+function isPersonalDevEnvironment_(properties) {
+  const props = properties || PropertiesService.getScriptProperties();
+  const scriptId = typeof ScriptApp !== 'undefined' && typeof ScriptApp.getScriptId === 'function'
+    ? String(ScriptApp.getScriptId() || '').trim()
+    : '';
+  const effectiveEmail = typeof Session !== 'undefined' && typeof Session.getEffectiveUser === 'function'
+    ? String((Session.getEffectiveUser() && Session.getEffectiveUser().getEmail()) || '').trim().toLowerCase()
+    : '';
+  const spreadsheetId = String((props && props.getProperty('SPREADSHEET_ID')) || '').trim();
+  return Boolean(
+    scriptId &&
+    effectiveEmail &&
+    spreadsheetId &&
+    scriptId === PUBLIC_DEV_ENV_CONFIG_.scriptId &&
+    effectiveEmail === PUBLIC_DEV_ENV_CONFIG_.ownerEmail &&
+    spreadsheetId === PUBLIC_DEV_ENV_CONFIG_.spreadsheetId
+  );
+}
+
+function isPublicDevMode_(properties) {
+  if (!PUBLIC_DEV_ENV_CONFIG_.enabled) return false;
+  const props = properties || PropertiesService.getScriptProperties();
+  const explicit = String((props && props.getProperty('PUBLIC_DEV_MODE')) || '').trim().toLowerCase();
+  if (explicit && explicit !== 'true') return false;
+  return isPersonalDevEnvironment_(props);
+}
+
 function requireVisitAdmin_() {
   const properties = PropertiesService.getScriptProperties();
+  // Explicit public development mode bound to this personal development environment only.
+  if (isPublicDevMode_(properties)) return;
   // Explicit demo bypass only when explicitly 'true'; missing/false/other values fail closed.
   if (properties.getProperty('ADMIN_DEMO_MODE') === 'true') return;
   const email = String(Session.getActiveUser().getEmail() || '').trim().toLowerCase();
@@ -82,7 +119,10 @@ function readVisitWorkflow_(code, spreadsheet, options) {
     : [];
   return { visit:visit, workflow:workflow, stage:visitWorkflowStage_(workflow), attendance:attendance,
     roster:getVisitRoster_(visit).map(member=>Object.assign({},member,{attended:hasVisitAttendance_(attendance,{member_id:member.id,nama:member.nama})})),
-    rooms:!options||options.rooms!==false?readMeetingRoomOptions_(ss):[], simulated:false, storageRow:found?found.row:null };
+    rooms:!options||options.rooms!==false?readMeetingRoomOptions_(ss):[], simulated:false,
+    fonnteDisabled: typeof isFonnteDisabled_ === 'function' ? isFonnteDisabled_() : false,
+    publicDevMode: isPublicDevMode_(),
+    storageRow:found?found.row:null };
 }
 
 function getVisitWorkflow(payload) {

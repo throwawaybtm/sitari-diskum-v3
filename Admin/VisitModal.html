@@ -255,9 +255,12 @@
         panel+=`<form id="visitDestinationForm" class="visit-panel" hidden><p>Pilih satu atau lebih Bidang Tujuan. Penerima tamu mengikuti PIC masing-masing bidang.</p><div class="visit-detail-grid">${(data.destinations||[]).map(d=>`<label class="visit-destination-option"><input type="checkbox" value="${escapeHtml(d.bidang)}" ${selected.includes(d.bidang)?'checked':''}><span>${escapeHtml(d.bidang)}<small class="block text-teal-700 mt-1">PIC: ${escapeHtml(d.pic)}</small></span></label>`).join('')}</div>${visitAction('Simpan Bidang Tujuan','destinations',true,'fa-floppy-disk')}</form>`;
         panel+=`<div class="visit-confirm-actions"><button class="visit-secondary" type="button" onclick="document.getElementById('visitRescheduleForm').hidden=!document.getElementById('visitRescheduleForm').hidden"><i class="fa-solid fa-calendar-pen mr-2"></i>Ganti Jadwal</button>`;
         panel+=`<button class="visit-secondary" type="button" onclick="document.getElementById('visitDestinationForm').hidden=!document.getElementById('visitDestinationForm').hidden"><i class="fa-solid fa-building-user mr-2"></i>Pilih Bidang Tujuan</button>`;
-        panel+=visitAction(w.contactNotification&&w.contactNotification.success?'Notifikasi narahubung dikirim':'Kirim Notifikasi Narahubung','notifyContact',Boolean(String(v.tujuan_bidang||'').trim())&&!(w.contactNotification&&w.contactNotification.success),w.contactNotification&&w.contactNotification.success?'fa-check':'fa-paper-plane')+'</div>';
+        const contactNotif=w.contactNotification;
+        const contactDone=Boolean(contactNotif&&contactNotif.success);
+        panel+=visitAction(contactDone?(contactNotif.disabled||data.fonnteDisabled?'Notifikasi narahubung dilewati (Fonnte nonaktif)':'Notifikasi narahubung dikirim'):'Kirim Notifikasi Narahubung','notifyContact',Boolean(String(v.tujuan_bidang||'').trim())&&!contactDone,contactDone?'fa-check':'fa-paper-plane')+'</div>';
         if(!v.tujuan_bidang)panel+='<p class="text-slate-500">Pilih dan simpan Bidang Tujuan sebelum mengirim notifikasi.</p>';
         if(data.simulated)panel+='<p class="text-slate-500">Pengujian lokal: WhatsApp disimulasikan.</p>';
+        else if(data.fonnteDisabled)panel+='<p class="text-slate-500">Mode pengembangan publik: pengiriman WhatsApp Fonnte dinonaktifkan. Alur konfirmasi tetap berjalan tanpa mengirim pesan.</p>';
         panel+=visitAction(w.acknowledged?'Dikonfirmasi':'KONFIRMASI','confirm',!w.acknowledged&&Boolean(String(v.tujuan_bidang||'').trim()));
       }
     } else if (visitModalTab === 1) {
@@ -266,9 +269,11 @@
     } else if (visitModalTab === 2) {
       const recipients = String(v.lo_nama || '').split(';').map(s=>s.trim()).filter(Boolean);
       const complete = recipients.length > 0 && recipients.every(pic => w.notifications.some(n=>n.pic===pic && n.success));
-      panel = data.simulated ? '<div class="visit-note">Mode pengujian lokal: notifikasi disimulasikan. Tidak ada pesan WhatsApp yang dikirim.</div>' : '';
-      panel += `<ul class="space-y-3">${recipients.map(pic=>{const n=w.notifications.find(n=>n.pic===pic);return `<li class="flex justify-between gap-3"><strong>${escapeHtml(pic)}</strong><span class="${n&&n.success?'text-emerald-700':'text-slate-400'}">${n&&n.success?(n.simulated?'Simulasi berhasil':'Dikirim'):n&&n.error?escapeHtml(n.error):'Belum dikirim'}</span></li>`;}).join('')}</ul>`;
-      panel += visitAction(complete?'Notifikasi dikirim':'Kirim Notifikasi','notify',!readonly && data.stage===2 && !complete,complete?'fa-check':'fa-paper-plane','visitNotifyButton');
+      const disabledDelivery = Boolean(data.fonnteDisabled || w.notifications.some(n => n && n.disabled));
+      panel = data.simulated ? '<div class="visit-note">Mode pengujian lokal: notifikasi disimulasikan. Tidak ada pesan WhatsApp yang dikirim.</div>'
+        : disabledDelivery ? '<div class="visit-note">Mode pengembangan publik: integrasi WhatsApp Fonnte dinonaktifkan. Tidak ada pesan WhatsApp yang dikirim; proses jadwal tetap dapat dilanjutkan.</div>' : '';
+      panel += `<ul class="space-y-3">${recipients.map(pic=>{const n=w.notifications.find(n=>n.pic===pic);return `<li class="flex justify-between gap-3"><strong>${escapeHtml(pic)}</strong><span class="${n&&n.success?'text-emerald-700':'text-slate-400'}">${n&&n.success?(n.simulated?'Simulasi berhasil':n.disabled?'Dilewati (Fonnte nonaktif)':'Dikirim'):n&&n.error?escapeHtml(n.error):'Belum dikirim'}</span></li>`;}).join('')}</ul>`;
+      panel += visitAction(complete?(disabledDelivery?'Notifikasi dilewati (Fonnte nonaktif)':'Notifikasi dikirim'):'Kirim Notifikasi','notify',!readonly && data.stage===2 && !complete,complete?'fa-check':'fa-paper-plane','visitNotifyButton');
       panel += renderVisitBooking(data,complete);
     } else if (visitModalTab === 3) {
       panel = `<div class="visit-note">Presensi dari QR atau input manual admin pada agenda kunjungan di tab Jadwal Rapat ditampilkan sesuai daftar ketua dan anggota rombongan. Periksa hasilnya setelah kunjungan berlangsung.</div>`;
@@ -349,7 +354,12 @@
       if(action==='notifyContact'||action==='notify'){
         const results=action==='notifyContact'?[visitModalData.workflow.contactNotification]:visitModalData.workflow.notifications;
         const success=results.length&&results.every(n=>n&&n.success);
-        showToast(success?'success':'error',success?'Notifikasi dikirim':'Sebagian notifikasi gagal',visitModalData.simulated?'Simulasi lokal berhasil. Tidak ada WhatsApp dikirim.':success?'Pesan diterima Fonnte untuk dikirim melalui WhatsApp.':'Periksa hasil setiap penerima sebelum mencoba kembali.');
+        const disabledDelivery=Boolean(visitModalData.fonnteDisabled||results.some(n=>n&&n.disabled));
+        showToast(
+          success?'success':'error',
+          success?(disabledDelivery?'Notifikasi dilewati (Fonnte nonaktif)':'Notifikasi dikirim'):'Sebagian notifikasi gagal',
+          visitModalData.simulated?'Simulasi lokal berhasil. Tidak ada WhatsApp dikirim.':disabledDelivery&&success?'Integrasi WhatsApp Fonnte dinonaktifkan pada mode pengembangan. Tidak ada pesan yang dikirim.':success?'Pesan diterima Fonnte untuk dikirim melalui WhatsApp.':'Periksa hasil setiap penerima sebelum mencoba kembali.'
+        );
       }
     } catch (error) {
       buttons.forEach((b,i)=>b.disabled=disabled[i]);

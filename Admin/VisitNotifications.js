@@ -10,7 +10,22 @@ function normalizeVisitWhatsappPhone_(phone) {
   return target;
 }
 
+const FONNTE_DISABLED_MESSAGE_ = 'Integrasi WhatsApp Fonnte dinonaktifkan pada mode pengembangan publik.';
+
+function isFonnteDisabled_(properties) {
+  const props = properties || (typeof PropertiesService !== 'undefined' ? PropertiesService.getScriptProperties() : null);
+  const explicit = String((props && props.getProperty('FONNTE_DISABLED')) || '').trim().toLowerCase();
+  if (explicit === 'true') return true;
+  if (typeof isPublicDevMode_ === 'function' && isPublicDevMode_(props)) {
+    return typeof PUBLIC_DEV_ENV_CONFIG_ === 'undefined' || PUBLIC_DEV_ENV_CONFIG_.disableFonnte !== false;
+  }
+  return false;
+}
+
 function sendVisitWhatsapp_(phone,message) {
+  if(isFonnteDisabled_()) {
+    return {success:true,sent:false,skipped:true,disabled:true,delivery:'disabled',reason:FONNTE_DISABLED_MESSAGE_,at:new Date().toISOString()};
+  }
   const token=PropertiesService.getScriptProperties().getProperty('FONNTE_TOKEN');
   if(!token)throw new Error('Fonnte belum dikonfigurasi. Simpan FONNTE_TOKEN di Script Properties dan hubungkan perangkat WhatsApp.');
   const target=normalizeVisitWhatsappPhone_(phone);
@@ -29,7 +44,8 @@ function visitWhatsappMessage_(visit,schedule,audience) {
 }
 
 function notifyVisitPics_(visit,previous,schedule) {
-  if(!PropertiesService.getScriptProperties().getProperty('FONNTE_TOKEN'))throw new Error('Fonnte belum dikonfigurasi. Simpan FONNTE_TOKEN di Script Properties.');
+  const fonnteDisabled=isFonnteDisabled_();
+  if(!fonnteDisabled&&!PropertiesService.getScriptProperties().getProperty('FONNTE_TOKEN'))throw new Error('Fonnte belum dikonfigurasi. Simpan FONNTE_TOKEN di Script Properties.');
   const directory=VISIT_PIC_CONTACTS;
   const ids=String(visit.lo_id||'').split(';').map(s=>s.trim());
   return String(visit.lo_nama||'').split(';').map(s=>s.trim()).filter(Boolean).map((pic,idx)=>{

@@ -130,7 +130,8 @@ function createGasContext(options = {}) {
   const ctx = vm.createContext({
     Date: options.DateClass || Date,
     Session: {
-      getActiveUser: () => ({ getEmail: () => email })
+      getActiveUser: () => ({ getEmail: () => email }),
+      getEffectiveUser: () => ({ getEmail: () => (options.effectiveEmail !== undefined ? options.effectiveEmail : '') })
     },
     PropertiesService: {
       getScriptProperties: () => ({
@@ -151,6 +152,7 @@ function createGasContext(options = {}) {
       getActiveSpreadsheet: () => spreadsheet
     },
     ScriptApp: {
+      getScriptId: () => (options.scriptId !== undefined ? options.scriptId : ''),
       getService: () => ({ getUrl: () => 'https://script.google.com/macros/s/test/exec' })
     },
     CacheService: {
@@ -217,6 +219,7 @@ function createGasContext(options = {}) {
     'Admin/PublicApi.js',
     'Admin/VisitWorkflow.js',
     'Admin/VisitWorkflowStorage.js',
+    'Admin/VisitArchive.js',
     'Admin/AgendaDocuments.js',
     'Admin/AgendaAttendanceData.js'
   ];
@@ -224,7 +227,9 @@ function createGasContext(options = {}) {
     vm.runInContext(readText(file), ctx);
   }
 
-  ctx.configureNewDeployment_ = () => { counters.configureCalled++; };
+  if (!options.keepDeploymentConfig) {
+    ctx.configureNewDeployment_ = () => { counters.configureCalled++; };
+  }
   ctx.ensurePublicVisitDocuments_ = () => { counters.ensureDocsCalled++; };
   ctx.ensurePlutMeetingRoom_ = () => { counters.ensureRoomCalled++; };
   ctx.ensureEmployeeDirectory_ = () => { counters.ensureEmpCalled++; return 0; };
@@ -232,19 +237,18 @@ function createGasContext(options = {}) {
   return { ctx, counters, props, sheets, spreadsheet };
 }
 
-test('Admin and Public manifests satisfy dev trial access policy and revertible configuration', () => {
+test('Admin and Public manifests satisfy personal public dev mode policy and revertible configuration', () => {
   const adminManifest = JSON.parse(readText('Admin/appsscript.json'));
   assert.equal(adminManifest.webapp.executeAs, 'USER_DEPLOYING');
-  assert.equal(adminManifest.webapp.access, 'ANYONE');
+  assert.equal(adminManifest.webapp.access, 'ANYONE_ANONYMOUS');
   assert.notEqual(adminManifest.webapp.access, 'MYSELF');
-  assert.notEqual(adminManifest.webapp.access, 'ANYONE_ANONYMOUS');
 
   const publicManifest = JSON.parse(readText('Public/appsscript.json'));
   assert.equal(publicManifest.webapp.executeAs, 'USER_DEPLOYING');
   assert.equal(publicManifest.webapp.access, 'ANYONE_ANONYMOUS');
   const coreLib = publicManifest.dependencies.libraries.find(l => l.userSymbol === 'SiTariCore');
   assert.ok(coreLib);
-  assert.equal(coreLib.version, '46');
+  assert.equal(coreLib.version, '47');
 });
 
 test('doGet, include, and ADMIN_INCLUDE_FILES_ fail closed on consumer empty email and non-allowlisted includes', () => {
@@ -489,4 +493,169 @@ test('local private config files exist locally without placeholder tokens or dum
   assert.equal(resFo.data.lo_nama, 'Destri Wilia, S.E.');
   assert.equal(flushCount, 1);
   assert.equal(tamuSheet._rows[tamuSheet._rows.length - 1][0], 10);
+});
+
+test('PUBLIC_DEV_MODE enables anonymous Admin workflow with Fonnte disabled ONLY on verified personal dev environment', () => {
+  const DEV_SCRIPT_ID = '1jrzdwzt6xg-J1WcgY23FHET5eqJqOCZBcjcRmk3DUE5faGEYQyyJsob0';
+  const DEV_OWNER_EMAIL = 'riyanbwirawanto@gmail.com';
+  const DEV_SPREADSHEET_ID = '1c0HZKs1OfvCFd8naEz1gQz6y8BxGZ_VBr7S3k5miBo8';
+
+  const fullFiles = [
+    'Admin/Code.js',
+    'Admin/Setup.js',
+    'Admin/AutoSort.js',
+    'Admin/MeetingRooms.js',
+    'Admin/PublicApi.js',
+    'Admin/VisitPicContacts.js',
+    'Admin/VisitNotifications.js',
+    'Admin/VisitWorkflow.js',
+    'Admin/VisitWorkflowStorage.js',
+    'Admin/VisitArchive.js',
+    'Admin/AgendaDocuments.js',
+    'Admin/AgendaAttendanceData.js',
+    'Admin/DeploymentConfig.js'
+  ];
+
+  // Client or mismatched deployments must FAIL CLOSED even if PUBLIC_DEV_MODE='true' is set in Script Properties
+  for (const mismatch of [
+    { name: 'wrong scriptId', scriptId: 'client-script-id', effectiveEmail: DEV_OWNER_EMAIL, props: { SPREADSHEET_ID: DEV_SPREADSHEET_ID, PUBLIC_DEV_MODE: 'true' } },
+    { name: 'wrong effectiveEmail', scriptId: DEV_SCRIPT_ID, effectiveEmail: 'client-admin@diskum.go.id', props: { SPREADSHEET_ID: DEV_SPREADSHEET_ID, PUBLIC_DEV_MODE: 'true' } },
+    { name: 'wrong spreadsheetId', scriptId: DEV_SCRIPT_ID, effectiveEmail: DEV_OWNER_EMAIL, props: { SPREADSHEET_ID: 'client-sheet-id', PUBLIC_DEV_MODE: 'true' } },
+    { name: 'explicitly disabled', scriptId: DEV_SCRIPT_ID, effectiveEmail: DEV_OWNER_EMAIL, props: { SPREADSHEET_ID: DEV_SPREADSHEET_ID, PUBLIC_DEV_MODE: 'false' } }
+  ]) {
+    const blocked = createGasContext({
+      email: '',
+      scriptId: mismatch.scriptId,
+      effectiveEmail: mismatch.effectiveEmail,
+      props: mismatch.props,
+      files: fullFiles,
+      keepDeploymentConfig: true
+    });
+    assert.throws(() => blocked.ctx.doGet({ parameter: {} }), /belum diberi akses admin/, mismatch.name);
+    assert.equal(blocked.ctx.getDashboardData().success, false, mismatch.name);
+    assert.equal(blocked.counters.urlFetch, 0, mismatch.name);
+    assert.equal(blocked.counters.lockWait, 0, mismatch.name);
+  }
+
+  // Verified personal dev environment: anonymous browser can access Admin UI and normal workflows without FONNTE_TOKEN or Fonnte HTTP calls
+  const devCtx = createGasContext({
+    email: '',
+    scriptId: DEV_SCRIPT_ID,
+    effectiveEmail: DEV_OWNER_EMAIL,
+    props: {
+      SPREADSHEET_ID: DEV_SPREADSHEET_ID,
+      FOLDER_BUKTI_ID: 'folder-bukti-test',
+      FONNTE_TOKEN: 'secret-token-must-never-be-used-or-exposed',
+      APPROVER_EMAIL: DEV_OWNER_EMAIL
+    },
+    files: fullFiles,
+    keepDeploymentConfig: true
+  });
+
+  assert.doesNotThrow(() => devCtx.ctx.doGet({ parameter: {} }));
+  assert.equal(devCtx.props.ADMIN_DEMO_MODE, 'false', 'ADMIN_DEMO_MODE must remain false');
+  assert.equal(devCtx.props.PUBLIC_DEV_MODE, 'true');
+  assert.equal(devCtx.props.FONNTE_DISABLED, 'true');
+  assert.equal(devCtx.ctx.include('Stylesheet'), '<!-- Stylesheet -->');
+  assert.throws(() => devCtx.ctx.include('VisitPicContacts'), /Konten tidak tersedia/, 'Include allowlist remains intact in public dev mode');
+
+  // Normal Admin reads + Nov 2 cutoff remain enforced
+  const tamuList = devCtx.ctx.getTamuList();
+  assert.equal(tamuList.success, true);
+  assert.deepEqual(tamuList.data.map(v => v.id), [5]);
+
+  // Input validation & workflow integrity still enforced (invalid meeting payload and TLD SPPD guard fail cleanly)
+  assert.throws(() => devCtx.ctx.simpanJadwalRapat({}), /Judul agenda rapat wajib diisi/);
+  assert.throws(() => devCtx.ctx.ttdPejabatTeknis(2), /Gunakan modal EDIT kunjungan/);
+
+  // Normal Admin write (meeting creation) succeeds without Google Sign-In
+  const okMeeting = devCtx.ctx.simpanJadwalRapat({
+    judul: 'Rapat Dev Publik',
+    ruangan: '1|Ruang Rapat Utama (Lantai 2)',
+    tanggal: '2026-11-16',
+    jam_mulai: '13:00',
+    jam_selesai: '14:00',
+    bidang: 'Sekretariat',
+    pimpinan: 'Kadis',
+    agenda: 'Uji Public Dev Mode'
+  });
+  assert.equal(okMeeting.success, true, okMeeting.error);
+
+  // Public attendance compatibility still works alongside PUBLIC_DEV_MODE
+  assert.equal(devCtx.ctx.getPublicAttendanceMasterData().success, true);
+  assert.equal(devCtx.ctx.getPublicAttendanceCalendar().success, true);
+
+  // Full Visit workflow with Fonnte disabled and ZERO external requests
+  let wf = devCtx.ctx.getVisitWorkflow({ kode_kunjungan: 'TLD-02112026-002' });
+  assert.equal(wf.success, true, wf.error);
+  assert.equal(wf.data.fonnteDisabled, true);
+  assert.equal(wf.data.publicDevMode, true);
+
+  let step = devCtx.ctx.saveVisitWorkflow({
+    kode_kunjungan: 'TLD-02112026-002',
+    version: wf.data.workflow.version,
+    action: 'destinations',
+    destinations: ['Bidang Pengembangan Usaha Mikro']
+  });
+  assert.equal(step.success, true, step.error);
+
+  step = devCtx.ctx.saveVisitWorkflow({
+    kode_kunjungan: 'TLD-02112026-002',
+    version: step.data.workflow.version,
+    action: 'notifyContact'
+  });
+  assert.equal(step.success, true, step.error);
+  assert.equal(step.data.workflow.contactNotification.success, true);
+  assert.equal(step.data.workflow.contactNotification.disabled, true);
+  assert.equal(step.data.workflow.contactNotification.sent, false);
+  assert.equal(step.data.workflow.contactNotification.skipped, true);
+
+  step = devCtx.ctx.saveVisitWorkflow({
+    kode_kunjungan: 'TLD-02112026-002',
+    version: step.data.workflow.version,
+    action: 'confirm'
+  });
+  assert.equal(step.success, true, step.error);
+
+  const samplePdf = 'data:application/pdf;base64,' + Buffer.from('%PDF-1.4\n%test').toString('base64');
+  step = devCtx.ctx.saveVisitWorkflow({
+    kode_kunjungan: 'TLD-02112026-002',
+    version: step.data.workflow.version,
+    action: 'disposisi',
+    file: { name: 'disposisi.pdf', data: samplePdf }
+  });
+  assert.equal(step.success, true, step.error);
+
+  step = devCtx.ctx.saveVisitWorkflow({
+    kode_kunjungan: 'TLD-02112026-002',
+    version: step.data.workflow.version,
+    action: 'notify'
+  });
+  assert.equal(step.success, true, step.error);
+  assert.ok(step.data.workflow.notifications.length >= 1);
+  assert.ok(step.data.workflow.notifications.every(n => n.success && n.disabled && !n.sent));
+
+  step = devCtx.ctx.saveVisitWorkflow({
+    kode_kunjungan: 'TLD-02112026-002',
+    version: step.data.workflow.version,
+    action: 'book',
+    booking: { ruangan_id: 1, tanggal: '2026-11-15', jam_mulai: '09:00', jam_selesai: '10:30' }
+  });
+  assert.equal(step.success, true, step.error);
+  assert.equal(step.data.workflow.status, 'Menunggu Kedatangan');
+  assert.equal(devCtx.counters.urlFetch, 0, 'Fonnte HTTP endpoint must never be called in public dev mode');
+
+  // configureNewDeployment_ on non-dev environment initializes PUBLIC_DEV_MODE='false' and FONNTE_DISABLED='false'
+  const clientCtx = createGasContext({
+    email: 'client@diskum.go.id',
+    scriptId: 'client-script-id',
+    effectiveEmail: 'client@diskum.go.id',
+    props: { SPREADSHEET_ID: 'client-ss-id', APPROVER_EMAIL: 'client@diskum.go.id' },
+    files: fullFiles,
+    keepDeploymentConfig: true
+  });
+  assert.doesNotThrow(() => clientCtx.ctx.doGet({ parameter: {} }));
+  assert.equal(clientCtx.props.PUBLIC_DEV_MODE, 'false');
+  assert.equal(clientCtx.props.FONNTE_DISABLED, 'false');
+  assert.equal(clientCtx.props.ADMIN_DEMO_MODE, 'false');
 });

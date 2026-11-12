@@ -8,13 +8,14 @@ const vm = require('node:vm');
 
 const ROOT = path.resolve(__dirname, '../..');
 
-function createFonnteContext({ contacts = [], token = 'test-fonnte-token', responseStatus = 200, responseBody = { status: true } } = {}) {
+function createFonnteContext({ contacts = [], token = 'test-fonnte-token', responseStatus = 200, responseBody = { status: true }, props = {} } = {}) {
   const requests = [];
+  const mergedProps = Object.assign({ FONNTE_TOKEN: token }, props);
   const context = vm.createContext({
     VISIT_PIC_CONTACTS: contacts,
     PropertiesService: {
       getScriptProperties: () => ({
-        getProperty: key => (key === 'FONNTE_TOKEN' ? token : '')
+        getProperty: key => (Object.prototype.hasOwnProperty.call(mergedProps, key) ? mergedProps[key] : '')
       })
     },
     UrlFetchApp: {
@@ -265,4 +266,76 @@ test('PIC directory configs stay in parity across Admin, Tamu-FO, Tamu-Luar, and
   }
   assert.doesNotMatch(JSON.stringify(foCtx.getTddPublicDestinations_()), /phone|PHONE_NUMBER_PLACEHOLDER/);
   assert.doesNotMatch(JSON.stringify(luarCtx.getTldPublicDestinations_()), /phone|PHONE_NUMBER_PLACEHOLDER/);
+});
+
+test('FONNTE_DISABLED centrally blocks all outgoing Fonnte requests while preserving validation and workflow progress', () => {
+  const contacts = [
+    { id: 'pengembangan-mikro', bidang: 'Bidang Pengembangan Usaha Mikro', pic: 'PIC Mikro Uji', phone: '0800-0000-0101' },
+    { id: 'kewirausahaan', bidang: 'Bidang Kewirausahaan', pic: 'PIC Wirausaha Uji', phone: '+62 800-0000-0202' }
+  ];
+
+  // Disabled with missing FONNTE_TOKEN AND disabled with valid FONNTE_TOKEN must both skip HTTP cleanly
+  for (const token of ['', 'real-fonnte-token']) {
+    const { context, requests } = createFonnteContext({
+      contacts,
+      token,
+      props: { FONNTE_DISABLED: 'true' }
+    });
+    const contactRes = context.sendVisitWhatsapp_('0812-3456-7890', 'Pesan Uji');
+    assert.equal(contactRes.success, true);
+    assert.equal(contactRes.sent, false);
+    assert.equal(contactRes.skipped, true);
+    assert.equal(contactRes.disabled, true);
+    assert.equal(contactRes.delivery, 'disabled');
+    assert.equal(requests.length, 0);
+
+    // Even empty/incomplete legacy phone strings do not throw when Fonnte is disabled
+    const legacyContactRes = context.sendVisitWhatsapp_('081', 'Pesan Uji');
+    assert.equal(legacyContactRes.success, true);
+    assert.equal(legacyContactRes.disabled, true);
+    assert.equal(requests.length, 0);
+
+    const picRes = context.notifyVisitPics_({
+      kode_kunjungan: 'TLD-12112026-001',
+      instansi: 'Dinas Uji',
+      keperluan: 'Rapat Koordinasi',
+      tanggal_kunjungan: '2026-11-12',
+      jam_kunjungan: '09:00',
+      tujuan_bidang: contacts.map(c => c.bidang).join('; '),
+      lo_id: contacts.map(c => c.id).join('; '),
+      lo_nama: contacts.map(c => c.pic).join('; ')
+    }, [], {});
+    assert.equal(picRes.length, 2);
+    assert.ok(picRes.every(item => item.success === true && item.sent === false && item.disabled === true && item.delivery === 'disabled'));
+    assert.equal(requests.length, 0);
+  }
+
+  // VisitModal UI reflects disabled Fonnte delivery transparently without claiming a WhatsApp message was sent
+  const modalHtml = fs.readFileSync(path.join(ROOT, 'Admin/VisitModal.html'), 'utf8');
+  const fields = {};
+  const modalCtx = vm.createContext({
+    document: { addEventListener() {}, getElementById: id => (id === 'visitDisposisi' ? null : (fields[id] ||= {})) },
+    escapeHtml: v => String(v ?? ''),
+    formatMeetingDate: v => v
+  });
+  vm.runInContext(modalHtml.match(/<script>([^]*?)<\/script>/)[1], modalCtx);
+  modalCtx.data = {
+    visit: { kode_kunjungan: 'TLD-12112026-001', tujuan_bidang: 'Bidang Pengembangan Usaha Mikro', lo_nama: 'PIC Mikro Uji', tanggal_kunjungan: '2026-11-12', jam_kunjungan: '09:00' },
+    workflow: { status: 'Menunggu Konfirmasi', contactNotification: { success: true, disabled: true, sent: false }, notifications: [] },
+    stage: 0,
+    rooms: [],
+    simulated: false,
+    fonnteDisabled: true
+  };
+  vm.runInContext('visitModalData=data;visitModalTab=0;renderVisitWorkflow();', modalCtx);
+  assert.match(fields.visitModalContent.innerHTML, /Notifikasi narahubung dilewati \(Fonnte nonaktif\)/);
+  assert.doesNotMatch(fields.visitModalContent.innerHTML, /Notifikasi narahubung dikirim/);
+
+  modalCtx.data.stage = 2;
+  modalCtx.data.workflow.status = 'Sudah Disposisi';
+  modalCtx.data.workflow.notifications = [{ pic: 'PIC Mikro Uji', success: true, disabled: true, sent: false }];
+  vm.runInContext('visitModalTab=2;renderVisitWorkflow();', modalCtx);
+  assert.match(fields.visitModalContent.innerHTML, /Dilewati \(Fonnte nonaktif\)/);
+  assert.match(fields.visitModalContent.innerHTML, /Notifikasi dilewati \(Fonnte nonaktif\)/);
+  assert.doesNotMatch(fields.visitModalContent.innerHTML, /Pesan diterima Fonnte/);
 });
