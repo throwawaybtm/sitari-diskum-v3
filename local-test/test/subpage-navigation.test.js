@@ -92,6 +92,32 @@ test('rendered Admin HTML wires Form TLD and Form TDD buttons to new-tab handler
  for(const tab of ['dashboard','tamu','calendar','qrcode']){
   assert.match(rendered,new RegExp(`onclick="switchTab\\('${tab}'\\)"`));
  }
- assert.match(rendered.match(/<a href="[^\n]*\?page=presensi-admin"[^>]*>/)[0],/target="_top"/);
- assert.match(rendered,/escapeHtml\(meeting\.notula\.url\)\}" target="_blank"/);
+ assert.match(rendered.match(/<a href="[^\n]*\?page=presensi-admin"[^>]*>/)[0],/target="_blank"\s+rel="noopener noreferrer"/);
+ assert.match(rendered,/escapeHtml\(meeting\.notula\.url\)\}" target="_blank" rel="noopener noreferrer"/);
+});
+
+test('missing APP_URL shows an error toast without calling window.open for Presensi subpages',()=>{
+ const toasts=[],opens=[];
+ const c=vm.createContext({
+  TAMU_LUAR_URL:'/public?page=tld',
+  TAMU_FO_URL:'/public?page=tdd',
+  APP_URL:'',
+  window:{open:(...args)=>opens.push(args)},
+  showToast:(...args)=>toasts.push(args)
+ });
+ extractNavHandlers(html,c);
+ c.openLayarPresensiTab();
+ c.openLayarPresensiTabWithId('42');
+ assert.deepEqual(opens,[]);
+ assert.equal(toasts.length,2);
+ assert.ok(toasts.every(args=>args[0]==='error'));
+});
+
+test('all external document and photo preview links use target="_blank" rel="noopener noreferrer"',()=>{
+ for(const file of ['Admin/Index.html','Admin/VisitModal.html','Admin/MeetingPhotos.html','Admin/TddModal.html']){
+  const content=fs.readFileSync(file,'utf8');
+  assert.doesNotMatch(content,/target="_blank"\s+rel="noopener"(?!\s+noreferrer)/,file+' should include noreferrer');
+  assert.match(content,/target="_blank"[^>]*rel="noopener noreferrer"|rel = 'noopener noreferrer'/,file+' uses target="_blank" rel="noopener noreferrer"');
+ }
+ assert.doesNotMatch(html,/target="_top"/,'Admin/Index.html should not navigate the top window');
 });

@@ -392,7 +392,7 @@
               aria-controls="bookingCalendar"
               class="w-40 px-3.5 py-2.5 min-h-10 bg-gradient-to-r from-teal-800 via-sky-800 to-blue-900 hover:brightness-110 text-white rounded-xl text-xs font-bold transition inline-flex items-center justify-center shrink-0"><i
                 class="fa-solid fa-calendar-days mr-1.5" aria-hidden="true"></i>Kalender Agenda</button>
-            <a href="<?= typeof adminAppUrl !== 'undefined' ? adminAppUrl : '' ?>?page=presensi-admin" target="_top"
+            <a href="<?= typeof adminAppUrl !== 'undefined' ? adminAppUrl : '' ?>?page=presensi-admin" target="_blank" rel="noopener noreferrer"
               class="w-40 px-3.5 py-2.5 min-h-10 bg-gradient-to-r from-teal-800 via-sky-800 to-blue-900 hover:brightness-110 text-white rounded-xl text-xs font-bold transition inline-flex items-center justify-center shrink-0">
               <i class="fa-solid fa-chart-column mr-1.5"></i> Isi presensi
             </a>
@@ -1971,12 +1971,20 @@
       if (opened && typeof opened === 'object') opened.opener = null;
     }
     function openLayarPresensiTab() {
+      if (!APP_URL) {
+        if (typeof showToast === 'function') showToast('error', 'URL Belum Diatur', 'URL halaman presensi belum tersedia.');
+        return;
+      }
       const url = APP_URL + '?page=presensi';
       const opened = window.open(url, '_blank', 'noopener,noreferrer');
       if (opened && typeof opened === 'object') opened.opener = null;
     }
     function openLayarPresensiTabWithId(id) {
-      const url = APP_URL + '?page=presensi&id=' + id;
+      if (!APP_URL) {
+        if (typeof showToast === 'function') showToast('error', 'URL Belum Diatur', 'URL halaman presensi belum tersedia.');
+        return;
+      }
+      const url = APP_URL + '?page=presensi&id=' + encodeURIComponent(String(id ?? ''));
       const opened = window.open(url, '_blank', 'noopener,noreferrer');
       if (opened && typeof opened === 'object') opened.opener = null;
     }
@@ -2069,7 +2077,7 @@
       const notulaInfo = document.getElementById('meetingEditNotulaInfo');
       if (notulaInfo) {
         notulaInfo.innerHTML = meeting.notula
-          ? `<div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"><span class="text-xs font-semibold text-slate-700 break-all">${escapeHtml(meeting.notula.name || 'E-Notula')}</span><a href="${escapeHtml(meeting.notula.url)}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-sky-100 text-sky-800 text-xs font-bold inline-flex items-center"><i class="fa-solid fa-eye mr-1.5"></i>Lihat E-Notula</a></div>`
+          ? `<div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"><span class="text-xs font-semibold text-slate-700 break-all">${escapeHtml(meeting.notula.name || 'E-Notula')}</span><a href="${escapeHtml(meeting.notula.url)}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-lg bg-sky-100 text-sky-800 text-xs font-bold inline-flex items-center"><i class="fa-solid fa-eye mr-1.5"></i>Lihat E-Notula</a></div>`
           : '<p class="text-xs text-slate-500">Belum ada E-notula.</p>';
       }
       const notulaUpload = document.getElementById('meetingEditNotulaUpload');

@@ -170,14 +170,14 @@
   }
   function visitFileLink(file, label) {
     if (!file || !file.url || !/^(https:\/\/|\/local-doc\/)/i.test(file.url)) return '';
-    return `<div class="visit-document-card"><strong class="visit-document-title">${escapeHtml(label || file.name || 'Dokumen')}</strong><div class="visit-document-preview">${visitDocumentPreview(file,label)}</div><a class="visit-file" href="${escapeHtml(file.url)}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i>Buka / unduh dokumen</a></div>`;
+    return `<div class="visit-document-card"><strong class="visit-document-title">${escapeHtml(label || file.name || 'Dokumen')}</strong><div class="visit-document-preview">${visitDocumentPreview(file,label)}</div><a class="visit-file" href="${escapeHtml(file.url)}" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-arrow-up-right-from-square"></i>Buka / unduh dokumen</a></div>`;
   }
   function visitUpload(id, label, existing) {
-    return `<div class="visit-document-card"><label for="${id}" class="visit-document-title">${escapeHtml(label)} <span class="visit-required">*</span></label><div id="${id}Preview" class="visit-document-preview">${visitDocumentPreview(existing,label)}</div><input id="${id}" type="file" onchange="previewVisitSelection(this)" accept="application/pdf,image/jpeg,image/png,image/webp,image/heic,image/heif"><p class="text-[10px] text-slate-400">PDF / Foto · Maksimal 5 MB</p><a id="${id}Open" class="visit-file" href="${escapeHtml(existing&&existing.url||'')}" target="_blank" rel="noopener" ${existing&&existing.url?'':'hidden'}>Buka / unduh dokumen</a></div>`;
+    return `<div class="visit-document-card"><label for="${id}" class="visit-document-title">${escapeHtml(label)} <span class="visit-required">*</span></label><div id="${id}Preview" class="visit-document-preview">${visitDocumentPreview(existing,label)}</div><input id="${id}" type="file" onchange="previewVisitSelection(this)" accept="application/pdf,image/jpeg,image/png,image/webp,image/heic,image/heif"><p class="text-[10px] text-slate-400">PDF / Foto · Maksimal 5 MB</p><a id="${id}Open" class="visit-file" href="${escapeHtml(existing&&existing.url||'')}" target="_blank" rel="noopener noreferrer" ${existing&&existing.url?'':'hidden'}>Buka / unduh dokumen</a></div>`;
   }
   function visitFileRow(file,index) {
     if(!file||!file.url||!/^(https:\/\/|\/local-doc\/)/i.test(file.url))return '';
-    return `<div class="visit-file-row"><strong><i class="fa-regular fa-file-lines text-teal-700 mr-2"></i>${escapeHtml(file.name||'Dokumen Kunjungan')}</strong><div class="visit-file-actions"><a class="visit-secondary" href="${escapeHtml(file.url)}" target="_blank" rel="noopener"><i class="fa-solid fa-eye mr-1"></i>View</a><button type="button" class="visit-secondary" onclick="downloadVisitDocument(${index},this)"><i class="fa-solid fa-download mr-1"></i>Download</button></div></div>`;
+    return `<div class="visit-file-row"><strong><i class="fa-regular fa-file-lines text-teal-700 mr-2"></i>${escapeHtml(file.name||'Dokumen Kunjungan')}</strong><div class="visit-file-actions"><a class="visit-secondary" href="${escapeHtml(file.url)}" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-eye mr-1"></i>View</a><button type="button" class="visit-secondary" onclick="downloadVisitDocument(${index},this)"><i class="fa-solid fa-download mr-1"></i>Download</button></div></div>`;
   }
   function visitDocumentPreview(file,label) {
     const title=escapeHtml(label||file&&file.name||'Dokumen');
