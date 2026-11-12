@@ -9,7 +9,7 @@ const { testDocument } = require('./tld-test-data');
 const { completeTddPayload } = require('./tdd-test-data');
 const { completeMeetingPayload } = require('./meeting-test-data');
 
-const FIXED_NOW = new Date('2026-10-24T18:30:00.000Z');
+const FIXED_NOW = new Date('2026-11-04T18:30:00.000Z');
 
 async function withServer(run) {
   const server = createLocalTestServer({ now: FIXED_NOW });
@@ -248,8 +248,8 @@ test('simulates the two allowed mutations locally', async () => {
 test('adds local TDD and TLD submissions to the Admin visitor data', async () => {
   await withServer(async baseUrl => {
     const initial=(await (await postJson(baseUrl,'getTamuList')).json()).data;
-    const serial=Math.max(0,...initial.map(v=>/^(?:TLD|TDD)-\d{2}102026-(\d+)$/.exec(v.kode_kunjungan)).filter(Boolean).map(m=>Number(m[1])));
-    const foCode='TDD-25102026-'+String(serial+1).padStart(3,'0'),luarCode='TLD-26102026-'+String(serial+2).padStart(3,'0');
+    const serial=Math.max(0,...initial.map(v=>/^(?:TLD|TDD)-\d{2}112026-(\d+)$/.exec(v.kode_kunjungan)).filter(Boolean).map(m=>Number(m[1])));
+    const foCode='TDD-05112026-'+String(serial+1).padStart(3,'0'),luarCode='TLD-06112026-'+String(serial+2).padStart(3,'0');
     const foResponse = await postJson(baseUrl, 'registerTamuFo', {
       ketua_nama: 'Pengunjung Lokal FO',
       pengikut_list: 'Pengunjung Lokal FO',
@@ -270,7 +270,7 @@ test('adds local TDD and TLD submissions to the Admin visitor data', async () =>
       pengikut_list: 'Anggota Satu, Anggota Dua',
       tujuan_bidang: ['Bidang Pengembangan Usaha Mikro', 'Sekretariat (Umum dan Kepegawaian)'],
       keperluan: 'Pengujian formulir TLD',
-      tanggal_kunjungan: '2026-10-26',
+      tanggal_kunjungan: '2026-11-06',
       jam_kunjungan: '09:00',
       narahubung_hp: '081298765432',
       bawa_sppd: 1,
@@ -293,12 +293,12 @@ test('adds local TDD and TLD submissions to the Admin visitor data', async () =>
       tujuan_bidang: '',
       lo_nama: ''
     });
-    assert.equal(listPayload.data.length, 22);
+    assert.equal(listPayload.data.length, 2);
     assert.equal(listPayload.data[0].kode_kunjungan, luarCode);
     assert.equal(listPayload.data[1].kode_kunjungan, foCode);
     assert.equal(listPayload.data[1].ketua_nama, 'Pengunjung Lokal FO');
     assert.equal(listPayload.data[1].pengikut_list, 'Pengunjung Lokal FO');
-    assert.equal(dashboardPayload.data.stats.totalTamu, 22);
+    assert.equal(dashboardPayload.data.stats.totalTamu, 2);
     assert.equal(dashboardPayload.data.stats.tamuHariIni, 1);
     assert.equal(dashboardPayload.data.recentTamu[0].kode_kunjungan, luarCode);
   });

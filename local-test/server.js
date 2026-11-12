@@ -153,8 +153,8 @@ function readJsonBody(request, limitBytes = BODY_LIMIT_BYTES) {
   });
 }
 
-function createLocalTestServer({ now = () => new Date() } = {}) {
-  const store = createFixtureStore(now,{deploymentPreview:true});
+function createLocalTestServer({ now = () => new Date(), seed, employees } = {}) {
+  const store = createFixtureStore(now, { seed, employees });
 
   return http.createServer(async (request, response) => {
     try {

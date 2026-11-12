@@ -624,7 +624,15 @@ test('attendance list orders Diskum attendees by official organizational hierarc
 });
 
 test('local HTTP server supports Revision 04 postpone, reschedule with history, descending sort, and hierarchy attendance order', async () => {
-  const server = createLocalTestServer();
+  const server = createLocalTestServer({
+    now: () => new Date('2026-11-10T05:00:00Z'),
+    seed: {
+      meetings: [
+        { id: 101, kode_rapat: 'RPT-20261102-101', judul_rapat: 'Rapat Seed 1', ruangan_id: 6001, nama_ruangan: 'Ruang Rapat Utama Diskum', tanggal: '2026-11-02', jam_mulai: '09:00', jam_selesai: '10:30', penyelenggara_bidang: 'Sekretariat', pimpinan_rapat: 'Adrial', jumlah_peserta: 5, agenda: 'Agenda 1', status: 'Terjadwal' },
+        { id: 102, kode_rapat: 'RPT-20261103-102', judul_rapat: 'Rapat Seed 2', ruangan_id: 6002, nama_ruangan: 'Ruangan Bidang Koperasi & UMKM', tanggal: '2026-11-03', jam_mulai: '13:00', jam_selesai: '14:30', penyelenggara_bidang: 'Bidang Koperasi', pimpinan_rapat: 'Kabid', jumlah_peserta: 4, agenda: 'Agenda 2', status: 'Terjadwal' }
+      ]
+    }
+  });
   server.listen(0, '127.0.0.1');
   await once(server, 'listening');
   const base = `http://127.0.0.1:${server.address().port}`;

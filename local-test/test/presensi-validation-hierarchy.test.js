@@ -303,29 +303,29 @@ test('TLD Presensi displays red asterisk on Jabatan and enforces required valida
 test('GAS and local server reject missing/whitespace Jabatan for TLD Presensi while preserving Pemko/Diskum/manual optional Jabatan', async () => {
   const visitRow = Array(20).fill('');
   visitRow[0] = 1;
-  visitRow[1] = 'TLD-26102026-001';
+  visitRow[1] = 'TLD-02112026-001';
   visitRow[2] = 'luar_daerah';
   visitRow[3] = 'Dinas Koperasi Kab. Uji';
   visitRow[5] = 2;
   visitRow[6] = 'Ketua Terdaftar';
   visitRow[7] = 'Anggota Satu';
-  visitRow[12] = '2026-10-26';
+  visitRow[12] = '2026-11-02';
   visitRow[13] = '09:00';
   visitRow[19] = 'Menunggu Kedatangan';
   const wfState = {
     version: 1,
     status: 'Menunggu Kedatangan',
-    booking: { id: 9, kode_rapat: 'VISIT-TLD-26102026-001', tanggal: '2026-10-26', jam_mulai: '09:00', jam_selesai: '11:00' },
+    booking: { id: 9, kode_rapat: 'VISIT-TLD-02112026-001', tanggal: '2026-11-02', jam_mulai: '09:00', jam_selesai: '11:00' },
     files: {},
     history: []
   };
   const { context, presensiSheet } = createGasContext({
     visits: [visitRow],
     meetings: [
-      [9, 'VISIT-TLD-26102026-001', 'Kunjungan Uji', 1, 'Ruang Rapat Utama Diskum', '2026-10-26', '09:00', '11:00', 'Sekretariat', 'PIC', 2, 'Agenda', 'Terjadwal', ''],
-      [10, 'RPT-10', 'Rapat Internal', 1, 'Ruang Rapat Utama Diskum', '2026-10-26', '13:00', '14:00', 'Sekretariat', 'PIC', 5, 'Agenda', 'Terjadwal', '']
+      [9, 'VISIT-TLD-02112026-001', 'Kunjungan Uji', 1, 'Ruang Rapat Utama Diskum', '2026-11-02', '09:00', '11:00', 'Sekretariat', 'PIC', 2, 'Agenda', 'Terjadwal', ''],
+      [10, 'RPT-10', 'Rapat Internal', 1, 'Ruang Rapat Utama Diskum', '2026-11-02', '13:00', '14:00', 'Sekretariat', 'PIC', 5, 'Agenda', 'Terjadwal', '']
     ],
-    workflows: [['TLD-26102026-001', 1, JSON.stringify(wfState), '2026-10-26T08:00:00Z']]
+    workflows: [['TLD-02112026-001', 1, JSON.stringify(wfState), '2026-11-02T08:00:00Z']]
   });
 
   // GAS rejects missing & whitespace-only jabatan on TLD QR & AdminEntry
@@ -341,7 +341,7 @@ test('GAS and local server reject missing/whitespace Jabatan for TLD Presensi wh
   assert.equal(context.submitPresensiRapat({ rapat_id: 10, kategori_peserta: 'OPD_Pemko', nama: 'Pejabat Pemko', opd_pemko: 'Dinas Kesehatan Kota Batam', jabatan: '' }).success, true);
 
   // Local HTTP server parity
-  const server = createLocalTestServer();
+  const server = createLocalTestServer({ now: () => new Date('2026-11-02T12:00:00Z') });
   server.listen(0, '127.0.0.1');
   await once(server, 'listening');
   const base = `http://127.0.0.1:${server.address().port}`;
@@ -355,7 +355,7 @@ test('GAS and local server reject missing/whitespace Jabatan for TLD Presensi wh
       ketua_nama: 'Ketua Local',
       pengikut_list: 'Anggota Local',
       jumlah_orang: 2,
-      tanggal_kunjungan: '2026-10-26'
+      tanggal_kunjungan: '2026-11-02'
     }));
     const code = reg.data.kode_kunjungan;
     const wf0 = (await rpc('getVisitWorkflow', { kode_kunjungan: code })).data;
@@ -364,7 +364,7 @@ test('GAS and local server reject missing/whitespace Jabatan for TLD Presensi wh
     d = await act('confirm', {}, d.workflow.version);
     d = await act('disposisi', { file: { name: 'd.pdf', data: 'data:application/pdf;base64,JVBERg==' } }, d.workflow.version);
     d = await act('notify', {}, d.workflow.version);
-    d = await act('book', { booking: { ruangan_id: 6001, tanggal: '2026-10-26', jam_mulai: '15:00', jam_selesai: '16:00' } }, d.workflow.version);
+    d = await act('book', { booking: { ruangan_id: 6001, tanggal: '2026-11-02', jam_mulai: '15:00', jam_selesai: '16:00' } }, d.workflow.version);
     const rapatId = d.workflow.booking.id;
 
     const badQr = await rpc('submitPresensiRapat', { rapat_id: rapatId, member_id: 'ketua', kategori_peserta: 'Tamu_Luar', jabatan: '  ' });
@@ -385,18 +385,18 @@ test('hierarchy sorting handles leaders, unit order, equal/unknown ranks, and pr
 
   // Deliberately pre-sorted DESC (as GAS autoSortPresensi does) with same-minute timestamps & unknown/external ranks.
   const storedRows = [
-    [6, 9, 'Rapat Gabungan', 'Tamu_Luar', 'Tamu Staf Awal', '-', 'Staf Pelaksana', 'Pemkab Lain', '', '2026-10-26 08:05:00', 'anggota-1', 'QR', '2026-10-26 08:05:00'],
-    [5, 9, 'Rapat Gabungan', 'Tamu_Luar', 'Tamu Kadis Belakangan', '-', 'Kepala Dinas', 'Pemkab Lain', '', '2026-10-26 08:05:40', 'ketua', 'QR', '2026-10-26 08:05:40'],
-    [4, 9, 'Rapat Gabungan', 'Diskum', 'Diskum Tidak Terdaftar B', '-', 'Tenaga Ahli', 'Diskum Batam', '', '2026-10-26 08:04:50', '', 'QR', '2026-10-26 08:04:50'],
-    [3, 9, 'Rapat Gabungan', 'Diskum', 'Diskum Tidak Terdaftar A', '-', 'Staf Honorer', 'Diskum Batam', '', '2026-10-26 08:04:10', '', 'QR', '2026-10-26 08:04:10'],
-    [2, 9, 'Rapat Gabungan', 'Diskum', 'Vinggo Sepco Putra, A.Md.', '19960913 202203 1 003', 'Pengolah Data dan Informasi', 'Diskum Batam', '', '2026-10-26 08:10:00', '', 'QR', '2026-10-26 08:10:00'],
-    [1, 9, 'Rapat Gabungan', 'Diskum', 'Adrial, S.K.M, M.K.M.', '19710520 199403 1 009', 'Sekretaris', 'Diskum Batam', '', '2026-10-26 08:20:00', '', 'QR', '2026-10-26 08:20:00'],
-    [7, 9, 'Rapat Gabungan', 'Diskum', 'Salim, S.Sos, M.Si', '19681021 199010 1 001', 'Kepala Dinas', 'Diskum Batam', '', '2026-10-26 08:30:00', '', 'QR', '2026-10-26 08:30:00']
+    [6, 9, 'Rapat Gabungan', 'Tamu_Luar', 'Tamu Staf Awal', '-', 'Staf Pelaksana', 'Pemkab Lain', '', '2026-11-02 08:05:00', 'anggota-1', 'QR', '2026-11-02 08:05:00'],
+    [5, 9, 'Rapat Gabungan', 'Tamu_Luar', 'Tamu Kadis Belakangan', '-', 'Kepala Dinas', 'Pemkab Lain', '', '2026-11-02 08:05:40', 'ketua', 'QR', '2026-11-02 08:05:40'],
+    [4, 9, 'Rapat Gabungan', 'Diskum', 'Diskum Tidak Terdaftar B', '-', 'Tenaga Ahli', 'Diskum Batam', '', '2026-11-02 08:04:50', '', 'QR', '2026-11-02 08:04:50'],
+    [3, 9, 'Rapat Gabungan', 'Diskum', 'Diskum Tidak Terdaftar A', '-', 'Staf Honorer', 'Diskum Batam', '', '2026-11-02 08:04:10', '', 'QR', '2026-11-02 08:04:10'],
+    [2, 9, 'Rapat Gabungan', 'Diskum', 'Vinggo Sepco Putra, A.Md.', '19960913 202203 1 003', 'Pengolah Data dan Informasi', 'Diskum Batam', '', '2026-11-02 08:10:00', '', 'QR', '2026-11-02 08:10:00'],
+    [1, 9, 'Rapat Gabungan', 'Diskum', 'Adrial, S.K.M, M.K.M.', '19710520 199403 1 009', 'Sekretaris', 'Diskum Batam', '', '2026-11-02 08:20:00', '', 'QR', '2026-11-02 08:20:00'],
+    [7, 9, 'Rapat Gabungan', 'Diskum', 'Salim, S.Sos, M.Si', '19681021 199010 1 001', 'Kepala Dinas', 'Diskum Batam', '', '2026-11-02 08:30:00', '', 'QR', '2026-11-02 08:30:00']
   ];
   const snapshotBefore = JSON.stringify(storedRows);
 
   const { context, presensiSheet } = createGasContext({
-    meetings: [[9, 'RPT-9', 'Rapat Gabungan', 1, 'Ruang Rapat Utama Diskum', '2026-10-26', '08:00', '10:00', 'Dinas', 'Salim', 10, 'Koordinasi', 'Terjadwal', '']],
+    meetings: [[9, 'RPT-9', 'Rapat Gabungan', 1, 'Ruang Rapat Utama Diskum', '2026-11-02', '08:00', '10:00', 'Dinas', 'Salim', 10, 'Koordinasi', 'Terjadwal', '']],
     attendance: storedRows,
     employees: employeeRows
   });
@@ -453,39 +453,39 @@ test('attendance ordering is consistent across Lihat Presensi (getAgendaAttendan
 
   const visitRow = Array(20).fill('');
   visitRow[0] = 1;
-  visitRow[1] = 'TLD-26102026-009';
+  visitRow[1] = 'TLD-02112026-009';
   visitRow[2] = 'luar_daerah';
   visitRow[3] = 'Dinas Koperasi Kab. Tetangga';
   visitRow[5] = 3;
   visitRow[6] = 'Ketua Eksternal';
   visitRow[7] = 'Anggota Satu\nAnggota Dua';
-  visitRow[12] = '2026-10-26';
+  visitRow[12] = '2026-11-02';
   visitRow[13] = '09:00';
   visitRow[19] = 'Kelola SPPD';
 
   const wfState = {
     version: 4,
     status: 'Kelola SPPD',
-    booking: { id: 50, kode_rapat: 'VISIT-TLD-26102026-009', tanggal: '2026-10-26', jam_mulai: '09:00', jam_selesai: '11:00' },
-    arrival: { at: '2026-10-26T11:30:00Z', actor: 'Admin' },
+    booking: { id: 50, kode_rapat: 'VISIT-TLD-02112026-009', tanggal: '2026-11-02', jam_mulai: '09:00', jam_selesai: '11:00' },
+    arrival: { at: '2026-11-02T11:30:00Z', actor: 'Admin' },
     files: { foto: { name: 'foto.jpg', url: 'https://drive.google.com/file/d/foto/view' } },
     history: []
   };
 
   // GAS Data_Presensi in reverse chronological order (as left by autoSortPresensi) + mixed Diskum/TLD rows
   const storedAttendance = [
-    [4, 50, 'Kunjungan', 'Tamu_Luar', 'Ketua Eksternal', '-', 'Ketua Rombongan', 'Dinas Koperasi Kab. Tetangga', '', '2026-10-26 09:05:00', 'ketua', 'QR', '2026-10-26 09:05:00'],
-    [3, 50, 'Kunjungan', 'Tamu_Luar', 'Anggota Satu', '-', 'Kepala Bidang', 'Dinas Koperasi Kab. Tetangga', '', '2026-10-26 09:02:00', 'anggota-1', 'QR', '2026-10-26 09:02:00'],
-    [2, 50, 'Kunjungan', 'Diskum', 'Afrinaldi', '19890917 202521 1 023', 'Pengadministrasi Perkantoran', 'Diskum Batam', '', '2026-10-26 09:10:00', '', 'QR', '2026-10-26 09:10:00'],
-    [1, 50, 'Kunjungan', 'Diskum', 'Salim, S.Sos, M.Si', '19681021 199010 1 001', 'Kepala Dinas', 'Diskum Batam', '', '2026-10-26 09:15:00', '', 'QR', '2026-10-26 09:15:00']
+    [4, 50, 'Kunjungan', 'Tamu_Luar', 'Ketua Eksternal', '-', 'Ketua Rombongan', 'Dinas Koperasi Kab. Tetangga', '', '2026-11-02 09:05:00', 'ketua', 'QR', '2026-11-02 09:05:00'],
+    [3, 50, 'Kunjungan', 'Tamu_Luar', 'Anggota Satu', '-', 'Kepala Bidang', 'Dinas Koperasi Kab. Tetangga', '', '2026-11-02 09:02:00', 'anggota-1', 'QR', '2026-11-02 09:02:00'],
+    [2, 50, 'Kunjungan', 'Diskum', 'Afrinaldi', '19890917 202521 1 023', 'Pengadministrasi Perkantoran', 'Diskum Batam', '', '2026-11-02 09:10:00', '', 'QR', '2026-11-02 09:10:00'],
+    [1, 50, 'Kunjungan', 'Diskum', 'Salim, S.Sos, M.Si', '19681021 199010 1 001', 'Kepala Dinas', 'Diskum Batam', '', '2026-11-02 09:15:00', '', 'QR', '2026-11-02 09:15:00']
   ];
 
   const { context } = createGasContext({
     visits: [visitRow],
-    meetings: [[50, 'VISIT-TLD-26102026-009', 'Kunjungan Dinas Koperasi Kab. Tetangga', 1, 'Ruang Rapat Utama Diskum', '2026-10-26', '09:00', '11:00', 'Sekretariat', 'PIC', 3, 'Koordinasi', 'Terjadwal', '']],
+    meetings: [[50, 'VISIT-TLD-02112026-009', 'Kunjungan Dinas Koperasi Kab. Tetangga', 1, 'Ruang Rapat Utama Diskum', '2026-11-02', '09:00', '11:00', 'Sekretariat', 'PIC', 3, 'Koordinasi', 'Terjadwal', '']],
     attendance: storedAttendance,
     employees: employeeRows,
-    workflows: [['TLD-26102026-009', 4, JSON.stringify(wfState), '2026-10-26T11:30:00Z']]
+    workflows: [['TLD-02112026-009', 4, JSON.stringify(wfState), '2026-11-02T11:30:00Z']]
   });
 
   const expectedOrder = [
@@ -501,11 +501,11 @@ test('attendance ordering is consistent across Lihat Presensi (getAgendaAttendan
   assert.deepEqual(lihatRes.data.attendance.map(r => r.nama), expectedOrder);
 
   // 2. Visit workflow Presensi list (getVisitWorkflow full & tab 3)
-  const wfFull = context.getVisitWorkflow({ kode_kunjungan: 'TLD-26102026-009' });
+  const wfFull = context.getVisitWorkflow({ kode_kunjungan: 'TLD-02112026-009' });
   assert.equal(wfFull.success, true, wfFull.error);
   assert.deepEqual(wfFull.data.attendance.map(r => r.nama), expectedOrder);
 
-  const wfTab3 = context.getVisitWorkflow({ kode_kunjungan: 'TLD-26102026-009', tab: 3 });
+  const wfTab3 = context.getVisitWorkflow({ kode_kunjungan: 'TLD-02112026-009', tab: 3 });
   assert.equal(wfTab3.success, true, wfTab3.error);
   assert.deepEqual(wfTab3.data.attendance.map(r => r.nama), expectedOrder);
 
@@ -519,7 +519,7 @@ test('attendance ordering is consistent across Lihat Presensi (getAgendaAttendan
   };
   context.MimeType = { PDF: 'application/pdf' };
   const finishedGas = context.saveVisitWorkflow({
-    kode_kunjungan: 'TLD-26102026-009',
+    kode_kunjungan: 'TLD-02112026-009',
     version: wfFull.data.workflow.version,
     action: 'finish',
     note: 'Kunjungan selesai di GAS.'
@@ -533,12 +533,12 @@ test('attendance ordering is consistent across Lihat Presensi (getAgendaAttendan
   }
 
   // 4. Local fixture store consistency (getAgendaAttendance, getVisitWorkflow, and jsPDF Daftar_Hadir_<kode>.pdf)
-  const store = createFixtureStore(new Date('2026-10-26T12:00:00Z'), { deploymentPreview: true });
+  const store = createFixtureStore(new Date('2026-11-02T12:00:00Z'));
   const reg = store.handleMutation('registerTamuLuar', completeTldPayload({
     ketua_nama: 'Ketua Local Konsisten',
     pengikut_list: 'Anggota Pertama\nAnggota Kedua',
     jumlah_orang: 3,
-    tanggal_kunjungan: '2026-10-26'
+    tanggal_kunjungan: '2026-11-02'
   }));
   const code = reg.data.kode_kunjungan;
   let d = store.handleMutation('getVisitWorkflow', { kode_kunjungan: code }).data;
@@ -547,7 +547,7 @@ test('attendance ordering is consistent across Lihat Presensi (getAgendaAttendan
     ['confirm', {}],
     ['disposisi', { file: { name: 'd.pdf', data: 'data:application/pdf;base64,JVBERg==' } }],
     ['notify', {}],
-    ['book', { booking: { ruangan_id: 6001, tanggal: '2026-10-26', jam_mulai: '08:00', jam_selesai: '09:00' } }]
+    ['book', { booking: { ruangan_id: 6001, tanggal: '2026-11-02', jam_mulai: '08:00', jam_selesai: '09:00' } }]
   ]) {
     d = store.handleMutation('saveVisitWorkflow', { kode_kunjungan: code, version: d.workflow.version, action, ...extra }).data;
   }
@@ -576,7 +576,26 @@ test('attendance ordering is consistent across Lihat Presensi (getAgendaAttendan
   assert.ok(pdfText.indexOf('Anggota Kedua') < pdfText.indexOf('Ketua Local Konsisten'));
 
   // 5. Local HTTP served Presensi pages include red * on Jabatan and HTTP API endpoints stay consistent
-  const server = createLocalTestServer();
+  const server = createLocalTestServer({
+    now: () => new Date('2026-11-03T12:00:00Z'),
+    seed({ visitors, meetings, sppd, visitWorkflow, rooms }) {
+      const visit = {
+        id: 1, kode_kunjungan: 'TLD-02112026-001', tipe_tamu: 'luar_daerah', instansi: 'Dinas Koperasi Uji HTTP',
+        alamat: 'Batam', jumlah_orang: 2, ketua_nama: 'Ketua HTTP', pengikut_list: 'Anggota HTTP',
+        tujuan_bidang: 'Sekretariat', keperluan: 'Koordinasi', narahubung_hp: '081200000001',
+        tanggal_kunjungan: '2026-11-02', jam_kunjungan: '09:00', lo_id: '', lo_nama: 'PIC HTTP',
+        bawa_sppd: true, status_kunjungan: 'Selesai'
+      };
+      visitors.push(visit);
+      sppd.push({ id: 1, tamu_id: 1, kode_kunjungan: visit.kode_kunjungan, instansi: visit.instansi, ketua_nama: visit.ketua_nama, file_foto: '/f', file_absen: '/a', file_notulen: '/n', status_sppd: 'Sah & Terverifikasi', disetujui_kasubag: 1, waktu_persetujuan_kasubag: '2026-11-02 15:00:00' });
+      const booking = { id: 101, kode_rapat: 'VISIT-' + visit.kode_kunjungan, judul_rapat: 'Kunjungan HTTP', ruangan_id: rooms[0].id, nama_ruangan: rooms[0].nama_ruangan, tanggal: '2026-11-02', jam_mulai: '09:00', jam_selesai: '10:30', penyelenggara_bidang: 'Sekretariat', pimpinan_rapat: 'PIC HTTP', jumlah_peserta: 2, agenda: 'Koordinasi', status: 'Selesai', kode_kunjungan: visit.kode_kunjungan };
+      meetings.push(booking);
+      visitWorkflow.seedVisit(visit, { version: 5, status: 'Selesai', booking, destinations: { bidang: visit.tujuan_bidang, pic: visit.lo_nama, picIds: '' }, files: {}, history: [] }, [
+        { id: 1, rapat_id: 101, kategori: 'Tamu_Luar', nama: 'Ketua HTTP', jabatan: 'Ketua', nama_opd: visit.instansi, waktu: '2026-11-02 09:05:00', member_id: 'ketua' },
+        { id: 2, rapat_id: 101, kategori: 'Tamu_Luar', nama: 'Anggota HTTP', jabatan: 'Anggota', nama_opd: visit.instansi, waktu: '2026-11-02 09:10:00', member_id: 'anggota-1' }
+      ]);
+    }
+  });
   server.listen(0, '127.0.0.1');
   await once(server, 'listening');
   const base = `http://127.0.0.1:${server.address().port}`;

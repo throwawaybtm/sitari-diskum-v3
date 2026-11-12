@@ -566,14 +566,14 @@ test('GAS backend supports editing unlocked meetings, uploading attachments befo
 
 test('GAS backend preserves legacy records (unlocked by default) and requires admin auth for edit/lock', () => {
   const legacyRows = [
-    [1, 'RPT-20261001-001', 'Rapat Legacy Selesai', 1, 'Ruang Rapat Utama Diskum', '2026-10-01', '09:00', '10:00', 'Sekretariat / Umpeg', 'Pimpinan Lama', 5, 'Agenda lama', 'Selesai', '2026-10-01 08:00:00'],
-    [2, 'RPT-20261002-002', 'Rapat Legacy Terjadwal', 1, 'Ruang Rapat Utama Diskum', '2026-10-02', '09:00', '10:00', 'Koperasi', 'Pimpinan Lama 2', 3, 'Agenda lama 2', 'Terjadwal', '2026-10-02 08:00:00']
+    [1, 'RPT-20261102-001', 'Rapat Legacy Selesai', 1, 'Ruang Rapat Utama Diskum', '2026-11-02', '09:00', '10:00', 'Sekretariat / Umpeg', 'Pimpinan Lama', 5, 'Agenda lama', 'Selesai', '2026-11-02 08:00:00'],
+    [2, 'RPT-20261103-002', 'Rapat Legacy Terjadwal', 1, 'Ruang Rapat Utama Diskum', '2026-11-03', '09:00', '10:00', 'Koperasi', 'Pimpinan Lama 2', 3, 'Agenda lama 2', 'Terjadwal', '2026-11-03 08:00:00']
   ];
-  const docs = [[1, JSON.stringify({ name: 'legacy-notula.pdf', url: 'https://drive.google.com/file/d/legacy-doc/view' }), '2026-10-01T10:00:00Z']];
-  const photos = [[1, JSON.stringify([{ name: 'legacy-foto.jpg', url: 'https://drive.google.com/file/d/legacy-photo/view' }]), '2026-10-01T09:30:00Z']];
+  const docs = [[1, JSON.stringify({ name: 'legacy-notula.pdf', url: 'https://drive.google.com/file/d/legacy-doc/view' }), '2026-11-02T10:00:00Z']];
+  const photos = [[1, JSON.stringify([{ name: 'legacy-foto.jpg', url: 'https://drive.google.com/file/d/legacy-photo/view' }]), '2026-11-02T09:30:00Z']];
 
   const unauth = createGasHarness({ initialMeetings: legacyRows, initialDocs: docs, initialPhotos: photos, isAdmin: false });
-  assert.equal(unauth.context.updateJadwalRapat({ rapat_id: 1, judul: 'X', ruangan: '1|Ruang', tanggal: '2026-10-01', jam_mulai: '09:00', jam_selesai: '10:00', bidang: 'Dinas', pimpinan: 'A', agenda: 'B' }).success, false);
+  assert.equal(unauth.context.updateJadwalRapat({ rapat_id: 1, judul: 'X', ruangan: '1|Ruang', tanggal: '2026-11-02', jam_mulai: '09:00', jam_selesai: '10:00', bidang: 'Dinas', pimpinan: 'A', agenda: 'B' }).success, false);
   assert.equal(unauth.context.lockAgendaRapat({ rapat_id: 1 }).success, false);
 
   const auth = createGasHarness({ initialMeetings: legacyRows, initialDocs: docs, initialPhotos: photos, isAdmin: true });
@@ -585,7 +585,7 @@ test('GAS backend preserves legacy records (unlocked by default) and requires ad
     rapat_id: 1,
     judul: 'Rapat Legacy Diedit',
     ruangan: '1|Ruang Rapat Utama Diskum',
-    tanggal: '2026-10-01',
+    tanggal: '2026-11-02',
     jam_mulai: '09:00',
     jam_selesai: '10:30',
     bidang: 'Sekretariat / Umpeg',
@@ -599,7 +599,7 @@ test('GAS backend preserves legacy records (unlocked by default) and requires ad
     rapat_id: 1,
     judul: 'Blocked',
     ruangan: '1|Ruang Rapat Utama Diskum',
-    tanggal: '2026-10-01',
+    tanggal: '2026-11-02',
     jam_mulai: '09:00',
     jam_selesai: '10:30',
     bidang: 'Sekretariat / Umpeg',
@@ -609,7 +609,44 @@ test('GAS backend preserves legacy records (unlocked by default) and requires ad
 });
 
 test('local HTTP server enforces edit, pre-lock uploads, Konfirmasi – Kunci, blocked edits, and legacy default unlocked state', async () => {
-  const server = createLocalTestServer();
+  const server = createLocalTestServer({
+    now: () => new Date('2026-11-05T05:00:00Z'),
+    seed({ visitors, meetings, visitWorkflow, rooms }) {
+      meetings.push({
+        id: 101, kode_rapat: 'RPT-20261102-101', judul_rapat: 'Rapat Legacy Selesai', ruangan_id: rooms[0].id, nama_ruangan: rooms[0].nama_ruangan,
+        tanggal: '2026-11-02', jam_mulai: '09:00', jam_selesai: '10:00', penyelenggara_bidang: 'Sekretariat', pimpinan_rapat: 'Adrial, S.K.M, M.K.M.',
+        jumlah_peserta: 5, agenda: 'Agenda selesai', status: 'Selesai', photos: []
+      });
+      const visit1 = {
+        id: 1, kode_kunjungan: 'TLD-03112026-001', tipe_tamu: 'luar_daerah', instansi: 'Dinas Koperasi Uji 1',
+        alamat: 'Batam', jumlah_orang: 2, ketua_nama: 'Ketua Uji 1', pengikut_list: 'Anggota Uji 1',
+        tujuan_bidang: 'Sekretariat', keperluan: 'Koordinasi 1', narahubung_hp: '081200000001',
+        tanggal_kunjungan: '2026-11-03', jam_kunjungan: '09:00', lo_id: '', lo_nama: 'PIC 1',
+        bawa_sppd: true, status_kunjungan: 'Menunggu Kedatangan'
+      };
+      const booking1 = {
+        id: 102, kode_rapat: 'VISIT-' + visit1.kode_kunjungan, judul_rapat: 'Kunjungan ' + visit1.instansi, ruangan_id: rooms[0].id, nama_ruangan: rooms[0].nama_ruangan,
+        tanggal: '2026-11-03', jam_mulai: '09:00', jam_selesai: '10:30', penyelenggara_bidang: 'Sekretariat', pimpinan_rapat: 'PIC 1',
+        jumlah_peserta: 2, agenda: 'Koordinasi 1', status: 'Terjadwal', kode_kunjungan: visit1.kode_kunjungan, photos: []
+      };
+      const visit2 = {
+        id: 2, kode_kunjungan: 'TLD-04112026-002', tipe_tamu: 'luar_daerah', instansi: 'Dinas Koperasi Uji 2',
+        alamat: 'Batam', jumlah_orang: 2, ketua_nama: 'Ketua Uji 2', pengikut_list: 'Anggota Uji 2',
+        tujuan_bidang: 'Sekretariat', keperluan: 'Koordinasi 2', narahubung_hp: '081200000002',
+        tanggal_kunjungan: '2026-11-04', jam_kunjungan: '13:00', lo_id: '', lo_nama: 'PIC 2',
+        bawa_sppd: true, status_kunjungan: 'Menunggu Kedatangan'
+      };
+      const booking2 = {
+        id: 103, kode_rapat: 'VISIT-' + visit2.kode_kunjungan, judul_rapat: 'Kunjungan ' + visit2.instansi, ruangan_id: rooms[1].id, nama_ruangan: rooms[1].nama_ruangan,
+        tanggal: '2026-11-04', jam_mulai: '13:00', jam_selesai: '14:30', penyelenggara_bidang: 'Sekretariat', pimpinan_rapat: 'PIC 2',
+        jumlah_peserta: 2, agenda: 'Koordinasi 2', status: 'Terjadwal', kode_kunjungan: visit2.kode_kunjungan, photos: []
+      };
+      visitors.push(visit1, visit2);
+      meetings.push(booking1, booking2);
+      visitWorkflow.seedVisit(visit1, { version: 2, status: 'Menunggu Kedatangan', booking: booking1, destinations: { bidang: 'Sekretariat', pic: 'PIC 1', picIds: '' }, files: {}, history: [] });
+      visitWorkflow.seedVisit(visit2, { version: 2, status: 'Menunggu Kedatangan', booking: booking2, destinations: { bidang: 'Sekretariat', pic: 'PIC 2', picIds: '' }, files: {}, history: [] });
+    }
+  });
   server.listen(0, '127.0.0.1');
   await once(server, 'listening');
   const base = `http://127.0.0.1:${server.address().port}`;
@@ -814,7 +851,7 @@ test('Cancel meeting dialog inside Edit Rapat confirms before calling cancelAgen
 test('GAS backend blocks submitManualVisitAttendance when a VISIT- agenda is locked', () => {
   const { context } = createGasHarness({
     initialMeetings: [
-      [1, 'VISIT-TLD-001', 'Kunjungan Tamu', 1, 'Ruang Rapat Utama Diskum', '2026-10-20', '09:00', '10:00', 'Sekretariat', 'Pimpinan', 2, 'Koordinasi', 'Terkunci', '2026-10-20 08:00:00']
+      [1, 'VISIT-TLD-001', 'Kunjungan Tamu', 1, 'Ruang Rapat Utama Diskum', '2026-11-02', '09:00', '10:00', 'Sekretariat', 'Pimpinan', 2, 'Koordinasi', 'Terkunci', '2026-11-02 08:00:00']
     ],
     isAdmin: true
   });

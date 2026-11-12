@@ -1,10 +1,32 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const {createFixtureStore}=require('../fixtures');
-test('deployment preview has twenty visits and usable agenda attendance for SPPD completion',()=>{
-  const store=createFixtureStore(new Date('2026-10-30T12:00:00Z'),{deploymentPreview:true});
-  const rows=store.responses.getTamuList.data;assert.equal(rows.length,20);
-  assert.ok(rows.some(v=>v.instansi==='Dinas Koperasi Kabupaten Purnama'));
+test('seeded local workflow completes Kelola SPPD when agenda attendance and photo exist',()=>{
+  const store=createFixtureStore(new Date('2026-11-04T12:00:00Z'),{
+    seed({visitors,meetings,sppd,visitWorkflow,rooms}){
+      const visit={
+        id:1,kode_kunjungan:'TLD-03112026-001',tipe_tamu:'luar_daerah',instansi:'Dinas Koperasi Uji',
+        alamat:'Batam',jumlah_orang:3,ketua_nama:'Ketua Uji',pengikut_list:'Anggota Satu\nAnggota Dua',
+        tujuan_bidang:'Sekretariat',keperluan:'Koordinasi',narahubung_hp:'081200000001',
+        tanggal_kunjungan:'2026-11-03',jam_kunjungan:'09:00',lo_id:'',lo_nama:'PIC Uji',
+        bawa_sppd:true,status_kunjungan:'Kelola SPPD'
+      };
+      visitors.push(visit);
+      sppd.push({id:1,tamu_id:1,kode_kunjungan:visit.kode_kunjungan,instansi:visit.instansi,ketua_nama:visit.ketua_nama,file_foto:'',file_absen:'',file_notulen:'',status_sppd:'Belum Lengkap'});
+      const room=rooms[0],booking={id:101,kode_rapat:'VISIT-'+visit.kode_kunjungan,judul_rapat:'Kunjungan '+visit.instansi,ruangan_id:room.id,nama_ruangan:room.nama_ruangan,tanggal:'2026-11-03',jam_mulai:'09:00',jam_selesai:'11:00',penyelenggara_bidang:'Sekretariat',pimpinan_rapat:'PIC Uji',jumlah_peserta:3,agenda:'Koordinasi',status:'Terjadwal',kode_kunjungan:visit.kode_kunjungan};
+      meetings.push(booking);
+      const foto=visitWorkflow.saveFile({name:'Dokumentasi.png',data:'data:image/png;base64,'+fs.readFileSync('local-test/previews/meeting-preview.png').toString('base64')},'foto');
+      visitWorkflow.seedVisit(visit,{
+        version:4,status:'Kelola SPPD',booking,destinations:{bidang:visit.tujuan_bidang,pic:visit.lo_nama,picIds:''},
+        files:{foto},arrival:{at:'2026-11-03T10:00:00+07:00',actor:'Admin'},history:[]
+      },[
+        {rapat_id:101,kategori:'Tamu_Luar',nama:'Ketua Uji',jabatan:'Ketua',nama_opd:visit.instansi,waktu:'2026-11-03 09:05:00',member_id:'ketua'},
+        {rapat_id:101,kategori:'Tamu_Luar',nama:'Anggota Satu',jabatan:'Anggota',nama_opd:visit.instansi,waktu:'2026-11-03 09:06:00',member_id:'anggota-1'},
+        {rapat_id:101,kategori:'Tamu_Luar',nama:'Anggota Dua',jabatan:'Anggota',nama_opd:visit.instansi,waktu:'2026-11-03 09:07:00',member_id:'anggota-2'}
+      ]);
+    }
+  });
+  const rows=store.responses.getTamuList.data;assert.equal(rows.length,1);
   const v=rows.find(v=>v.status_kunjungan==='Kelola SPPD');const data=store.handleMutation('getVisitWorkflow',{kode_kunjungan:v.kode_kunjungan}).data;
   assert.ok(data.workflow.booking);assert.equal(data.attendance.length,3);assert.ok(data.workflow.files.foto);
   const result=store.handleMutation('saveVisitWorkflow',{kode_kunjungan:v.kode_kunjungan,version:data.workflow.version,action:'finish',note:'Koordinasi telah selesai.'});

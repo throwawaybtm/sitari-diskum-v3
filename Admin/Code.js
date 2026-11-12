@@ -38,9 +38,136 @@ function doGet(e) {
 
 function include(filename) { return HtmlService.createHtmlOutputFromFile(filename).getContent(); }
 
-function formatDateVal(val) { if (!val) return ''; if (val instanceof Date) return Utilities.formatDate(val, 'Asia/Jakarta', 'yyyy-MM-dd'); return String(val).substring(0, 10); }
+const DISPLAY_START_DATE_ = '2026-11-02';
+const JAKARTA_TIMEZONE_ = 'Asia/Jakarta';
 
-function formatTimeVal(val) { if (!val) return ''; if (val instanceof Date) return Utilities.formatDate(val, 'Asia/Jakarta', 'HH:mm'); if (String(val).length >= 5) return String(val).substring(0, 5); return String(val); }
+function formatDateInJakarta_(date) {
+  if (!(date instanceof Date) || isNaN(date.getTime())) return '';
+  if (typeof Utilities !== 'undefined' && Utilities && typeof Utilities.formatDate === 'function') {
+    return Utilities.formatDate(date, JAKARTA_TIMEZONE_, 'yyyy-MM-dd');
+  }
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: JAKARTA_TIMEZONE_,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(date);
+  const map = {};
+  parts.forEach(p => { map[p.type] = p.value; });
+  return `${map.year}-${map.month}-${map.day}`;
+}
+
+function normalizeJakartaDateKey_(val) {
+  if (!val) return '';
+  if (val instanceof Date) return formatDateInJakarta_(val);
+  const str = String(val).trim();
+  if (!str) return '';
+  if (/^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:?\d{2})$/i.test(str)) {
+    const parsed = new Date(str);
+    if (!isNaN(parsed.getTime())) return formatDateInJakarta_(parsed);
+  }
+  const isoMatch = str.match(/^(\d{4})[-/](\d{2})[-/](\d{2})(?:$|[T\s].*)/);
+  if (isoMatch) {
+    const month = Number(isoMatch[2]), day = Number(isoMatch[3]);
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+  }
+  const dmyMatch = str.match(/^(\d{2})[-/](\d{2})[-/](\d{4})(?:$|\s.*)/);
+  if (dmyMatch) {
+    const day = Number(dmyMatch[1]), month = Number(dmyMatch[2]);
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) return `${dmyMatch[3]}-${dmyMatch[2]}-${dmyMatch[1]}`;
+  }
+  return '';
+}
+
+function isDisplayDateOnOrAfterCutoff_(val, cutoff) {
+  const dateKey = normalizeJakartaDateKey_(val);
+  if (!dateKey) return false;
+  return dateKey >= (cutoff || DISPLAY_START_DATE_);
+}
+
+function buildVisitDateLookup_(ss) {
+  const visitDatesByCode = new Map();
+  const visitDatesById = new Map();
+  const sheetTamu = ss ? ss.getSheetByName('Data_Tamu') : null;
+  if (sheetTamu && sheetTamu.getLastRow() > 1) {
+    const rows = sheetTamu.getRange(2, 1, sheetTamu.getLastRow() - 1, sheetTamu.getLastColumn()).getValues();
+    rows.forEach(r => {
+      const dateKey = normalizeJakartaDateKey_(r[12]);
+      const codeKey = String(r[1] || '').trim();
+      const idKey = String(r[0] || '').trim();
+      if (codeKey) visitDatesByCode.set(codeKey, dateKey);
+      if (idKey) visitDatesById.set(idKey, dateKey);
+    });
+  }
+  return { visitDatesByCode, visitDatesById };
+}
+
+function parseVisitCodeDateKey_(code) {
+  const match = String(code || '').trim().match(/^(?:TLD|TDD)-(\d{2})(\d{2})(\d{4})-/i);
+  if (!match) return '';
+  const day = Number(match[1]), month = Number(match[2]);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return '';
+  return `${match[3]}-${match[2]}-${match[1]}`;
+}
+
+function filterSppdRowsByVisitDate_(ss, sppdRows, lookup) {
+  const resolvedLookup = lookup || buildVisitDateLookup_(ss);
+  return (Array.isArray(sppdRows) ? sppdRows : []).filter(r => {
+    const codeKey = String(r && r[2] || '').trim();
+    const idKey = String(r && r[1] || '').trim();
+    let visitDate = '';
+    if (codeKey && resolvedLookup.visitDatesByCode.has(codeKey)) {
+      visitDate = resolvedLookup.visitDatesByCode.get(codeKey);
+    } else if (idKey && resolvedLookup.visitDatesById.has(idKey)) {
+      visitDate = resolvedLookup.visitDatesById.get(idKey);
+    } else {
+      visitDate = parseVisitCodeDateKey_(codeKey) || normalizeJakartaDateKey_(r && r[16]);
+    }
+    return isDisplayDateOnOrAfterCutoff_(visitDate);
+  });
+}
+
+function compareVisitRowsDesc_(a, b) {
+  const dateA = normalizeJakartaDateKey_(a && a[12]);
+  const dateB = normalizeJakartaDateKey_(b && b[12]);
+  if (dateA !== dateB) return dateB.localeCompare(dateA);
+  const timeA = formatTimeVal(a && a[13]);
+  const timeB = formatTimeVal(b && b[13]);
+  if (timeA !== timeB) return timeB.localeCompare(timeA);
+  const idA = Number(a && a[0]);
+  const idB = Number(b && b[0]);
+  if (Number.isFinite(idA) && Number.isFinite(idB) && idA !== idB) return idB - idA;
+  return 0;
+}
+
+function formatDateVal(val) {
+  if (!val) return '';
+  const normalized = normalizeJakartaDateKey_(val);
+  if (normalized) return normalized;
+  if (val instanceof Date) return '';
+  return String(val).substring(0, 10);
+}
+
+function formatTimeVal(val) {
+  if (!val) return '';
+  if (val instanceof Date) {
+    if (isNaN(val.getTime())) return '';
+    if (typeof Utilities !== 'undefined' && Utilities && typeof Utilities.formatDate === 'function') {
+      return Utilities.formatDate(val, JAKARTA_TIMEZONE_, 'HH:mm');
+    }
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: JAKARTA_TIMEZONE_,
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    }).formatToParts(val);
+    const map = {};
+    parts.forEach(p => { map[p.type] = p.value; });
+    return `${map.hour === '24' ? '00' : map.hour}:${map.minute}`;
+  }
+  if (String(val).length >= 5) return String(val).substring(0, 5);
+  return String(val);
+}
 
 /** Read sheet-local wall time; never treat a bare 12-hour cell display as authoritative. */
 function normalizeMeetingTime_(value) {
@@ -236,25 +363,35 @@ function getDashboardSummary() {
 
 function readDashboardData_(includeLoStats) {
   const ss = getSpreadsheet();
-  const today = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'yyyy-MM-dd');
+  const today = formatDateInJakarta_(new Date());
 
   // Hitung Tamu
   const sheetTamu = ss.getSheetByName('Data_Tamu');
   let totalTamu = 0, tamuHariIni = 0, tamuLuar = 0, tamuFo = 0;
   let recentTamu = [];
+  const visitDatesByCode = new Map();
+  const visitDatesById = new Map();
 
   if (sheetTamu && sheetTamu.getLastRow() > 1) {
-    const rows = sheetTamu.getRange(2, 1, sheetTamu.getLastRow() - 1, sheetTamu.getLastColumn()).getValues();
+    const rawRows = sheetTamu.getRange(2, 1, sheetTamu.getLastRow() - 1, sheetTamu.getLastColumn()).getValues();
+    rawRows.forEach(r => {
+      const dateKey = normalizeJakartaDateKey_(r[12]);
+      const codeKey = String(r[1] || '').trim();
+      const idKey = String(r[0] || '').trim();
+      if (codeKey) visitDatesByCode.set(codeKey, dateKey);
+      if (idKey) visitDatesById.set(idKey, dateKey);
+    });
+    const rows = rawRows.filter(r => isDisplayDateOnOrAfterCutoff_(r[12]));
     totalTamu = rows.length;
 
     rows.forEach(r => {
-      const tgl = formatDateVal(r[12]);
+      const tgl = normalizeJakartaDateKey_(r[12]) || formatDateVal(r[12]);
       if (tgl === today) tamuHariIni++;
       if (r[2] === 'luar_daerah') tamuLuar++;
       if (r[2] === 'dalam_daerah_fo') tamuFo++;
     });
 
-    recentTamu = rows.slice(0, 5).map(r => ({
+    recentTamu = rows.slice().sort(compareVisitRowsDesc_).slice(0, 5).map(r => ({
       id: r[0],
       kode_kunjungan: r[1],
       tipe_tamu: r[2],
@@ -281,8 +418,8 @@ function readDashboardData_(includeLoStats) {
   if (sheetRapat && sheetRapat.getLastRow() > 1) {
     const rows = readMeetingRows_(sheetRapat);
     rows.forEach(r => {
-      const tgl = formatDateVal(r[5]);
-      if (tgl === today && r[12] !== 'Dibatalkan' && r[12] !== 'Ditunda') {
+      const tgl = normalizeJakartaDateKey_(r[5]) || formatDateVal(r[5]);
+      if (tgl === today && isDisplayDateOnOrAfterCutoff_(r[5]) && r[12] !== 'Dibatalkan' && r[12] !== 'Ditunda') {
         rapatHariIni++;
         todayMeetings.push({
           id: r[0],
@@ -305,7 +442,8 @@ function readDashboardData_(includeLoStats) {
   const sheetSppd = ss.getSheetByName('Kendali_SPPD');
   let sppdTotal = 0, sppdBelumLengkap = 0, sppdSah = 0;
   if (sheetSppd && sheetSppd.getLastRow() > 1) {
-    const rows = sheetSppd.getRange(2, 1, sheetSppd.getLastRow() - 1, sheetSppd.getLastColumn()).getValues();
+    const rawSppdRows = sheetSppd.getRange(2, 1, sheetSppd.getLastRow() - 1, sheetSppd.getLastColumn()).getValues();
+    const rows = filterSppdRowsByVisitDate_(ss, rawSppdRows, { visitDatesByCode, visitDatesById });
     sppdTotal = rows.length;
     rows.forEach(r => {
       if (r[8] === 'Belum Lengkap') sppdBelumLengkap++;
@@ -472,7 +610,8 @@ function getTamuList(spreadsheet) {
   const sheet = ss.getSheetByName('Data_Tamu');
   if (!sheet || sheet.getLastRow() <= 1) return { success: true, data: [] };
 
-  const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).getValues();
+  const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).getValues()
+    .filter(r => isDisplayDateOnOrAfterCutoff_(r[12]));
   return { success: true, data: rows.map(mapVisitRow_) };
 }
 function mapVisitRow_(r) {
@@ -577,7 +716,7 @@ function getRapatCalendar() {
   const attendanceSheet=ss.getSheetByName('Data_Presensi');
   const attendance=attendanceSheet&&attendanceSheet.getLastRow()>1?attendanceSheet.getRange(2,1,attendanceSheet.getLastRow()-1,12).getValues():[];
   const manualAgendaIds=new Set(attendance.filter(row=>row[11]==='Admin').map(row=>String(row[1])));
-  const list = rows.filter(r => r[12] !== 'Dibatalkan').map(r => {
+  const list = rows.filter(r => r[12] !== 'Dibatalkan' && isDisplayDateOnOrAfterCutoff_(r[5])).map(r => {
     const doc=docsByAgendaId.get(String(r[0]));
     const rawStatus = String(r[12] || '');
     const visitKey = String(r[1] || '').indexOf('VISIT-') === 0 ? String(r[1]) : '';
@@ -972,7 +1111,8 @@ function getSppdList(spreadsheet) {
   const sheet = ss.getSheetByName('Kendali_SPPD');
   if (!sheet || sheet.getLastRow() <= 1) return { success: true, data: [] };
 
-  const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).getValues();
+  const rawRows = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).getValues();
+  const rows = filterSppdRowsByVisitDate_(ss, rawRows);
   const list = rows.map(r => ({
     id: r[0],
     tamu_id: r[1],

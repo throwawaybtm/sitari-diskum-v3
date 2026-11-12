@@ -1213,6 +1213,14 @@
       }
     }
 
+    function resetDashboardStats(placeholder = '—') {
+      if (typeof document === 'undefined' || !document || typeof document.getElementById !== 'function') return;
+      ['statTamuHariIni', 'statTotalTamu', 'statTamuLuar', 'statTamuFo', 'statRapatHariIni', 'statSppdBelumLengkap', 'statSppdSah'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerText = placeholder;
+      });
+    }
+
     function loadAllDashboard(options = {}) {
       const requests = [];
       const request = (name, args, success, failure) => requests.push(new Promise(resolve => {
@@ -1244,12 +1252,14 @@
           } else {
             renderPanelState(document.getElementById('todayMeetingsList'), 'error', responseMessage(res, 'Agenda hari ini gagal dimuat.'));
             renderTableState(document.getElementById('recentTamuTableBody'), 7, 'error', responseMessage(res, 'Kunjungan terbaru gagal dimuat.'));
+            if (typeof resetDashboardStats === 'function') resetDashboardStats();
           }
         }, err => {
           if (summaryRequest !== dashboardRequestRevision) return;
           console.error('getDashboardSummary failed:', err);
           renderPanelState(document.getElementById('todayMeetingsList'), 'error', 'Agenda hari ini gagal dimuat. Silakan muat ulang halaman.');
           renderTableState(document.getElementById('recentTamuTableBody'), 7, 'error', 'Kunjungan terbaru gagal dimuat. Silakan muat ulang halaman.');
+          if (typeof resetDashboardStats === 'function') resetDashboardStats();
           showToast('error', 'Dashboard Gagal Dimuat', 'Periksa koneksi lalu muat ulang halaman.');
         });
       }

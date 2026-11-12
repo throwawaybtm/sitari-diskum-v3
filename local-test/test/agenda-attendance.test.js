@@ -10,12 +10,12 @@ test('attendance viewer formats event time, including manual backfill and ISO QR
 test('view endpoint authorizes before reading and filters all agenda types by agenda ID',()=>{
  const c=load();assert.equal(typeof c.getAgendaAttendance,'function');let denied=true,reads=0;
  c.requireVisitAdmin_=()=>{if(denied)throw Error('Akses ditolak');};
- const meetingRows=[[1,'RPT-1','Internal'],[2,'VISIT-TLD-2','TLD']];
- const attendanceRows=[[1,1,'','','Alice','','','','','2026-10-30 14:25:00','','AdminEntry','2026-11-02 08:00:00'],[2,2,'','','Bob','','','','','2026-10-31 10:00:00']];
+ const meetingRows=[[1,'RPT-1','Internal',1,'Ruang Rapat Utama Diskum','2026-11-02'],[2,'VISIT-TLD-2','TLD',1,'Ruang Rapat Utama Diskum','2026-11-03']];
+ const attendanceRows=[[1,1,'','','Alice','','','','','2026-11-02 14:25:00','','AdminEntry','2026-11-02 08:00:00'],[2,2,'','','Bob','','','','','2026-11-03 10:00:00']];
  const sheet=rows=>({getLastRow:()=>rows.length+1,getRange:()=>({getValues:()=>rows})});
  c.getSpreadsheet=()=>{reads++;return {getSpreadsheetTimeZone:()=> 'Asia/Jakarta',getSheetByName:name=>name==='Data_Rapat'?sheet(meetingRows):sheet(attendanceRows)};};
  assert.equal(c.getAgendaAttendance({rapat_id:1}).success,false);assert.equal(reads,0);denied=false;
- const internal=c.getAgendaAttendance({rapat_id:1});assert.equal(internal.success,true,internal.error);assert.equal(internal.data.attendance.length,1);assert.equal(internal.data.attendance[0].nama,'Alice');assert.equal(internal.data.attendance[0].tanggal,'30-10-2026');
+ const internal=c.getAgendaAttendance({rapat_id:1});assert.equal(internal.success,true,internal.error);assert.equal(internal.data.attendance.length,1);assert.equal(internal.data.attendance[0].nama,'Alice');assert.equal(internal.data.attendance[0].tanggal,'02-11-2026');
  assert.equal(c.getAgendaAttendance({rapat_id:2}).data.attendance[0].nama,'Bob');assert.equal(c.getAgendaAttendance({rapat_id:99}).success,false);
 });
 test('attendance dialog opens immediately and ignores older responses after switching agenda',async()=>{

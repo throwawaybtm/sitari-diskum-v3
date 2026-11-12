@@ -154,18 +154,55 @@ function makeAgendaAttendanceList_(records,spreadsheetTimezone,hierarchyOptions)
       return {no:index+1,nama:String(record.nama||'-'),nama_opd:namaOpd,tanggal:time?time.slice(0,10).split('-').reverse().join('-'):'-',jam:time?time.slice(11,16):'-'};
     });
 }
+const AGENDA_DISPLAY_START_DATE_ = '2026-11-02';
+function isAgendaDateOnOrAfterCutoff_(value, spreadsheetTimezone) {
+  if (typeof isDisplayDateOnOrAfterCutoff_ === 'function') return isDisplayDateOnOrAfterCutoff_(value, AGENDA_DISPLAY_START_DATE_);
+  if (!value) return false;
+  let key = '';
+  if (Object.prototype.toString.call(value) === '[object Date]') {
+    if (!Number.isFinite(value.getTime())) return false;
+    if (typeof Utilities !== 'undefined' && Utilities && typeof Utilities.formatDate === 'function') {
+      key = Utilities.formatDate(value, 'Asia/Jakarta', 'yyyy-MM-dd');
+    } else {
+      const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(value);
+      const map = {};
+      parts.forEach(p => { map[p.type] = p.value; });
+      key = `${map.year}-${map.month}-${map.day}`;
+    }
+  } else {
+    const str = String(value).trim();
+    if (/^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:?\d{2})$/i.test(str)) {
+      const parsed = new Date(str);
+      if (Number.isFinite(parsed.getTime())) return isAgendaDateOnOrAfterCutoff_(parsed, spreadsheetTimezone);
+    }
+    const iso = str.match(/^(\d{4})[-/](\d{2})[-/](\d{2})(?:$|[T\s].*)/);
+    if (iso) key = `${iso[1]}-${iso[2]}-${iso[3]}`;
+    else {
+      const dmy = str.match(/^(\d{2})[-/](\d{2})[-/](\d{4})(?:$|\s.*)/);
+      if (dmy) key = `${dmy[3]}-${dmy[2]}-${dmy[1]}`;
+    }
+  }
+  return Boolean(key && key >= AGENDA_DISPLAY_START_DATE_);
+}
 function getAgendaAttendance(payload) {
   try {
     requireVisitAdmin_();
     const id=String(payload&&payload.rapat_id||'');if(!id)throw new Error('Pilih agenda yang valid.');
     const ss=getSpreadsheet(),calendar=ss.getSheetByName('Data_Rapat');
-    const meeting=calendar&&calendar.getLastRow()>1?calendar.getRange(2,1,calendar.getLastRow()-1,3).getValues().find(row=>String(row[0])===id):null;
-    if(!meeting)throw new Error('Agenda tidak ditemukan.');
+    const meetingCols=calendar&&typeof calendar.getLastColumn==='function'?Math.max(3,Math.min(13,calendar.getLastColumn())):13;
+    const meeting=calendar&&calendar.getLastRow()>1?calendar.getRange(2,1,calendar.getLastRow()-1,meetingCols).getValues().find(row=>String(row[0])===id):null;
+    const timezone=ss&&typeof ss.getSpreadsheetTimeZone==='function'?ss.getSpreadsheetTimeZone():'Asia/Jakarta';
+    if(!meeting||meeting[12]==='Dibatalkan'||!isAgendaDateOnOrAfterCutoff_(meeting[5],timezone))throw new Error('Agenda tidak ditemukan.');
     const sheet=ss.getSheetByName('Data_Presensi');
     const rows=sheet&&sheet.getLastRow()>1?sheet.getRange(2,1,sheet.getLastRow()-1,10).getValues():[];
-    const records=rows.filter(row=>String(row[1])===id).map(row=>({id:row[0],kategori:row[3],nama:row[4],nip:row[5],jabatan:row[6],bidang:row[7],waktu:row[9]}));
+    const records=rows.filter(row=>{
+      if(String(row[1])!==id)return false;
+      const parts=agendaAttendanceTimeParts_(row[9],timezone);
+      const recordDate=parts.display?parts.display.substring(0,10):'';
+      return !recordDate||recordDate>=AGENDA_DISPLAY_START_DATE_;
+    }).map(row=>({id:row[0],kategori:row[3],nama:row[4],nip:row[5],jabatan:row[6],bidang:row[7],waktu:row[9]}));
     const employees=readMasterEmployeesForOrder_(ss);
-    const attendance=makeAgendaAttendanceList_(records,ss.getSpreadsheetTimeZone(),{employees});
+    const attendance=makeAgendaAttendanceList_(records,timezone,{employees});
     return {success:true,data:{agenda:{id:meeting[0],judul_rapat:String(meeting[2]||'')},total:attendance.length,attendance:attendance}};
   }catch(error){return {success:false,error:error.message};}
 }

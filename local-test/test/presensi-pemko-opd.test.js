@@ -292,7 +292,7 @@ test('Presensi Pemko submission validates required specific name and sends canon
 
 test('GAS backend validates Pemko OPD submissions, persists Data_Presensi row, and exposes OPD in getMasterData & getAgendaAttendance', () => {
   const attendanceRows = [];
-  const meetingRow = [10, 'RPT-10', 'Rapat OPD Pemko', 1, 'Ruang Rapat Utama Diskum', '2026-10-26', '09:00', '11:00', 'Sekretariat', 'Adrial', 20, 'Koordinasi', 'Terjadwal', '2026-10-26 08:00:00'];
+  const meetingRow = [10, 'RPT-10', 'Rapat OPD Pemko', 1, 'Ruang Rapat Utama Diskum', '2026-11-02', '09:00', '11:00', 'Sekretariat', 'Adrial', 20, 'Koordinasi', 'Terjadwal', '2026-11-02 08:00:00'];
   const presensiSheet = {
     getLastRow: () => attendanceRows.length + 1,
     getLastColumn: () => 13,
@@ -325,7 +325,7 @@ test('GAS backend validates Pemko OPD submissions, persists Data_Presensi row, a
   const context = vm.createContext({
     Date,
     LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
-    Utilities: { formatDate: () => '2026-10-26 09:45:00' },
+    Utilities: { formatDate: () => '2026-11-02 09:45:00' },
     PropertiesService: { getScriptProperties: () => ({ getProperty: key => key === 'ADMIN_DEMO_MODE' ? 'true' : null }) },
     CacheService: { getScriptCache: () => { throw new Error('no cache'); } }
   });
@@ -363,8 +363,8 @@ test('GAS backend validates Pemko OPD submissions, persists Data_Presensi row, a
   assert.equal(attendanceRows[1][7], 'Kecamatan - Batu Ampar');
 
   // Legacy existing row (old OPD string + blank OPD row) remain viewable
-  attendanceRows.push([3, 10, 'Rapat OPD Pemko', 'OPD_Pemko', 'Peserta Lama', '-', '-', 'Dinas Perdagangan Lama', '', '2026-10-26 09:30:00', '', 'QR', '2026-10-26 09:30:00']);
-  attendanceRows.push([4, 10, 'Rapat OPD Pemko', 'Diskum', 'Pegawai Tanpa Unit', '-', '-', '', '', '2026-10-26 09:20:00', '', 'QR', '2026-10-26 09:20:00']);
+  attendanceRows.push([3, 10, 'Rapat OPD Pemko', 'OPD_Pemko', 'Peserta Lama', '-', '-', 'Dinas Perdagangan Lama', '', '2026-11-02 09:30:00', '', 'QR', '2026-11-02 09:30:00']);
+  attendanceRows.push([4, 10, 'Rapat OPD Pemko', 'Diskum', 'Pegawai Tanpa Unit', '-', '-', '', '', '2026-11-02 09:20:00', '', 'QR', '2026-11-02 09:20:00']);
 
   const view = context.getAgendaAttendance({ rapat_id: 10 });
   assert.equal(view.success, true, view.error);
@@ -376,7 +376,26 @@ test('GAS backend validates Pemko OPD submissions, persists Data_Presensi row, a
 });
 
 test('local HTTP server and Admin AgendaAttendance modal display OPD/Kelurahan/Kecamatan safely and preserve legacy records', async () => {
-  const server = createLocalTestServer();
+  const server = createLocalTestServer({
+    now: () => new Date('2026-11-03T05:00:00Z'),
+    seed: {
+      meetings: [{
+        id: 101,
+        kode_rapat: 'RPT-20261102-101',
+        judul_rapat: 'Rapat Uji OPD Pemko',
+        ruangan_id: 6001,
+        nama_ruangan: 'Ruang Rapat Utama Diskum',
+        tanggal: '2026-11-02',
+        jam_mulai: '09:00',
+        jam_selesai: '11:00',
+        penyelenggara_bidang: 'Sekretariat',
+        pimpinan_rapat: 'Adrial, S.K.M, M.K.M.',
+        jumlah_peserta: 10,
+        agenda: 'Koordinasi',
+        status: 'Terjadwal'
+      }]
+    }
+  });
   server.listen(0, '127.0.0.1');
   await once(server, 'listening');
   const base = `http://127.0.0.1:${server.address().port}`;

@@ -281,13 +281,20 @@ test('Jadwalkan Rapat modal preserves existing 8-field layout with no NIP or Pan
 });
 
 test('existing storage/schema accepts auto-filled and manually overridden values while preserving legacy records', async () => {
-  const store = createFixtureStore(new Date('2026-10-24T18:30:00.000Z'));
+  const store = createFixtureStore(new Date('2026-11-05T05:00:00.000Z'), {
+    seed: {
+      meetings: [
+        { id: 1, kode_rapat: 'RPT-20261103-001', judul_rapat: 'Rapat Legacy 1', ruangan_id: 6001, nama_ruangan: 'Ruang Rapat Utama Diskum', tanggal: '2026-11-03', jam_mulai: '09:00', jam_selesai: '10:30', penyelenggara_bidang: 'Usaha Mikro', pimpinan_rapat: 'Pimpinan Satu', jumlah_peserta: 5, agenda: 'Agenda 1', status: 'Terjadwal' },
+        { id: 2, kode_rapat: 'RPT-20261102-001', judul_rapat: 'Rapat Legacy 2', ruangan_id: 6002, nama_ruangan: 'Ruangan Bidang Koperasi & UMKM', tanggal: '2026-11-02', jam_mulai: '13:00', jam_selesai: '14:30', penyelenggara_bidang: 'Sekretariat', pimpinan_rapat: 'Pimpinan Dua', jumlah_peserta: 4, agenda: 'Agenda 2', status: 'Selesai' }
+      ]
+    }
+  });
   const legacyMeetings = store.responses.getRapatCalendar.data;
   assert.equal(legacyMeetings[0].penyelenggara_bidang, 'Usaha Mikro');
   assert.equal(legacyMeetings[1].penyelenggara_bidang, 'Sekretariat');
-  assert.equal(legacyMeetings[1].pimpinan_rapat, 'Rini Handayani, S.E.');
+  assert.equal(legacyMeetings[1].pimpinan_rapat, 'Pimpinan Dua');
 
-  const server = createLocalTestServer({ now: () => new Date('2026-10-24T18:30:00.000Z') });
+  const server = createLocalTestServer({ now: () => new Date('2026-11-05T05:00:00.000Z') });
   server.listen(0, '127.0.0.1');
   await once(server, 'listening');
   const baseUrl = `http://127.0.0.1:${server.address().port}`;
@@ -342,7 +349,7 @@ test('existing storage/schema accepts auto-filled and manually overridden values
 
 test('GAS simpanJadwalRapat and getRapatCalendar reuse existing 14-column schema and preserve legacy rows', () => {
   const rows = [
-    [1, 'RPT-20261001-101', 'Rapat Lama', 1, 'Ruang Rapat Utama Diskum', '2026-10-01', '09:00', '10:00', 'Sekretariat / Umpeg', 'Pimpinan Lama', 5, 'Agenda lama', 'Selesai', '2026-10-01 08:00:00']
+    [1, 'RPT-20261102-101', 'Rapat Lama', 1, 'Ruang Rapat Utama Diskum', '2026-11-02', '09:00', '10:00', 'Sekretariat / Umpeg', 'Pimpinan Lama', 5, 'Agenda lama', 'Selesai', '2026-11-02 08:00:00']
   ];
   const writes = [];
   const context = vm.createContext({

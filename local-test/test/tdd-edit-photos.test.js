@@ -655,19 +655,19 @@ test('Admin TddModal UI omits scheduling controls, supports unscheduled photo pr
 
 test('GAS preserves pre-existing scheduled VISIT-TDD agendas and existing Foto_Agenda photos without duplicating', () => {
   const legacyTddRow = [
-    1, 'TDD-01102026-005', 'dalam_daerah_fo', 'Koperasi Terjadwal Lama', '', 2,
+    1, 'TDD-02112026-005', 'dalam_daerah_fo', 'Koperasi Terjadwal Lama', '', 2,
     'Agus Salim', '', 'Koperasi', 'Konsultasi lama',
-    'Agus Salim', '080000000155', '2026-10-01', '09:00', '', '',
-    '', 'PIC Lama', 0, 'Diterima', '2026-10-01 08:30:00'
+    'Agus Salim', '080000000155', '2026-11-02', '09:00', '', '',
+    '', 'PIC Lama', 0, 'Diterima', '2026-11-02 08:30:00'
   ];
   const existingVisitAgenda = [
-    42, 'VISIT-TDD-01102026-005', 'Kunjungan Koperasi Terjadwal Lama', 6001, 'Ruang Rapat Utama Diskum',
-    '2026-10-01', '09:30', '10:30', 'Koperasi', 'PIC Lama', 2, 'Konsultasi lama', 'Selesai', '2026-10-01 09:00:00'
+    42, 'VISIT-TDD-02112026-005', 'Kunjungan Koperasi Terjadwal Lama', 6001, 'Ruang Rapat Utama Diskum',
+    '2026-11-02', '09:30', '10:30', 'Koperasi', 'PIC Lama', 2, 'Konsultasi lama', 'Selesai', '2026-11-02 09:00:00'
   ];
   const existingPhotoRow = [
     42,
     JSON.stringify([{ name: 'legacy-agenda-foto.jpg', url: 'https://drive.google.com/file/d/legacy-photo-1/view', mime: 'image/jpeg', label: 'Foto Agenda Kunjungan' }]),
-    '2026-10-01T10:00:00Z'
+    '2026-11-02T10:00:00Z'
   ];
   const { context, sheets } = createGasHarness({
     initialVisitors: [legacyTddRow],
@@ -676,14 +676,14 @@ test('GAS preserves pre-existing scheduled VISIT-TDD agendas and existing Foto_A
   });
 
   assert.equal(typeof context.scheduleTddAgenda, 'undefined');
-  const loaded = context.getTddVisitEdit({ kode_kunjungan: 'TDD-01102026-005' });
+  const loaded = context.getTddVisitEdit({ kode_kunjungan: 'TDD-02112026-005' });
   assert.equal(loaded.success, true, loaded.error);
   assert.equal(loaded.data.agenda.id, 42);
   assert.equal(loaded.data.locked, false);
   assert.deepEqual(Array.from(loaded.data.photos, p => p.name), ['legacy-agenda-foto.jpg']);
 
   // Adding a photo via Buku Tamu Edit appends to row 42 in Foto_Agenda and shows in Jadwal Rapat
-  const added = context.saveTddPhotos({ kode_kunjungan: 'TDD-01102026-005', files: [{ name: 'baru.jpg', data: SAMPLE_JPG }] });
+  const added = context.saveTddPhotos({ kode_kunjungan: 'TDD-02112026-005', files: [{ name: 'baru.jpg', data: SAMPLE_JPG }] });
   assert.equal(added.success, true, added.error);
   assert.deepEqual(Array.from(added.data.photos, p => p.name), ['legacy-agenda-foto.jpg', 'baru.jpg']);
   assert.equal(sheets.get('Foto_Agenda').rows.length, 2, 'single shared row in Foto_Agenda');
