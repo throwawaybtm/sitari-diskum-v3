@@ -129,6 +129,19 @@ function generateVisitCode_(sheet, prefix, dateValue) {
   return buildVisitCode_(prefix, dateValue, existingCodes);
 }
 
+/** Return max numeric ID in column A plus one so gaps, sorting, or deletions cannot reuse IDs. */
+function nextRecordId_(sheet) {
+  const lastRow = sheet && typeof sheet.getLastRow === 'function' ? sheet.getLastRow() : 0;
+  if (lastRow <= 1) return 1;
+  const values = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+  return values.reduce((max, row) => {
+    const raw = row && row[0];
+    if (raw === '' || raw === null || raw === undefined || typeof raw === 'boolean') return max;
+    const numeric = typeof raw === 'string' && !raw.trim() ? NaN : Number(raw);
+    return Number.isFinite(numeric) ? Math.max(max, numeric) : max;
+  }, 0) + 1;
+}
+
 function registerTamuFo(payload) {
   const destination = prepareTddVisit_(payload);
 
@@ -139,7 +152,7 @@ function registerTamuFo(payload) {
     const sheetTamu = ss.getSheetByName('Data_Tamu');
     if (!sheetTamu) throw new Error('Sheet Data_Tamu tidak ditemukan pada database bersama.');
 
-    const nextId = sheetTamu.getLastRow();
+    const nextId = nextRecordId_(sheetTamu);
     const submittedAt = new Date();
     const today = Utilities.formatDate(submittedAt, 'Asia/Jakarta', 'yyyy-MM-dd');
     const nowHours = Utilities.formatDate(submittedAt, 'Asia/Jakarta', 'HH:mm');
@@ -160,6 +173,12 @@ function registerTamuFo(payload) {
       data: { kode_kunjungan: kodeKunjungan, lo_nama: destination.pic, tujuan_bidang: destination.bidang }
     };
   } finally {
-    lock.releaseLock();
+    try {
+      if (typeof SpreadsheetApp !== 'undefined' && typeof SpreadsheetApp.flush === 'function') {
+        SpreadsheetApp.flush();
+      }
+    } finally {
+      lock.releaseLock();
+    }
   }
 }

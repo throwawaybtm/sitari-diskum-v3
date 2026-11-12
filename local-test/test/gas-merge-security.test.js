@@ -452,7 +452,7 @@ test('synthetic configuration supplies consistent public destinations without ex
   }
 });
 
-test('PublicIntake uses max ID across gaps and flushes writes (pending safe-ID integration)', () => {
+test('PublicIntake uses max ID across gaps and flushes writes', () => {
   // PublicIntake writes use max(ID)+1 across gaps and flush SpreadsheetApp
   const tamuSheet = makeSheet('Data_Tamu', [
     ['ID', 'Kode', 'Tipe', 'Instansi', 'Alamat', 'Jumlah', 'Ketua', 'Pengikut', 'Bidang', 'Keperluan', 'Narahubung', 'HP', 'Tanggal', 'Jam', 'Surat1', 'Surat2', 'LO_ID', 'LO_Nama', 'SPPD', 'Status', 'Created'],
