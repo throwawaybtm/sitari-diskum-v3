@@ -3,15 +3,15 @@
     "old": "1KDJUkzgKiqKO2qEQB3eF-APv6_lQOvDRQ5Y4P62JrPBrvpGIP7mLdub3",
     "id": "1jrzdwzt6xg-J1WcgY23FHET5eqJqOCZBcjcRmk3DUE5faGEYQyyJsob0",
     "deployment": "AKfycbzvEIvbSDllKZDtqigiOrqqwXhP4h_e5FrDGcXUWjbVIzvihihBiBh7XjZBovCpvqHBTQ",
-    "version": 45,
+    "version": 50,
     "source": "Admin"
   },
   "Public": {
     "old": "1hRDT2ehC4IOdakD-6x0kdbDhD84A-acHqoPoQDv45sS7SmacXf87VENj",
     "id": "1DSFVKlyIspith7axwc8wdKdL5kc1BqU6OMfSt3Dj9GRMDNDZPvwRQv5w",
     "deployment": "AKfycbywu_c5VaQuX6hE5Fu1StXiNgLQWA5m1JZAKUdAFU2Nx0Dli8K0qB8CMxkP3fy2YD55Xg",
-    "version": 15,
-    "coreVersion": 37,
+    "version": 21,
+    "coreVersion": 50,
     "source": "Public"
   },
   "legacy": {

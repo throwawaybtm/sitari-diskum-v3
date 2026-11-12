@@ -191,7 +191,7 @@
               <div class="flex flex-wrap gap-2 pt-2">
                 <label class="relative inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white border border-slate-300 text-xs font-semibold cursor-pointer focus-within:ring-2 focus-within:ring-teal-500">
                   <i class="fa-solid fa-folder-open" aria-hidden="true"></i> Pilih File
-                  <input type="file" id="fileSuratKunjungan" required aria-label="Pilih File Surat Permohonan Kunjungan" accept=".pdf,image/jpeg,image/png,image/webp,image/heic,image/heif" onchange="selectDocument(this, 'fileSuratKunjungan')" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                  <input type="file" id="fileSuratKunjungan" multiple required aria-label="Pilih File Surat Permohonan Kunjungan" accept=".pdf,image/jpeg,image/png,image/webp,image/heic,image/heif" onchange="selectDocument(this, 'fileSuratKunjungan')" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
                 </label>
                 <button type="button" onclick="document.getElementById('cameraSuratKunjungan').click()" class="camera-option items-center gap-1.5 px-3 py-2 rounded-lg bg-teal-50 border border-teal-200 text-teal-800 text-xs font-semibold"><i class="fa-solid fa-camera" aria-hidden="true"></i> Ambil Gambar</button>
                 <input type="file" id="cameraSuratKunjungan" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" capture="environment" onchange="selectDocument(this, 'fileSuratKunjungan')" class="hidden">
@@ -204,7 +204,7 @@
               <div class="flex flex-wrap gap-2 pt-2">
                 <label class="relative inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white border border-slate-300 text-xs font-semibold cursor-pointer focus-within:ring-2 focus-within:ring-teal-500">
                   <i class="fa-solid fa-folder-open" aria-hidden="true"></i> Pilih File
-                  <input type="file" id="fileSuratTugas" required aria-label="Pilih File Surat Tugas Rombongan" accept=".pdf,image/jpeg,image/png,image/webp,image/heic,image/heif" onchange="selectDocument(this, 'fileSuratTugas')" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                  <input type="file" id="fileSuratTugas" multiple required aria-label="Pilih File Surat Tugas Rombongan" accept=".pdf,image/jpeg,image/png,image/webp,image/heic,image/heif" onchange="selectDocument(this, 'fileSuratTugas')" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
                 </label>
                 <button type="button" onclick="document.getElementById('cameraSuratTugas').click()" class="camera-option items-center gap-1.5 px-3 py-2 rounded-lg bg-teal-50 border border-teal-200 text-teal-800 text-xs font-semibold"><i class="fa-solid fa-camera" aria-hidden="true"></i> Ambil Gambar</button>
                 <input type="file" id="cameraSuratTugas" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" capture="environment" onchange="selectDocument(this, 'fileSuratTugas')" class="hidden">
@@ -294,22 +294,28 @@
     }
 
     function selectDocument(input, fieldId) {
-      const file = input.files[0];
-      if (!file) return;
+      const files = Array.from(input.files || []);
+      if (!files.length) return;
       const picker = document.getElementById(fieldId);
       const status = document.getElementById(fieldId + 'Status');
-      const error = documentFileError(file);
+      const error = files.map(documentFileError).find(Boolean);
+      const previous = selectedDocuments[fieldId] || [];
       if (error) {
         input.value = '';
-        picker.required = !selectedDocuments[fieldId];
-        status.textContent = error + (selectedDocuments[fieldId] ? ' File sebelumnya: ' + selectedDocuments[fieldId].name : ' Silakan pilih ulang.');
+        picker.required = !previous.length;
+        status.textContent = error + (previous.length ? ' File sebelumnya tetap dipilih.' : ' Silakan pilih ulang.');
         status.className = 'text-[11px] text-rose-700 break-all pt-1';
         return;
       }
-      selectedDocuments[fieldId] = file;
+      selectedDocuments[fieldId] = input === picker ? files : previous.concat(files);
       picker.required = false;
-      status.textContent = file.name;
+      status.textContent = selectedDocuments[fieldId].map(file => file.name).join(', ');
       status.className = 'text-[11px] text-teal-800 break-all pt-1';
+    }
+
+    async function documentsToBase64(files) {
+      const values = await Promise.all((files || []).map(fileToBase64));
+      return values.length === 1 ? values[0] : values;
     }
 
     function fileToBase64(file) {
@@ -337,8 +343,8 @@
         const fileKunjungan = selectedDocuments.fileSuratKunjungan;
         const fileTugas = selectedDocuments.fileSuratTugas;
 
-        const base64Kunjungan = await fileToBase64(fileKunjungan);
-        const base64Tugas = await fileToBase64(fileTugas);
+        const base64Kunjungan = await documentsToBase64(fileKunjungan);
+        const base64Tugas = await documentsToBase64(fileTugas);
 
         const payload = {
           instansi: formData.get('instansi'),
@@ -360,7 +366,7 @@
             .withFailureHandler(err => {
               btn.disabled = false;
               btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i> Kirim Pendaftaran Kunjungan';
-              alert('Gagal: ' + err.message);
+              alert('Gagal: ' + publicErrorMessage(err));
             })
             .registerTamuLuar(payload);
         } else {
@@ -384,15 +390,23 @@
             document.getElementById('modalSukses').classList.remove('hidden');
             document.getElementById('modalSukses').classList.add('flex');
           } else {
-            alert('Gagal: ' + (res.error || 'Terjadi kesalahan'));
+            alert('Gagal: ' + publicErrorMessage(res.error));
           }
         }
       } catch (err) {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i> Kirim Pendaftaran Kunjungan';
-        alert('Error: ' + err.message);
+        alert('Gagal: ' + publicErrorMessage(err));
       }
     }
+    function publicErrorMessage(error) {
+      const message = String(error && error.message || error || '');
+      if (!message || /oauth|authoriz|permission|scope|Session\.|https?:|Exception|TypeError|ReferenceError|SyntaxError|DriveApp|SpreadsheetApp|ScriptApp|SPREADSHEET_ID|FOLDER_|access denied|service invoked|internal error|unexpected|quota|timed? out|timeout|exceeded|invalid argument|not found|not a function|not defined|cannot read/i.test(message)) {
+        return 'Layanan sedang tidak tersedia. Silakan coba lagi atau hubungi petugas.';
+      }
+      return message.slice(0, 240);
+    }
+
   </script>
 </body>
 </html>

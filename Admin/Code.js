@@ -9,7 +9,6 @@ const ADMIN_INCLUDE_FILES_=['MobileBase','Stylesheet','BookingCalendar','Attenda
 function doGet(e) {
   requireVisitAdmin_();
   configureNewDeployment_();
-  ensurePublicVisitDocuments_();
   ensurePlutMeetingRoom_();
   const employeeImport=ensureEmployeeDirectory_();
   const page = (e && e.parameter && e.parameter.page) ? e.parameter.page : 'index';
@@ -104,6 +103,30 @@ function isVisitDisplayDateOnOrAfterCutoff_(val) {
   return isDisplayDateOnOrAfterCutoff_(val, VISIT_DISPLAY_START_DATE_);
 }
 
+/** Sheet date/time cells are wall values, not instants to convert into Jakarta. */
+function normalizeVisitSheetRow_(row, spreadsheet) {
+  const timezone = spreadsheet?.getSpreadsheetTimeZone?.() || JAKARTA_TIMEZONE_;
+  const result = row.slice();
+  [12, 13].forEach(column => {
+    const value = row[column];
+    if (!(value instanceof Date)) return;
+    if (isNaN(value.getTime())) { result[column] = ''; return; }
+    if (typeof Utilities !== 'undefined' && typeof Utilities.formatDate === 'function') {
+      result[column] = Utilities.formatDate(value, timezone, column === 12 ? 'yyyy-MM-dd' : 'HH:mm');
+      return;
+    }
+    const parts = {};
+    new Intl.DateTimeFormat('en-GB', {
+      timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+    }).formatToParts(value).forEach(part => { parts[part.type] = part.value; });
+    result[column] = column === 12
+      ? parts.year + '-' + parts.month + '-' + parts.day
+      : parts.hour + ':' + parts.minute;
+  });
+  return result;
+}
+
 function buildVisitDateLookup_(ss) {
   const visitDatesByCode = new Map();
   const visitDatesById = new Map();
@@ -111,7 +134,7 @@ function buildVisitDateLookup_(ss) {
   if (sheetTamu && sheetTamu.getLastRow() > 1) {
     const rows = sheetTamu.getRange(2, 1, sheetTamu.getLastRow() - 1, sheetTamu.getLastColumn()).getValues();
     rows.forEach(r => {
-      const dateKey = normalizeJakartaDateKey_(r[12]);
+      const dateKey = normalizeJakartaDateKey_(normalizeVisitSheetRow_(r, ss)[12]);
       const codeKey = String(r[1] || '').trim();
       const idKey = String(r[0] || '').trim();
       if (codeKey) visitDatesByCode.set(codeKey, dateKey);
@@ -335,7 +358,6 @@ function saveBase64ToDrive_(base64Data, fileName, mimeType, folderType) {
   const decodedBytes = Utilities.base64Decode(cleanBase64);
   const blob = Utilities.newBlob(decodedBytes, mimeType || 'application/octet-stream', fileName);
   const file = folder.createFile(blob);
-  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
   return file.getUrl();
 }
 
@@ -433,7 +455,8 @@ function readDashboardData_(includeLoStats) {
   const visitDatesById = new Map();
 
   if (sheetTamu && sheetTamu.getLastRow() > 1) {
-    const rawRows = sheetTamu.getRange(2, 1, sheetTamu.getLastRow() - 1, sheetTamu.getLastColumn()).getValues();
+    const rawRows = sheetTamu.getRange(2, 1, sheetTamu.getLastRow() - 1, sheetTamu.getLastColumn()).getValues()
+      .map(row => normalizeVisitSheetRow_(row, ss));
     rawRows.forEach(r => {
       const dateKey = normalizeJakartaDateKey_(r[12]);
       const codeKey = String(r[1] || '').trim();
@@ -687,6 +710,7 @@ function getTamuList_(spreadsheet) {
   if (!sheet || sheet.getLastRow() <= 1) return { success: true, data: [] };
 
   const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).getValues()
+    .map(row => normalizeVisitSheetRow_(row, ss))
     .filter(r => isVisitDisplayDateOnOrAfterCutoff_(r[12]));
   return { success: true, data: rows.map(mapVisitRow_) };
 }
@@ -728,7 +752,7 @@ function findRecordByColumn_(sheet,column,code,width) {
 }
 function getVisitByCode_(ss,code) {
   const found=findRecordByColumn_(ss.getSheetByName('Data_Tamu'),2,code);
-  return found?mapVisitRow_(found.values):null;
+  return found?mapVisitRow_(normalizeVisitSheetRow_(found.values, ss)):null;
 }
 
 function simpanJadwalRapat(p) {

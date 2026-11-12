@@ -1,22 +1,69 @@
 'use strict';
-const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
-const read=file=>fs.readFileSync(path.join(__dirname,'../../',file),'utf8');
-test('document migration shares only project documents, preserves database/backups, and runs once',()=>{
-  const files={},changes=[],props={},audits=[];
-  for(const [id,mime,name] of [['letter','application/pdf','Surat.pdf'],['photo','image/png','Foto.png'],['database','application/vnd.google-apps.spreadsheet','DB'],['backup','application/zip','Backup.zip']])files[id]={getId:()=>id,getMimeType:()=>mime,getName:()=>name,getSharingAccess:()=>changes.includes(id)?'ANYONE_WITH_LINK':'PRIVATE',getSharingPermission:()=>changes.includes(id)?'VIEW':'NONE',setSharing:(access,permission)=>{assert.equal(access,'ANYONE_WITH_LINK');assert.equal(permission,'VIEW');changes.push(id);}};
-  const row=Array(21).fill('');row[14]='https://drive.google.com/file/d/letter/view';row[15]='https://drive.google.com/file/d/database/view';
-  const sheet={getLastRow:()=>2,getLastColumn:()=>21,getRange:()=>({getValues:()=>[row]})};
-  const iterator=values=>{let i=0;return {hasNext:()=>i<values.length,next:()=>values[i++]};};
-  const c=vm.createContext({PropertiesService:{getScriptProperties:()=>({getProperty:key=>props[key],setProperty:(key,value)=>props[key]=value})},getSpreadsheet:()=>({getId:()=> 'database',getSheetByName:name=>name==='Data_Tamu'?sheet:null}),LockService:{getScriptLock:()=>({waitLock(){},releaseLock(){}})},DriveApp:{Access:{ANYONE_WITH_LINK:'ANYONE_WITH_LINK'},Permission:{VIEW:'VIEW'},getFileById:id=>files[id],getFolderById:()=>({getFiles:()=>iterator([files.photo,files.backup,files.database]),getFolders:()=>iterator([])}),getFoldersByName:()=>iterator([]),createFile:(name,content,mime)=>{audits.push(JSON.parse(content));return {getId:()=> 'private-audit'};}},MimeType:{PLAIN_TEXT:'text/plain'},console});
-  props.FOLDER_SURAT_ID='project-folder';
-  c.FOLDER_ROOT_NAME='SI-TARI';c.FOLDER_SURAT_NAME='Surat';c.FOLDER_BUKTI_NAME='Bukti';
-  vm.runInContext(read('Admin/DocumentSharing.js'),c);
-  c.ensurePublicVisitDocuments_();
-  assert.deepEqual(changes.sort(),['letter','photo']);assert.equal(audits.length,1);assert.equal(audits[0].files.length,2);
-  assert.ok(audits[0].files.every(f=>f.access==='PRIVATE'));
-  assert.equal(JSON.parse(props.PUBLIC_DOCUMENTS_MIGRATION_V1).shared,2);
-  c.ensurePublicVisitDocuments_();assert.equal(changes.length,2);assert.equal(audits.length,1);
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+const path = require('node:path');
+const read = file => fs.readFileSync(path.join(__dirname, '../../', file), 'utf8');
+
+function uploadContext(file) {
+  const uploads = [];
+  const folder = {
+    createFile(blob) {
+      uploads.push(blob);
+      return {
+        getUrl: () => 'https://drive.example/private-document',
+        setSharing() { assert.fail('Sensitive uploads must preserve configured folder access.'); }
+      };
+    }
+  };
+  const context = vm.createContext({
+    PropertiesService: { getScriptProperties: () => ({ getProperty: () => 'private-folder' }) },
+    DriveApp: {
+      getFolderById: () => folder,
+      Access: { ANYONE_WITH_LINK: 'ANYONE_WITH_LINK' },
+      Permission: { VIEW: 'VIEW' }
+    },
+    Utilities: {
+      base64Decode: () => [1, 2, 3],
+      newBlob: (bytes, mime, name) => ({ bytes, mime, name }),
+      getUuid: () => 'synthetic-id'
+    }
+  });
+  vm.runInContext(read(file), context);
+  context.getSuratFolder_ = () => folder;
+  context.validateTldUpload_ = () => {};
+  context.validateVisitFile_ = () => ({ mime: 'application/pdf', size: 3 });
+  return { context, uploads };
+}
+
+test('legacy document sharing migration performs no Drive or database access', () => {
+  const context = vm.createContext({});
+  vm.runInContext(read('Admin/DocumentSharing.js'), context);
+  assert.doesNotThrow(() => context.ensurePublicVisitDocuments_());
+  assert.doesNotMatch(read('Admin/Code.js'), /\bensurePublicVisitDocuments_\(\);/);
 });
-test('future TLD letters and workflow evidence receive public read-only link access',()=>{
-  for(const file of ['Tamu-Luar/Code.js','Admin/VisitWorkflowStorage.js'])assert.match(read(file),/\.setSharing\(DriveApp\.Access\.ANYONE_WITH_LINK, DriveApp\.Permission\.VIEW\)/);
+
+for (const file of ['Tamu-Luar/Code.js', 'Admin/Code.js']) {
+  test(file + ' uploads documents without making them publicly accessible', () => {
+    const { context, uploads } = uploadContext(file);
+    const storage = file === 'Tamu-Luar/Code.js' ? [] : 'surat';
+    const url = context.saveBase64ToDrive_('data:application/pdf;base64,AQID', 'Surat.pdf', 'application/pdf', storage);
+    assert.equal(url, 'https://drive.example/private-document');
+    assert.equal(uploads.length, 1);
+  });
+}
+
+test('workflow evidence uploads preserve configured folder access', () => {
+  const { context, uploads } = uploadContext('Admin/VisitWorkflowStorage.js');
+  const result = context.saveVisitWorkflowFile_({ data: 'data:application/pdf;base64,AQID', name: 'Bukti.pdf' }, 'TEST', 'absen');
+  assert.equal(result.url, 'https://drive.example/private-document');
+  assert.equal(result.name, 'Bukti.pdf');
+  assert.equal(uploads.length, 1);
+});
+
+test('generated intake and its template preserve document access', () => {
+  for (const file of ['Admin/PublicIntake.js', 'config-templates/Admin/PublicIntake.js.example']) {
+    assert.doesNotMatch(read(file), /\.setSharing\(DriveApp\.Access\.ANYONE_WITH_LINK/);
+  }
 });

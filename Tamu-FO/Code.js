@@ -159,6 +159,7 @@ function registerTamuFo(payload) {
     const kodeKunjungan = generateVisitCode_(sheetTamu, 'TDD', today);
     const timeNow = Utilities.formatDate(submittedAt, 'Asia/Jakarta', 'yyyy-MM-dd HH:mm:ss');
 
+    sheetTamu.getRange(sheetTamu.getLastRow() + 1, 13, 1, 2).setNumberFormat('@');
     sheetTamu.appendRow([
       nextId, kodeKunjungan, 'dalam_daerah_fo', payload.instansi || 'Perorangan', payload.alamat || '',
       Number(payload.jumlah_orang), payload.ketua_nama, payload.pengikut_list || '',

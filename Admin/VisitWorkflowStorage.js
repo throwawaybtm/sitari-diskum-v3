@@ -120,8 +120,8 @@ function readVisitWorkflow_(code, spreadsheet, options) {
   return { visit:visit, workflow:workflow, stage:visitWorkflowStage_(workflow), attendance:attendance,
     roster:getVisitRoster_(visit).map(member=>Object.assign({},member,{attended:hasVisitAttendance_(attendance,{member_id:member.id,nama:member.nama})})),
     rooms:!options||options.rooms!==false?readMeetingRoomOptions_(ss):[], simulated:false,
-    fonnteDisabled: typeof isFonnteDisabled_ === 'function' ? isFonnteDisabled_() : false,
-    publicDevMode: isPublicDevMode_(),
+    fonnteDisabled: (!options || options.adminMetadata !== false) && typeof isFonnteDisabled_ === 'function' ? isFonnteDisabled_() : false,
+    publicDevMode: (!options || options.adminMetadata !== false) && isPublicDevMode_(),
     storageRow:found?found.row:null };
 }
 
@@ -201,7 +201,6 @@ function saveVisitWorkflowFile_(file,code,kind) {
   const name=kind+'_'+code+'_'+Utilities.getUuid()+'.'+extension;
   const blob=Utilities.newBlob(Utilities.base64Decode(file.data.split(',')[1]),info.mime,name);
   const saved=DriveApp.getFolderById(folderId).createFile(blob);
-  saved.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
   return {name:file.name||name,url:saved.getUrl(),mime:info.mime,size:info.size};
 }
 
@@ -271,7 +270,7 @@ function validateVisitAttendanceWrite_(meetingId) {
 
 function visitAttendanceForAgenda_(meeting) {
   const code=meeting.kode_kunjungan||(String(meeting.kode_rapat||'').indexOf('VISIT-')===0?String(meeting.kode_rapat).slice(6):'');
-  return code?readVisitWorkflow_(code):null;
+  return code ? readVisitWorkflow_(code, undefined, { rooms: false, adminMetadata: false }) : null;
 }
 
 function getVisitAttendanceRoster(payload) {

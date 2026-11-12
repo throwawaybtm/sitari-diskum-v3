@@ -33,6 +33,7 @@ function createSheet(name, initialRows, state) {
     getRange(row, column, height = 1, width = 1) {
       assert.equal(state.held, true, 'read/sort requires the shared ScriptLock');
       return {
+        setNumberFormat() { return this; },
         getValues() {
           return Array.from({ length: height }, (_, offset) =>
             Array.from({ length: width }, (_, cell) => committed[row - 2 + offset]?.[column - 1 + cell]));

@@ -492,7 +492,7 @@
       message.textContent='Memuat nama dari permohonan kunjungan.';
       callBackend('getVisitAttendanceRoster',[{rapat_id:id}],res=>{
         if(request!==visitRosterRequest)return;
-        if(!res||!res.success){message.textContent=res&&res.error||'Daftar rombongan gagal dimuat. Pilih ulang agenda untuk mencoba lagi.';return;}
+        if(!res||!res.success){message.textContent=res&&res.error?publicErrorMessage(res.error):'Daftar rombongan gagal dimuat. Pilih ulang agenda untuk mencoba lagi.';return;}
         visitRosterData=res.data;
         select.replaceChildren(new Option('Pilih nama terdaftar',''));
         res.data.roster.forEach(member=>{const option=new Option(member.nama+' — '+member.peran+(member.attended?' (Sudah hadir)':''),member.id);option.disabled=member.attended;select.add(option);});
@@ -626,7 +626,7 @@
           alert(res.message);
           location.reload();
         } else {
-          alert('Gagal: ' + res.error);
+          alert('Gagal: ' + publicErrorMessage(res.error));
         }
       }, err => {
         console.error('submitPresensiRapat failed:', err);
@@ -655,6 +655,14 @@
         .catch(handleError);
       }
     }
+    function publicErrorMessage(error) {
+      const message = String(error && error.message || error || '');
+      if (!message || /oauth|authoriz|permission|scope|Session\.|https?:|Exception|TypeError|ReferenceError|SyntaxError|DriveApp|SpreadsheetApp|ScriptApp|SPREADSHEET_ID|FOLDER_|access denied|service invoked|internal error|unexpected|quota|timed? out|timeout|exceeded|invalid argument|not found|not a function|not defined|cannot read/i.test(message)) {
+        return 'Layanan sedang tidak tersedia. Silakan coba lagi atau hubungi petugas.';
+      }
+      return message.slice(0, 240);
+    }
+
   </script>
 </body>
 </html>

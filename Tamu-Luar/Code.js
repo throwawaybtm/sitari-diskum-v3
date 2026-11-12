@@ -64,7 +64,7 @@ function getSuratFolder_() {
   return suratFolder;
 }
 
-function saveBase64ToDrive_(base64Data, fileName, fallbackMimeType) {
+function saveBase64ToDrive_(base64Data, fileName, fallbackMimeType, createdFiles) {
   if (!base64Data) return '';
   validateTldUpload_(base64Data);
   const match = String(base64Data).match(/^data:([^;]+);base64,(.+)$/);
@@ -72,7 +72,7 @@ function saveBase64ToDrive_(base64Data, fileName, fallbackMimeType) {
   const cleanBase64 = match ? match[2] : base64Data;
   const blob = Utilities.newBlob(Utilities.base64Decode(cleanBase64), mimeType || 'application/octet-stream', fileName);
   const file = getSuratFolder_().createFile(blob);
-  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  if (createdFiles) createdFiles.push(file);
   return file.getUrl();
 }
 
@@ -176,10 +176,32 @@ function nextRecordId_(sheet) {
   }, 0) + 1;
 }
 
-function registerTamuLuar(payload) {
+function normalizeTldUploads_(value, required) {
+  const list = Array.isArray(value) ? value : (value ? [value] : []);
+  if (required && !list.length) throw new Error('Pilih minimal satu dokumen pada setiap kolom unggahan.');
+  if (list.some(item => typeof item !== 'string' || !item.trim())) throw new Error('Dokumen unggahan tidak valid.');
+  return list;
+}
+function validateTldDocumentBatch_(payload) {
   validateTldRequiredFields_(payload);
-  const destination = prepareTldVisit_(payload);
+  const kunjungan = normalizeTldUploads_(payload.surat_kunjungan_base64, true);
+  const tugas = normalizeTldUploads_(payload.surat_tugas_base64, true);
+  kunjungan.concat(tugas).forEach(data => validateTldUpload_(data));
+  return Object.assign({}, payload, { surat_kunjungan_base64: kunjungan[0], surat_tugas_base64: tugas[0] });
+}
 
+function saveTldDocuments_(value, fileName, createdFiles) {
+  const documents = normalizeTldUploads_(value, true);
+  const urls = documents.map((data, index) => saveBase64ToDrive_(data,
+    documents.length === 1 ? fileName : fileName + '_' + (index + 1), 'application/pdf', createdFiles));
+  return urls.length === 1 ? urls[0] : JSON.stringify(urls);
+}
+
+function registerTamuLuar(payload) {
+  const destination = prepareTldVisit_(validateTldDocumentBatch_(payload));
+
+  const createdFiles = [];
+  let rowWritten = false;
   const lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
@@ -194,13 +216,10 @@ function registerTamuLuar(payload) {
     // Every TLD registration follows the admin approval/SPPD workflow.
     const isBawaSppd = 1;
 
-    const urlSuratKunjungan = payload.surat_kunjungan_base64
-      ? saveBase64ToDrive_(payload.surat_kunjungan_base64, `Surat_Kunjungan_${kodeKunjungan}`, 'application/pdf')
-      : '';
-    const urlSuratTugas = payload.surat_tugas_base64
-      ? saveBase64ToDrive_(payload.surat_tugas_base64, `Surat_Tugas_${kodeKunjungan}`, 'application/pdf')
-      : '';
+    const urlSuratKunjungan = saveTldDocuments_(payload.surat_kunjungan_base64, `Surat_Kunjungan_${kodeKunjungan}`, createdFiles);
+    const urlSuratTugas = saveTldDocuments_(payload.surat_tugas_base64, `Surat_Tugas_${kodeKunjungan}`, createdFiles);
 
+    sheetTamu.getRange(sheetTamu.getLastRow() + 1, 13, 1, 2).setNumberFormat('@');
     sheetTamu.appendRow([
       nextId, kodeKunjungan, 'luar_daerah', payload.instansi, payload.alamat || '',
       Number(payload.jumlah_orang) || 1, payload.ketua_nama, payload.pengikut_list || '',
@@ -208,6 +227,7 @@ function registerTamuLuar(payload) {
       payload.narahubung_hp, dateValue, payload.jam_kunjungan || '09:00',
       urlSuratKunjungan, urlSuratTugas, destination.picIds, destination.pic, isBawaSppd, 'Menunggu Konfirmasi', timeNow
     ]);
+    rowWritten = true;
 
     if (isBawaSppd) {
       const sheetSppd = ss.getSheetByName('Kendali_SPPD');
@@ -233,6 +253,11 @@ function registerTamuLuar(payload) {
         tujuan_bidang: destination.bidang
       }
     };
+  } catch (error) {
+    if (!rowWritten) createdFiles.forEach(file => {
+      try { file.setTrashed(true); } catch (cleanupError) { /* Preserve the original error. */ }
+    });
+    throw error;
   } finally {
     try {
       if (typeof SpreadsheetApp !== 'undefined' && typeof SpreadsheetApp.flush === 'function') {

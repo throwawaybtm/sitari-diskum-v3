@@ -5,7 +5,7 @@
       {
         "userSymbol": "SiTariCore",
         "libraryId": "1jrzdwzt6xg-J1WcgY23FHET5eqJqOCZBcjcRmk3DUE5faGEYQyyJsob0",
-        "version": "49",
+        "version": "50",
         "developmentMode": false
       }
     ]
@@ -13,6 +13,7 @@
   "exceptionLogging": "STACKDRIVER",
   "runtimeVersion": "V8",
   "oauthScopes": [
+    "https://www.googleapis.com/auth/userinfo.email",
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive"
   ],

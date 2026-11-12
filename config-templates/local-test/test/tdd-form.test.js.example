@@ -38,7 +38,7 @@ test('GAS TDD records rombongan members, headcount, server arrival and Non-SPPD,
   const context = loadFo();
   const rows = [];
   const touched = [];
-  const sheet = { getLastRow: () => 1, appendRow: row => rows.push(row) };
+  const sheet = { getLastRow: () => 1, appendRow: row => rows.push(row), getRange: () => ({ setNumberFormat() {} }) };
   context.LockService = { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) };
   context.Utilities = { formatDate: (date, timezone, format) => ({
     'yyyy-MM-dd': '2026-10-26', 'HH:mm': '20:45', 'yyyy-MM-dd HH:mm:ss': '2026-10-26 20:45:00'

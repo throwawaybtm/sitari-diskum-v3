@@ -80,7 +80,7 @@ test('GAS registration saves all selected fields and PICs in the shared row', ()
   const context = loadTld();
   const options = context.getTldPublicDestinations_();
   const rows = [];
-  const sheet = { getLastRow: () => 1, appendRow: row => rows.push(row) };
+  const sheet = { getLastRow: () => 1, appendRow: row => rows.push(row), getRange: () => ({ setNumberFormat() {} }) };
   context.LockService = { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) };
   context.Utilities = { formatDate: () => '2026-10-26 10:00:00' };
   context.getSharedSpreadsheet_ = () => ({ getSheetByName: () => sheet });
@@ -182,17 +182,18 @@ test('file picker and camera fill the same required document without losing a pr
   }
   const pdf = { name: 'surat.pdf', type: 'application/pdf', size: 100 };
   const photo = { name: 'camera.jpg', type: 'image/jpeg', size: 200 };
-  context.selectDocument({ files: [pdf] }, 'fileSuratKunjungan');
-  assert.equal(selectedDocuments.fileSuratKunjungan, pdf);
+  fields.fileSuratKunjungan.files = [pdf];
+  context.selectDocument(fields.fileSuratKunjungan, 'fileSuratKunjungan');
+  assert.deepEqual(Array.from(selectedDocuments.fileSuratKunjungan), [pdf]);
   assert.equal(fields.fileSuratKunjungan.required, false);
   assert.equal(fields.fileSuratTugas.required, true);
   context.selectDocument({ files: [photo] }, 'fileSuratKunjungan');
-  assert.equal(selectedDocuments.fileSuratKunjungan, photo);
-  assert.equal(fields.fileSuratKunjunganStatus.textContent, 'camera.jpg');
+  assert.deepEqual(Array.from(selectedDocuments.fileSuratKunjungan), [pdf, photo]);
+  assert.equal(fields.fileSuratKunjunganStatus.textContent, 'surat.pdf, camera.jpg');
   context.selectDocument({ files: [] }, 'fileSuratKunjungan');
-  assert.equal(selectedDocuments.fileSuratKunjungan, photo, 'cancelling keeps the prior document');
+  assert.deepEqual(Array.from(selectedDocuments.fileSuratKunjungan), [pdf, photo], 'cancelling keeps prior documents');
   context.selectDocument({ files: [{ ...photo, size: 6 * 1024 * 1024 }] }, 'fileSuratKunjungan');
-  assert.equal(selectedDocuments.fileSuratKunjungan, photo);
+  assert.deepEqual(Array.from(selectedDocuments.fileSuratKunjungan), [pdf, photo]);
   assert.match(fields.fileSuratKunjunganStatus.textContent, /5 MB/);
   context.selectDocument({ files: [{ name: 'invalid.html', type: 'text/html', size: 20 }] }, 'fileSuratTugas');
   assert.equal(fields.fileSuratTugas.required, true);

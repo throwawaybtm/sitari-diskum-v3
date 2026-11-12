@@ -2,7 +2,7 @@
 function configureNewDeployment_() {
   const properties = PropertiesService.getScriptProperties();
   const defaults = {
-    ADMIN_DEMO_MODE: 'true',
+    ADMIN_DEMO_MODE: 'false',
     APPROVER_EMAIL: 'APPROVER_EMAIL_PLACEHOLDER',
     TAMU_FO_URL: 'https://script.google.com/macros/s/AKfycbxFLrXSN3av3V6qjUOJUxEfUU3uWxBdK-fXxQIdaUfXjtnB2ZUx87GWfUIALSDMrlD5/exec',
     TAMU_LUAR_URL: 'https://script.google.com/macros/s/AKfycbywu_c5VaQuX6hE5Fu1StXiNgLQWA5m1JZAKUdAFU2Nx0Dli8K0qB8CMxkP3fy2YD55Xg/exec'

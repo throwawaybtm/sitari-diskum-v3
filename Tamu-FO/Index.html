@@ -263,7 +263,7 @@
           .withFailureHandler(err => {
             btn.disabled = false;
             btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i> Kirim Pendaftaran Kunjungan';
-            alert('Gagal: ' + err.message);
+            alert('Gagal: ' + publicErrorMessage(err));
           })
           .registerTamuFo(payload);
       } else {
@@ -278,7 +278,7 @@
       } catch (err) {
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i> Kirim Pendaftaran Kunjungan';
-        alert('Gagal: ' + err.message);
+        alert('Gagal: ' + publicErrorMessage(err));
       }
 
       function onSuccess(res) {
@@ -291,10 +291,18 @@
           document.getElementById('modalSuksesFo').classList.remove('hidden');
           document.getElementById('modalSuksesFo').classList.add('flex');
         } else {
-          alert('Gagal: ' + res.error);
+          alert('Gagal: ' + publicErrorMessage(res.error));
         }
       }
     }
+    function publicErrorMessage(error) {
+      const message = String(error && error.message || error || '');
+      if (!message || /oauth|authoriz|permission|scope|Session\.|https?:|Exception|TypeError|ReferenceError|SyntaxError|DriveApp|SpreadsheetApp|ScriptApp|SPREADSHEET_ID|FOLDER_|access denied|service invoked|internal error|unexpected|quota|timed? out|timeout|exceeded|invalid argument|not found|not a function|not defined|cannot read/i.test(message)) {
+        return 'Layanan sedang tidak tersedia. Silakan coba lagi atau hubungi petugas.';
+      }
+      return message.slice(0, 240);
+    }
+
   </script>
 </body>
 </html>
