@@ -159,10 +159,20 @@
               <label for="selectOpdPemko" class="block text-xs font-bold text-slate-700 uppercase mb-1">
                 Pilih OPD Pemko Batam <span class="text-rose-600" aria-hidden="true">*</span>
               </label>
-              <select id="selectOpdPemko"
+              <select id="selectOpdPemko" onchange="onOpdPemkoChange()"
                 class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                 <option value="">-- Pilih OPD Pemko Batam --</option>
               </select>
+            </div>
+
+            <div id="pemkoWilayahField" class="hidden" hidden>
+              <label id="labelWilayahPemko" for="inputWilayahPemko" class="block text-xs font-bold text-slate-700 uppercase mb-1">
+                <span id="labelWilayahPemkoText">Nama Kelurahan</span> <span class="text-rose-600" aria-hidden="true">*</span>
+              </label>
+              <input type="text" id="inputWilayahPemko"
+                oninput="if (typeof this.setCustomValidity === 'function') this.setCustomValidity('')"
+                placeholder="Masukkan nama kelurahan..."
+                class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
             </div>
 
             <div>
@@ -187,9 +197,9 @@
 
           <div id="sectionTamu" class="space-y-3 hidden">
             <div id="visitRosterField" hidden><label for="selectTamuRombongan" class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Anggota Rombongan <span class="text-rose-600">*</span></label><select id="selectTamuRombongan" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm"><option value="">Pilih nama terdaftar</option></select><p id="visitRosterMessage" class="text-xs text-slate-500 mt-2" aria-live="polite"></p></div>
-            <div id="freeTamuName"><label for="inputNamaTamu" class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Lengkap <span class="text-rose-600">*</span></label><input id="inputNamaTamu" type="text" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm" placeholder="Nama peserta kunjungan"></div>
-            <div><label for="inputInstansiTamu" class="block text-xs font-bold text-slate-700 uppercase mb-1">Instansi Asal <span class="text-rose-600">*</span></label><input id="inputInstansiTamu" type="text" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm" placeholder="Nama instansi asal"></div>
-            <div><label for="inputJabatanTamu" class="block text-xs font-bold text-slate-700 uppercase mb-1">Jabatan</label><input id="inputJabatanTamu" type="text" maxlength="150" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm" placeholder="Jabatan pada instansi asal"></div>
+            <div id="freeTamuName"><label for="inputNamaTamu" class="block text-xs font-bold text-slate-700 uppercase mb-1">Nama Lengkap <span class="text-rose-600">*</span></label><input id="inputNamaTamu" type="text" oninput="if (typeof this.setCustomValidity === 'function') this.setCustomValidity('')" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm" placeholder="Nama peserta kunjungan"></div>
+            <div><label for="inputInstansiTamu" class="block text-xs font-bold text-slate-700 uppercase mb-1">Instansi Asal <span class="text-rose-600">*</span></label><input id="inputInstansiTamu" type="text" oninput="if (typeof this.setCustomValidity === 'function') this.setCustomValidity('')" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm" placeholder="Nama instansi asal"></div>
+            <div><label for="inputJabatanTamu" class="block text-xs font-bold text-slate-700 uppercase mb-1">Jabatan <span class="text-rose-600" aria-hidden="true">*</span></label><input id="inputJabatanTamu" type="text" maxlength="150" oninput="if (typeof this.setCustomValidity === 'function') this.setCustomValidity('')" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm" placeholder="Jabatan pada instansi asal"></div>
           </div>
 
           <div>
@@ -214,13 +224,110 @@
 
   <?!= include_('AttendancePolicy'); ?>
   <script>
+    const PEMKO_OPD_OPTIONS = Object.freeze([
+      'Asisten Pemerintahan dan Kesejahteraan Rakyat',
+      'Asisten Administrasi Umum',
+      'Asisten Perekonomian dan Pembangunan',
+      'Sekretariat Daerah Kota Batam',
+      'Sekretariat DPRD Kota Batam',
+      'Inspektorat Daerah Kota Batam',
+      'Badan Kepegawaian Dan Pengembangan Sumber Daya Manusia Kota Batam',
+      'Badan Pendapatan Daerah Kota Batam',
+      'Badan Pengelolaan Keuangan Dan Aset Daerah Kota Batam',
+      'Badan Perencanaan Pembangunan Daerah Kota Batam',
+      'Dinas Kependudukan Dan Pencatatan Sipil Kota Batam',
+      'Dinas Kesehatan Kota Batam',
+      'Dinas Penanaman Modal Dan Pelayanan Terpadu Satu Pintu Kota Batam',
+      'Dinas Pendidikan Kota Batam',
+      'Dinas Pertanahan Kota Batam',
+      'Dinas Perumahan, Kawasan Permukiman Dan Pertanaman Kota Batam',
+      'Badan Kesatuan Bangsa Dan Politik Kota Batam',
+      'Badan Penanggulangan Bencana Daerah Kota Batam',
+      'Badan Riset Dan Inovasi Daerah Kota Batam',
+      'Dinas Bina Marga Dan Sumber Daya Air Kota Batam',
+      'Dinas Cipta Karya Dan Tata Ruang Kota Batam',
+      'Dinas Kebudayaan Dan Pariwisata Kota Batam',
+      'Dinas Kepemudaan Dan Olahraga Kota Batam',
+      'Dinas Ketahanan Pangan Dan Pertanian Kota Batam',
+      'Dinas Komunikasi Dan Informatika Kota Batam',
+      'Dinas Lingkungan Hidup Kota Batam',
+      'Dinas Pemadam Kebakaran Dan Penyelamatan Kota Batam',
+      'Dinas Pemberdayaan Perempuan, Perlindungan Anak, Pengendalian Penduduk Dan Keluarga Berencana Kota Batam',
+      'Dinas Perhubungan Kota Batam',
+      'Dinas Perikanan Kota Batam',
+      'Dinas Perindustrian Dan Perdagangan Kota Batam',
+      'Dinas Perpustakaan Dan Kearsipan Kota Batam',
+      'Dinas Sosial Dan Pemberdayaan Masyarakat Kota Batam',
+      'Dinas Tenaga Kerja Kota Batam',
+      'Rumah Sakit Umum Daerah Embung Fatimah Kota Batam',
+      'Satuan Polisi Pamong Praja Kota Batam',
+      'Kelurahan',
+      'Kecamatan'
+    ]);
+    const PEMKO_WILAYAH_TYPES = new Set(['Kelurahan', 'Kecamatan']);
+
     let masterPegawai = [];
-    let masterOpd = [];
+    let masterOpd = PEMKO_OPD_OPTIONS.map((nama_opd, idx) => ({ id: idx + 1, nama_opd, kategori: 'Pemko Batam' }));
     let currentKategori = 'Diskum';
+    let lastPemkoOpdSelection = '';
     let presensiMeetings = [];
     let visitRosterMode = false;
     let visitRosterData = null;
     let visitRosterRequest = 0;
+
+    function isPemkoWilayahType(value) {
+      return PEMKO_WILAYAH_TYPES.has(String(value || '').trim());
+    }
+
+    function formatPemkoOpdName(opdCategory, specificName) {
+      const category = String(opdCategory || '').trim();
+      if (!isPemkoWilayahType(category)) return category;
+      const raw = String(specificName || '').trim();
+      if (!raw) return '';
+      const stripped = raw.replace(new RegExp('^' + category + '\\b[\\s:.-]*', 'i'), '').trim();
+      return category + ' - ' + (stripped || raw);
+    }
+
+    function syncPemkoWilayahField(clearIfChanged = false) {
+      const selOpd = document.getElementById('selectOpdPemko');
+      const wrap = document.getElementById('pemkoWilayahField');
+      const labelText = document.getElementById('labelWilayahPemkoText');
+      const input = document.getElementById('inputWilayahPemko');
+      if (!selOpd || !wrap || !input) return;
+      const selected = String(selOpd.value || '').trim();
+      const isWilayah = isPemkoWilayahType(selected);
+      if (!isWilayah || (clearIfChanged && lastPemkoOpdSelection && lastPemkoOpdSelection !== selected)) {
+        input.value = '';
+      }
+      lastPemkoOpdSelection = selected;
+      wrap.hidden = !isWilayah;
+      if (wrap.classList) {
+        if (isWilayah) wrap.classList.remove('hidden');
+        else wrap.classList.add('hidden');
+      }
+      if (isWilayah) {
+        if (labelText) labelText.textContent = 'Nama ' + selected;
+        input.placeholder = selected === 'Kelurahan' ? 'Contoh: Baloi Permai' : 'Contoh: Lubuk Baja';
+      }
+      input.required = currentKategori === 'OPD_Pemko' && isWilayah;
+      if (typeof input.setCustomValidity === 'function') input.setCustomValidity('');
+    }
+
+    function onOpdPemkoChange() {
+      syncPemkoWilayahField(true);
+    }
+
+    function populatePemkoOpdOptions() {
+      const selOpd = document.getElementById('selectOpdPemko');
+      if (!selOpd) return;
+      const current = String(selOpd.value || '').trim();
+      selOpd.replaceChildren(new Option('-- Pilih OPD Pemko Batam --', ''));
+      PEMKO_OPD_OPTIONS.forEach(name => selOpd.add(new Option(name, name)));
+      if (current && PEMKO_OPD_OPTIONS.includes(current)) {
+        selOpd.value = current;
+      }
+      syncPemkoWilayahField(false);
+    }
 
     function isAdminAttendance() {return document.body?.dataset?.adminAttendance==='true';}
     function attendanceFormAvailability(meeting) {return isAdminAttendance()?adminAttendanceAvailability(meeting):attendanceAvailability(meeting);}
@@ -237,10 +344,12 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       updateAdminAttendanceTime(null);
+      populatePemkoOpdOptions();
       loadInitialData();
     });
 
     function loadInitialData() {
+      populatePemkoOpdOptions();
       // Load rapat
       callBackend('getRapatCalendar', [], res => {
         const sel = document.getElementById('selectRapat');
@@ -283,36 +392,27 @@
 
       callBackend('getMasterData', [], res => {
         const selPegawai = document.getElementById('selectPegawaiDiskum');
-        const selOpd = document.getElementById('selectOpdPemko');
         selPegawai.replaceChildren(new Option('-- Pilih Nama Pegawai Diskum --', ''));
-        selOpd.replaceChildren(new Option('-- Pilih OPD Pemko Batam --', ''));
 
         if (res && res.success) {
           masterPegawai = Array.isArray(res.data && res.data.pegawai) ? res.data.pegawai : [];
-          masterOpd = Array.isArray(res.data && res.data.opd) ? res.data.opd : [];
           const department=document.getElementById('selectBidangDiskum');
           department.replaceChildren(new Option('-- Pilih Bidang / Unit Kerja --',''));
           const preferred=['Dinas','Sekretariat','Bidang Pemberdayaan dan Pelindungan Koperasi','Bidang Pengawasan Koperasi','Bidang Kewirausahaan','Bidang Pengembangan Usaha Mikro','UPTD Pengelolaan Dana Bergulir','UPTD PLUT KUMKM','UPTD Pemberdayaan dan Pelindungan Koperasi'];
           const departments=[...new Set(masterPegawai.map(p=>p.bidang).filter(Boolean))].sort((a,b)=>{const i=preferred.indexOf(a),j=preferred.indexOf(b);return (i<0?99:i)-(j<0?99:j)||a.localeCompare(b,'id');});
           departments.forEach(name=>department.add(new Option(name+' ('+masterPegawai.filter(p=>p.bidang===name).length+')',name)));
           department.disabled=!departments.length;onBidangDiskumChange();
-          masterOpd.forEach(o => selOpd.add(new Option(o.nama_opd || '-', String(o.id || ''))));
           if (masterPegawai.length === 0) selPegawai.add(new Option('Belum ada data pegawai', '', true, true));
-          if (masterOpd.length === 0) selOpd.add(new Option('Belum ada data OPD', '', true, true));
         } else {
           masterPegawai = [];
           document.getElementById('selectBidangDiskum').disabled=true;selPegawai.disabled=true;
-          masterOpd = [];
           selPegawai.replaceChildren(new Option('Data pegawai gagal dimuat', '', true, true));
-          selOpd.replaceChildren(new Option('Data OPD gagal dimuat', '', true, true));
         }
       }, err => {
         console.error('getMasterData failed:', err);
         masterPegawai = [];
         document.getElementById('selectBidangDiskum').disabled=true;document.getElementById('selectPegawaiDiskum').disabled=true;
-        masterOpd = [];
         document.getElementById('selectPegawaiDiskum').replaceChildren(new Option('Data pegawai gagal dimuat', '', true, true));
-        document.getElementById('selectOpdPemko').replaceChildren(new Option('Data OPD gagal dimuat', '', true, true));
       });
     }
 
@@ -323,9 +423,18 @@
       document.getElementById('selectBidangDiskum').required = kat === 'Diskum';
       document.getElementById('selectOpdPemko').required = kat === 'OPD_Pemko';
       document.getElementById('inputNamaPemko').required = kat === 'OPD_Pemko';
-      document.getElementById('inputNamaTamu').required = kat === 'Tamu_Luar' && !visitRosterMode;
+      const namaTamu = document.getElementById('inputNamaTamu');
+      const instansiTamu = document.getElementById('inputInstansiTamu');
+      const jabatanTamu = document.getElementById('inputJabatanTamu');
+      namaTamu.required = kat === 'Tamu_Luar' && !visitRosterMode;
       document.getElementById('selectTamuRombongan').required = kat === 'Tamu_Luar' && visitRosterMode;
-      document.getElementById('inputInstansiTamu').required = kat === 'Tamu_Luar';
+      instansiTamu.required = kat === 'Tamu_Luar';
+      jabatanTamu.required = kat === 'Tamu_Luar';
+      if ((kat !== 'Tamu_Luar' || visitRosterMode) && typeof namaTamu.setCustomValidity === 'function') namaTamu.setCustomValidity('');
+      if (kat !== 'Tamu_Luar') {
+        if (typeof instansiTamu.setCustomValidity === 'function') instansiTamu.setCustomValidity('');
+        if (typeof jabatanTamu.setCustomValidity === 'function') jabatanTamu.setCustomValidity('');
+      }
       document.getElementById('sectionTamu').classList[kat === 'Tamu_Luar' ? 'remove' : 'add']('hidden');
       document.getElementById('btnKatTamu').className = 'py-3 px-4 rounded-xl border-2 font-bold text-xs ' + (kat === 'Tamu_Luar' ? 'border-teal-600 bg-teal-50 text-teal-900' : 'border-slate-200 bg-white text-slate-700');
       const btnDiskum = document.getElementById('btnKatDiskum');
@@ -348,6 +457,7 @@
         secDiskum.classList.add('hidden'); secPemko.classList.add('hidden');
         btnPemko.className = btnDiskum.className;
       }
+      syncPemkoWilayahField(false);
     }
 
     function onPresensiAgendaChange() {
@@ -410,6 +520,26 @@
       const selected=presensiMeetings.find(m=>String(m.id)===String(document.getElementById('selectRapat').value));
       const availability=attendanceFormAvailability(selected);
       if(!availability.open){alert(availability.message);return;}
+      if (currentKategori === 'OPD_Pemko') {
+        const opdCheck = String(document.getElementById('selectOpdPemko').value || '').trim();
+        const wilayahInput = document.getElementById('inputWilayahPemko');
+        if (wilayahInput && typeof wilayahInput.setCustomValidity === 'function') {
+          wilayahInput.setCustomValidity(isPemkoWilayahType(opdCheck) && !String(wilayahInput.value || '').trim() ? ('Nama ' + opdCheck + ' wajib diisi.') : '');
+        }
+      } else if (currentKategori === 'Tamu_Luar') {
+        const namaTamu = document.getElementById('inputNamaTamu');
+        const instansiTamu = document.getElementById('inputInstansiTamu');
+        const jabatanTamu = document.getElementById('inputJabatanTamu');
+        if (namaTamu && typeof namaTamu.setCustomValidity === 'function') {
+          namaTamu.setCustomValidity(!visitRosterMode && !String(namaTamu.value || '').trim() ? 'Nama lengkap wajib diisi.' : '');
+        }
+        if (instansiTamu && typeof instansiTamu.setCustomValidity === 'function') {
+          instansiTamu.setCustomValidity(!String(instansiTamu.value || '').trim() ? 'Instansi asal wajib diisi.' : '');
+        }
+        if (jabatanTamu && typeof jabatanTamu.setCustomValidity === 'function') {
+          jabatanTamu.setCustomValidity(!String(jabatanTamu.value || '').trim() ? 'Jabatan wajib diisi.' : '');
+        }
+      }
       if (!document.getElementById('formPresensi').reportValidity()) return;
       const rapatId = document.getElementById('selectRapat').value;
       if (!rapatId) {
@@ -422,6 +552,7 @@
       btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Menyimpan...';
 
       let nama = '', nip = '', jabatan = '', namaOpd = 'Dinas Koperasi & UKM Batam';
+      let pemkoOpd = '', pemkoWilayah = '';
 
       if (currentKategori === 'Diskum') {
         const pId = document.getElementById('selectPegawaiDiskum').value;
@@ -440,23 +571,29 @@
         nama = visitRosterMode ? (member?member.nama:'') : document.getElementById('inputNamaTamu').value.trim();
         namaOpd = document.getElementById('inputInstansiTamu').value.trim();
         jabatan = document.getElementById('inputJabatanTamu').value.trim();
-        if (!nama || !namaOpd) {
-          alert('Isi nama dan instansi asal.'); btn.disabled=false;
+        if (!nama || !namaOpd || !jabatan) {
+          alert('Isi nama, instansi asal, dan jabatan.'); btn.disabled=false;
           btn.innerHTML='<i class="fa-solid fa-paper-plane mr-2"></i> Simpan Kehadiran Presensi Digital'; return;
         }
       } else {
         nama = document.getElementById('inputNamaPemko').value.trim();
         nip = document.getElementById('inputNipPemko').value;
         jabatan = document.getElementById('inputJabatanPemko').value;
-        const opdId = document.getElementById('selectOpdPemko').value;
-        const foundOpd = masterOpd.find(o => o.id == opdId);
-        namaOpd = foundOpd ? foundOpd.nama_opd : 'OPD Pemko Batam';
-        if (!nama || !opdId) {
+        pemkoOpd = String(document.getElementById('selectOpdPemko').value || '').trim();
+        pemkoWilayah = String(document.getElementById('inputWilayahPemko').value || '').trim();
+        if (!nama || !pemkoOpd || !PEMKO_OPD_OPTIONS.includes(pemkoOpd)) {
           alert('Pilih nama OPD dan masukkan nama Anda.');
           btn.disabled = false;
           btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i> Simpan Kehadiran Presensi Digital';
           return;
         }
+        if (isPemkoWilayahType(pemkoOpd) && !pemkoWilayah) {
+          alert('Masukkan Nama ' + pemkoOpd + '.');
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i> Simpan Kehadiran Presensi Digital';
+          return;
+        }
+        namaOpd = formatPemkoOpdName(pemkoOpd, pemkoWilayah);
       }
 
       const payload = {
@@ -469,6 +606,10 @@
         nama_opd: namaOpd,
         no_hp: document.getElementById('inputHp').value
       };
+      if (currentKategori === 'OPD_Pemko') {
+        payload.opd_pemko = pemkoOpd;
+        if (isPemkoWilayahType(pemkoOpd)) payload.opd_pemko_wilayah = pemkoWilayah;
+      }
 
       if(isAdminAttendance())payload.jam_kehadiran=document.getElementById('inputJamKehadiran').value;
       callBackend(isAdminAttendance()?'submitAdminPresensiRapat':'submitPresensiRapat', [payload], res => {

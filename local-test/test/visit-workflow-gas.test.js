@@ -14,7 +14,7 @@ function sheet(rows=[]) {
 }
 
 test('calendar reload derives manual attendance per agenda from saved rows, not QR rows',()=>{
-  const context=vm.createContext({});for(const file of ['Code.js','MeetingRooms.js'])vm.runInContext(fs.readFileSync('Admin/'+file,'utf8'),context);
+  const context=vm.createContext({requireVisitAdmin_:()=>{}});for(const file of ['Code.js','MeetingRooms.js'])vm.runInContext(fs.readFileSync('Admin/'+file,'utf8'),context);
   const attendance=[[],[1,10,'','','','','','','','','ketua','Admin'],[2,11,'','','','','','','','','ketua','QR']];
   const meetings=[[],[10,'VISIT-TLD-1','Kunjungan 1',1,'Ruang','2026-11-02'],[11,'VISIT-TLD-2','Kunjungan 2',1,'Ruang','2026-11-02'],[12,'RPT-12','Rapat 12',1,'Ruang','2026-11-02']];
   const sheets={Data_Rapat:sheet(meetings),Data_Presensi:sheet(attendance)};
@@ -76,7 +76,7 @@ test('GAS public roster omits private visit data and manual attendance requires 
   const {context,sheets,v}=setup();v.ketua_nama='Ketua Terdaftar';v.pengikut_list='Anggota A, S.E.\nAnggota B';
   const state=context.newVisitWorkflow_(v);state.status='Menunggu Kedatangan';state.booking={id:10};
   sheets.Alur_Kunjungan=sheet([[],[v.kode_kunjungan,0,JSON.stringify(state),'now']]);
-  context.getRapatCalendar=()=>({data:[{id:10,kode_kunjungan:v.kode_kunjungan,tanggal:'2026-10-27'}]});
+  context.getRapatCalendar_=context.getRapatCalendar=()=>({data:[{id:10,kode_kunjungan:v.kode_kunjungan,tanggal:'2026-10-27'}]});
   const publicData=context.getVisitAttendanceRoster({rapat_id:10});
   assert.equal(publicData.success,true,publicData.error);
   assert.deepEqual(Object.keys(publicData.data).sort(),['instansi','locked','rapat_id','roster']);

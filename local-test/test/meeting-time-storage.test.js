@@ -3,7 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 function context(rows=[],display=rows){
  const formats=[],writes=[],ss={getSheetByName:name=>name==='Data_Rapat'?sheet:null,getSpreadsheetTimeZone:()=> 'America/Los_Angeles'};
  const sheet={getParent:()=>ss,getLastRow:()=>rows.length+1,getLastColumn:()=>14,appendRow:row=>writes.push(row),getRange:()=>({getValues:()=>rows,getDisplayValues:()=>display,setNumberFormat:value=>formats.push(value)})};
- const c=vm.createContext({Date,Utilities:{formatDate:(d,tz,fmt)=>fmt==='HH:mm'?(tz==='America/Los_Angeles'?(d.getUTCHours()===22?'14:00':'16:00'):'05:00'):'2026-11-02'},LockService:{getScriptLock:()=>({waitLock(){},releaseLock(){}})}});
+ const c=vm.createContext({requireVisitAdmin_:()=>{},Date,Utilities:{formatDate:(d,tz,fmt)=>fmt==='HH:mm'?(tz==='America/Los_Angeles'?(d.getUTCHours()===22?'14:00':'16:00'):'05:00'):'2026-11-02'},LockService:{getScriptLock:()=>({waitLock(){},releaseLock(){}})}});
  for(const file of ['MeetingRooms.js','Code.js','AgendaDocuments.js'])vm.runInContext(fs.readFileSync('Admin/'+file,'utf8'),c);
  c.getSpreadsheet=()=>ss;c.autoSortAllSheets=()=>{};return {c,formats,writes};
 }

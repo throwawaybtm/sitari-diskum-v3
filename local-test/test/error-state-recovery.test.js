@@ -476,6 +476,7 @@ test('late failed getTamuList cannot clobber a newer successful reload with erro
 test('November 2, 2026 Asia/Jakarta cutoff remains intact across GAS Code.js, local HTTP server, Buku Tamu, and Laporan Bulanan', async () => {
   // Verify GAS Data_Tamu cutoff across UTC midnight boundary (16:59:59Z = Nov 1 WIB, 17:00:00Z = Nov 2 WIB)
   const gasContext = vm.createContext({
+    requireVisitAdmin_: () => {},
     Utilities: {
       formatDate: (date, tz, fmt) => {
         if (fmt === 'yyyy-MM-dd') {

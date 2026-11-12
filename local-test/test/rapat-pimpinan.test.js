@@ -162,6 +162,7 @@ function loadRapatPimpinanHarness() {
   }
 
   const context = vm.createContext({
+    requireVisitAdmin_: () => {},
     Option: FakeOption,
     document: {
       getElementById: id => elements[id] || null
@@ -353,6 +354,7 @@ test('GAS simpanJadwalRapat and getRapatCalendar reuse existing 14-column schema
   ];
   const writes = [];
   const context = vm.createContext({
+    requireVisitAdmin_: () => {},
     Date,
     Utilities: { formatDate: () => '2026-11-10 10:00:00' },
     LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) }

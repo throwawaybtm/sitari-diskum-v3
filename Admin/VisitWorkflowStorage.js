@@ -1,12 +1,14 @@
 /** GAS storage adapter. Local tests use local-test/visit-workflow.js instead. */
 function requireVisitAdmin_() {
   const properties = PropertiesService.getScriptProperties();
-  // Explicitly enabled for the pre-release team demo; set false before launch.
+  // Explicit demo bypass only when explicitly 'true'; missing/false/other values fail closed.
   if (properties.getProperty('ADMIN_DEMO_MODE') === 'true') return;
-  const email = Session.getActiveUser().getEmail();
-  const configured = properties.getProperty('APPROVER_EMAIL');
-  if (configured && email && email.toLowerCase() === configured.trim().toLowerCase()) return;
-  if (!configured) throw new Error('Akses admin belum diatur. Atur APPROVER_EMAIL pada Script Properties.');
+  const email = String(Session.getActiveUser().getEmail() || '').trim().toLowerCase();
+  const configuredRaw = String(properties.getProperty('APPROVER_EMAIL') || '').trim();
+  if (!configuredRaw) throw new Error('Akses admin belum diatur. Atur APPROVER_EMAIL pada Script Properties.');
+  const allowed = configuredRaw.split(/[,;\s]+/).map(item => item.trim().toLowerCase()).filter(Boolean);
+  if (!allowed.length) throw new Error('Akses admin belum diatur. Atur APPROVER_EMAIL pada Script Properties.');
+  if (email && allowed.includes(email)) return;
   throw new Error('Akun ini belum diberi akses admin. Masuk dengan akun admin yang ditugaskan.');
 }
 
@@ -107,10 +109,11 @@ function getVisitWorkflow(payload) {
 }
 
 function saveVisitWorkflow(payload) {
-  const lock = LockService.getScriptLock();
-  lock.waitLock(30000);
+  let lock;
   try {
     requireVisitAdmin_();
+    lock = LockService.getScriptLock();
+    lock.waitLock(30000);
     const code = String(payload.kode_kunjungan || ''), ss = getSpreadsheet(), data = readVisitWorkflow_(code,ss);
     const recipients = String(data.visit.lo_nama || '').split(';').map(s=>s.trim()).filter(Boolean);
     const actor = getApprovalActor_();
@@ -147,13 +150,13 @@ function saveVisitWorkflow(payload) {
     result.destinations=VISIT_PIC_CONTACTS.map(d=>({bidang:d.bidang,pic:d.pic}));
     return {success:true,data:result};
   } catch(error) { return {success:false,error:error.message}; }
-  finally { lock.releaseLock(); }
+  finally { if (lock) lock.releaseLock(); }
 }
 
 function saveVisitWorkflowFile_(file,code,kind) {
   const info=validateVisitFile_(file), props=PropertiesService.getScriptProperties();
   let folderId=props.getProperty('FOLDER_BUKTI_ID');
-  if(!folderId) folderId=setupGoogleDriveFolders().buktiId;
+  if(!folderId) folderId=(typeof setupGoogleDriveFolders_==='function'?setupGoogleDriveFolders_():setupGoogleDriveFolders()).buktiId;
   const extension=info.mime==='application/pdf'?'pdf':info.mime.split('/')[1];
   const name=kind+'_'+code+'_'+Utilities.getUuid()+'.'+extension;
   const blob=Utilities.newBlob(Utilities.base64Decode(file.data.split(',')[1]),info.mime,name);
@@ -178,7 +181,7 @@ function createVisitAgendaRow_(ss,visit,booking,rooms,meetings,title) {
 
 function bookVisitAgenda_(visit,booking,rooms) {
   const ss=getSpreadsheet();
-  const meetings=getRapatCalendar().data, key='VISIT-'+visit.kode_kunjungan;
+  const meetings=(typeof getRapatCalendar_==='function'?getRapatCalendar_():getRapatCalendar()).data, key='VISIT-'+visit.kode_kunjungan;
   const existing=meetings.find(m=>m.kode_rapat===key);
   if(existing) {
     if(String(existing.ruangan_id)===String(booking.ruangan_id)&&existing.tanggal===booking.tanggal&&existing.jam_mulai===booking.jam_mulai&&existing.jam_selesai===booking.jam_selesai) return existing;
@@ -210,8 +213,10 @@ function syncVisitSppdEvidence_(ss,code,state) {
 }
 
 function rejectLegacyVisitSppd_(sppdId) {
-  const control=getSppdList().data.find(item=>String(item.id)===String(sppdId));
-  if(control&&getTamuList().data.some(v=>v.tipe_tamu==='luar_daerah'&&String(v.kode_kunjungan)===String(control.kode_kunjungan))) {
+  const sppd=(typeof getSppdList_==='function'?getSppdList_():getSppdList()).data;
+  const control=sppd.find(item=>String(item.id)===String(sppdId));
+  const tamu=(typeof getTamuList_==='function'?getTamuList_():getTamuList()).data;
+  if(control&&tamu.some(v=>v.tipe_tamu==='luar_daerah'&&String(v.kode_kunjungan)===String(control.kode_kunjungan))) {
     throw new Error('Gunakan modal EDIT kunjungan untuk alur dokumen dan pengesahan fisik.');
   }
 }
@@ -231,7 +236,7 @@ function visitAttendanceForAgenda_(meeting) {
 
 function getVisitAttendanceRoster(payload) {
   try {
-    const meeting=getRapatCalendar().data.find(m=>String(m.id)===String(payload.rapat_id));
+    const meeting=(typeof getRapatCalendar_==='function'?getRapatCalendar_():getRapatCalendar()).data.find(m=>String(m.id)===String(payload.rapat_id));
     const data=meeting&&visitAttendanceForAgenda_(meeting);
     if(!data||!data.workflow.booking||String(data.workflow.booking.id)!==String(meeting.id))throw new Error('Agenda kunjungan tidak ditemukan.');
     return {success:true,data:{rapat_id:meeting.id,instansi:data.visit.instansi,roster:data.roster,locked:Boolean(data.workflow.arrival||data.workflow.status==='Selesai')}};
@@ -239,10 +244,11 @@ function getVisitAttendanceRoster(payload) {
 }
 
 function submitManualVisitAttendance(payload) {
-  const lock=LockService.getScriptLock();lock.waitLock(30000);
+  let lock;
   try {
     requireVisitAdmin_();
-    const meeting=getRapatCalendar().data.find(m=>String(m.id)===String(payload.rapat_id));
+    lock=LockService.getScriptLock();lock.waitLock(30000);
+    const meeting=(typeof getRapatCalendar_==='function'?getRapatCalendar_():getRapatCalendar()).data.find(m=>String(m.id)===String(payload.rapat_id));
     const availability=adminAttendanceAvailability_(meeting);if(!availability.open)throw new Error(availability.message);
     if(typeof isMeetingLocked_==='function'?isMeetingLocked_(meeting):Boolean(meeting&&(meeting.locked===true||String(meeting.status||'').trim().toLowerCase()==='terkunci')))throw new Error('Agenda terkunci. Presensi manual dinonaktifkan.');
     const data=meeting&&visitAttendanceForAgenda_(meeting);
@@ -255,5 +261,5 @@ function submitManualVisitAttendance(payload) {
     const updated=readVisitWorkflow_(data.visit.kode_kunjungan);delete updated.storageRow;
     return {success:true,data:updated};
   } catch(error) {return {success:false,error:error.message};}
-  finally {lock.releaseLock();}
+  finally {if(lock)lock.releaseLock();}
 }

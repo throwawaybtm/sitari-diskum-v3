@@ -23,12 +23,12 @@ test('explicit demo mode allows all demo users while normal mode restricts workf
   assert.throws(()=>access({...enabled,ADMIN_DEMO_MODE:'false'},'wife@example.com').requireVisitAdmin_(),/belum diberi akses admin/);
   assert.throws(()=>access({...enabled,ADMIN_DEMO_MODE:'yes'}).requireVisitAdmin_(),/belum diberi akses admin/);
 });
-test('new demo deployment enables demo mode only as a default and preserves an explicit release setting',()=>{
-  const props={ADMIN_DEMO_MODE:'false'};
+test('new deployment fails closed by default and preserves an explicit demo mode setting',()=>{
+  const props={ADMIN_DEMO_MODE:'true'};
   const c=vm.createContext({PropertiesService:{getScriptProperties:()=>({getProperty:name=>props[name],setProperty:(name,value)=>props[name]=value,setProperties:values=>Object.assign(props,values)})}});
   vm.runInContext(source('DeploymentConfig.js'),c);c.configureNewDeployment_();
-  assert.equal(props.ADMIN_DEMO_MODE,'false');delete props.ADMIN_DEMO_MODE;c.configureNewDeployment_();
-  assert.equal(props.ADMIN_DEMO_MODE,'true');
+  assert.equal(props.ADMIN_DEMO_MODE,'true');delete props.ADMIN_DEMO_MODE;c.configureNewDeployment_();
+  assert.equal(props.ADMIN_DEMO_MODE,'false');
   assert.equal(props.TAMU_FO_URL,props.PUBLIC_FORMS_BASE_URL+'?page=tdd');
   assert.equal(props.TAMU_LUAR_URL,props.PUBLIC_FORMS_BASE_URL+'?page=tld');
 });

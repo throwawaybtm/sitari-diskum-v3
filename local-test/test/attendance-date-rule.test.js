@@ -5,7 +5,7 @@ function backend(now){
   for(const f of ['Code.js','MeetingRooms.js','VisitWorkflow.js','VisitWorkflowStorage.js'])vm.runInContext(fs.readFileSync('Admin/'+f,'utf8'),c);
   c.getSpreadsheet=()=>({getSheetByName:name=>name==='Data_Presensi'?{getLastRow:()=>writes.length+1,getLastColumn:()=>12,getRange:()=>({setValue(){},setNumberFormat(){}}),appendRow:r=>writes.push(Array.from(r))}:null});
   c.autoSortPresensi=()=>{};const meeting={id:1,tanggal:'2026-11-02',jam_mulai:'09:00',jam_selesai:'10:00',status:'Terjadwal'};
-  c.getRapatCalendar=()=>({data:[meeting]});return {c,writes,meeting};
+  c.getRapatCalendar_=c.getRapatCalendar=()=>({data:[meeting]});return {c,writes,meeting};
 }
 test('public submissions reject the previous day and open at exactly midnight WIB',()=>{
   for(const [now,expected]of [['2026-11-01T16:59:59Z',false],['2026-11-01T17:00:00Z',true],['2026-11-02T12:00:00Z',true],['2026-11-04T12:00:00Z',true]]){

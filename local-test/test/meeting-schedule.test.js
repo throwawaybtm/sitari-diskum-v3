@@ -42,7 +42,7 @@ test('saved manual attendance disables QR and stale clicks, while manual entry s
 });
 
 test('room master returns only the three configured rooms with new capacities and existing IDs', () => {
-  const context = vm.createContext({});
+  const context = vm.createContext({ requireVisitAdmin_: () => {} });
   for (const file of ['MeetingRooms.js', 'Code.js']) vm.runInContext(fs.readFileSync(path.join(__dirname, '../../Admin', file), 'utf8'), context);
   const data = [
     [17, 'Ruang Rapat Utama Diskum', 35, 'Proyektor', 'Lantai 2', 'blue'],
@@ -195,7 +195,7 @@ test('meeting registration requires every field and valid same-day start/end tim
 });
 
 test('GAS rejects missing meeting fields before writing and preserves all fields on valid save', () => {
-  const context = vm.createContext({});
+  const context = vm.createContext({ requireVisitAdmin_: () => {} });
   for (const file of ['MeetingRooms.js', 'Code.js']) vm.runInContext(fs.readFileSync(path.join(__dirname, '../../Admin', file), 'utf8'), context);
   const rows = [];
   let databaseCalls = 0;

@@ -4,7 +4,10 @@
  * Backend Controller & Web App Entry Point
  */
 
+const ADMIN_INCLUDE_FILES_=['MobileBase','Stylesheet','BookingCalendar','AttendancePolicy','VisitModal','TddModal','ArchiveClient','NotulaPdf','Tools','MeetingPhotos','AgendaAttendance','AgendaSearch','RapatPimpinan','VisitAttendance'];
+
 function doGet(e) {
+  requireVisitAdmin_();
   configureNewDeployment_();
   ensurePublicVisitDocuments_();
   ensurePlutMeetingRoom_();
@@ -13,7 +16,6 @@ function doGet(e) {
   let template;
 
   const adminAttendance=page==='presensi-admin';
-  if(adminAttendance)requireVisitAdmin_();
   if (page === 'presensi'||adminAttendance) {
     template = HtmlService.createTemplateFromFile('Presensi');
     template.rapatId = (e && e.parameter && e.parameter.id) ? e.parameter.id : '';
@@ -36,7 +38,11 @@ function doGet(e) {
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
-function include(filename) { return HtmlService.createHtmlOutputFromFile(filename).getContent(); }
+function include(filename) {
+  requireVisitAdmin_();
+  if (ADMIN_INCLUDE_FILES_.indexOf(filename) === -1) throw new Error('Konten tidak tersedia.');
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
 
 const DISPLAY_START_DATE_ = '2026-11-02';
 const JAKARTA_TIMEZONE_ = 'Asia/Jakarta';
@@ -202,6 +208,18 @@ function appendMeetingRow_(sheet,row) {
   sheet.getRange(sheet.getLastRow()+1,6,1,3).setNumberFormat('@');
   sheet.appendRow(row);
 }
+/** Return max numeric ID in column A plus one so gaps, sorting, or deletions cannot reuse IDs. */
+function nextRecordId_(sheet) {
+  const lastRow=sheet&&typeof sheet.getLastRow==='function'?sheet.getLastRow():0;
+  if(lastRow<=1)return 1;
+  const values=sheet.getRange(2,1,lastRow-1,1).getValues();
+  return values.reduce((max,row)=>{
+    const raw=row&&row[0];
+    if(raw===''||raw===null||raw===undefined||typeof raw==='boolean')return max;
+    const numeric=typeof raw==='string'&&!raw.trim()?NaN:Number(raw);
+    return Number.isFinite(numeric)?Math.max(max,numeric):max;
+  },0)+1;
+}
 function meetingRoomClash_(rows,roomId,date,start,end,excludeId) {
   return rows.find(row=>{
     if(excludeId!=null&&String(row[0])===String(excludeId))return false;
@@ -241,7 +259,8 @@ function getSpreadsheet() {
       ss = SpreadsheetApp.open(files.next());
     } else {
       ss = SpreadsheetApp.create('DB_SI_TAMU_DISKUM_BATAM');
-      setupGoogleDriveFolders();
+      if (typeof setupGoogleDriveFolders_ === 'function') setupGoogleDriveFolders_();
+      else setupGoogleDriveFolders();
     }
     props.setProperty('SPREADSHEET_ID', ss.getId());
   }
@@ -249,13 +268,23 @@ function getSpreadsheet() {
   // Pastikan struktur database tersedia tanpa mengisi data sampel.
   const sheetTamu = ss.getSheetByName('Data_Tamu');
   if (!sheetTamu) {
-    setupSheetMasterPegawai(ss);
-    setupSheetMasterOPD(ss);
-    setupSheetMasterRuangan(ss);
-    setupSheetDataTamu(ss);
-    setupSheetDataRapat(ss);
-    setupSheetDataPresensi(ss);
-    setupSheetKendaliSPPD(ss);
+    if (typeof setupSheetMasterPegawai_ === 'function') {
+      setupSheetMasterPegawai_(ss);
+      setupSheetMasterOPD_(ss);
+      setupSheetMasterRuangan_(ss);
+      setupSheetDataTamu_(ss);
+      setupSheetDataRapat_(ss);
+      setupSheetDataPresensi_(ss);
+      setupSheetKendaliSPPD_(ss);
+    } else {
+      setupSheetMasterPegawai(ss);
+      setupSheetMasterOPD(ss);
+      setupSheetMasterRuangan(ss);
+      setupSheetDataTamu(ss);
+      setupSheetDataRapat(ss);
+      setupSheetDataPresensi(ss);
+      setupSheetKendaliSPPD(ss);
+    }
   }
 
   return ss;
@@ -265,6 +294,10 @@ function getSpreadsheet() {
  * Helper simpan base64 file ke Google Drive
  */
 function saveBase64ToDrive(base64Data, fileName, mimeType, folderType) {
+  requireVisitAdmin_();
+  return saveBase64ToDrive_(base64Data, fileName, mimeType, folderType);
+}
+function saveBase64ToDrive_(base64Data, fileName, mimeType, folderType) {
   if (!base64Data) return '';
   const props = PropertiesService.getScriptProperties();
   const folderId = folderType === 'surat' ? props.getProperty('FOLDER_SURAT_ID') : props.getProperty('FOLDER_BUKTI_ID');
@@ -277,7 +310,7 @@ function saveBase64ToDrive(base64Data, fileName, mimeType, folderType) {
   }
 
   if (!folder) {
-    const folders = setupGoogleDriveFolders();
+    const folders = typeof setupGoogleDriveFolders_ === 'function' ? setupGoogleDriveFolders_() : setupGoogleDriveFolders();
     folder = DriveApp.getFolderById(folderType === 'surat' ? folders.suratId : folders.buktiId);
   }
 
@@ -305,6 +338,10 @@ function getApprovalActor_() {
  * Otomatisasi pembagian LO secara adil (Fair Round-Robin Workload Balancing)
  */
 function assignLiaisonOfficer(ss, tujuanBidang) {
+  requireVisitAdmin_();
+  return assignLiaisonOfficer_(ss, tujuanBidang);
+}
+function assignLiaisonOfficer_(ss, tujuanBidang) {
   const sheet = ss.getSheetByName('Master_Pegawai');
   if (!sheet || sheet.getLastRow() <= 1) return { id: null, nama: 'Petugas FO' };
 
@@ -351,14 +388,24 @@ function assignLiaisonOfficer(ss, tujuanBidang) {
 // ==========================================
 
 function getDashboardData() {
-  return readDashboardData_(true);
+  try {
+    requireVisitAdmin_();
+    return readDashboardData_(true);
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
 }
 
 // Admin startup does not consume LO statistics; retain the legacy full endpoint.
 function getDashboardSummary() {
-  const result=readDashboardData_(false);
-  delete result.data.loStats;
-  return result;
+  try {
+    requireVisitAdmin_();
+    const result=readDashboardData_(false);
+    if(result&&result.data)delete result.data.loStats;
+    return result;
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
 }
 
 function readDashboardData_(includeLoStats) {
@@ -485,6 +532,14 @@ function readDashboardData_(includeLoStats) {
 }
 
 function getMasterData() {
+  try {
+    requireVisitAdmin_();
+    return getMasterData_();
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+function getMasterData_() {
   const ss = getSpreadsheet();
   return cachedMasterRead_(ss,'all',()=>readMasterData_(ss));
 }
@@ -606,6 +661,14 @@ function readMasterData_(ss) {
 }
 
 function getTamuList(spreadsheet) {
+  try {
+    requireVisitAdmin_();
+    return getTamuList_(spreadsheet);
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+function getTamuList_(spreadsheet) {
   const ss = spreadsheet || getSpreadsheet();
   const sheet = ss.getSheetByName('Data_Tamu');
   if (!sheet || sheet.getLastRow() <= 1) return { success: true, data: [] };
@@ -656,6 +719,11 @@ function getVisitByCode_(ss,code) {
 }
 
 function simpanJadwalRapat(p) {
+  try {
+    requireVisitAdmin_();
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
   validateMeetingSchedule_(p);
   const lock=LockService.getScriptLock(); lock.waitLock(30000);
   try { return saveJadwalRapat_(p); } finally { lock.releaseLock(); }
@@ -673,8 +741,7 @@ function saveJadwalRapat_(p) {
     }
   }
 
-  const storedIds=sheetRapat.getLastRow()>1?sheetRapat.getRange(2,1,sheetRapat.getLastRow()-1,1).getValues().map(r=>r[0]):[];
-  const nextId = storedIds.reduce((max,id)=>Math.max(max,Number(id)||0),0)+1;
+  const nextId = nextRecordId_(sheetRapat);
   const dateStr = (p.tanggal || "").replace(/-/g, '');
   const randomSuffix = Math.floor(100 + Math.random() * 900);
   const kodeRapat = `RPT-${dateStr}-${randomSuffix}`;
@@ -691,7 +758,8 @@ function saveJadwalRapat_(p) {
     0, p.agenda || '', 'Terjadwal', timeNow
   ]);
 
-  autoSortAllSheets(ss);
+  if (typeof autoSortAllSheets_ === 'function') autoSortAllSheets_(ss);
+  else if (typeof autoSortAllSheets === 'function') autoSortAllSheets(ss);
 
   return {
     success: true,
@@ -701,6 +769,14 @@ function saveJadwalRapat_(p) {
 }
 
 function getRapatCalendar() {
+  try {
+    requireVisitAdmin_();
+    return getRapatCalendar_();
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+function getRapatCalendar_() {
   const ss = getSpreadsheet();
   const sheet = ss.getSheetByName('Data_Rapat');
   if (!sheet || sheet.getLastRow() <= 1) return { success: true, data: [] };
@@ -845,7 +921,7 @@ function runAdminMeetingAction_(fn) {
   const lock = LockService.getScriptLock();
   let locked = false;
   try {
-    if (typeof requireVisitAdmin_ === 'function') requireVisitAdmin_();
+    requireVisitAdmin_();
     lock.waitLock(30000);
     locked = true;
     return fn();
@@ -892,8 +968,9 @@ function updateJadwalRapat_(p) {
     jam_selesai: p.jam_selesai,
     status: isPostponed ? 'Ditunda' : 'Terjadwal'
   }, { action: 'agendaUpdate', agendaId: target.agenda.id });
-  if (typeof autoSortAllSheets === 'function') autoSortAllSheets(ss);
-  const updated = getRapatCalendar().data.find(r => String(r.id) === String(target.agenda.id)) || null;
+  if (typeof autoSortAllSheets_ === 'function') autoSortAllSheets_(ss);
+  else if (typeof autoSortAllSheets === 'function') autoSortAllSheets(ss);
+  const updated = (typeof getRapatCalendar_ === 'function' ? getRapatCalendar_() : getRapatCalendar()).data.find(r => String(r.id) === String(target.agenda.id)) || null;
   return { success: true, message: 'Data rapat berhasil diperbarui.', data: updated };
 }
 
@@ -906,7 +983,7 @@ function postponeAgendaRapat(payload) {
     if (isMeetingCompletedForTransition_(ss, target)) throw new Error('Agenda rapat yang sudah selesai tidak dapat ditunda.');
     target.sheetRapat.getRange(target.sheetRow, 13).setValue('Ditunda');
     syncVisitBookingState_(ss, target.agenda.kode_rapat, 'postpone', null, { agendaId: target.agenda.id });
-    const updated = getRapatCalendar().data.find(r => String(r.id) === String(target.agenda.id)) || Object.assign({}, target.agenda, { status: 'Ditunda' });
+    const updated = (typeof getRapatCalendar_ === 'function' ? getRapatCalendar_() : getRapatCalendar()).data.find(r => String(r.id) === String(target.agenda.id)) || Object.assign({}, target.agenda, { status: 'Ditunda' });
     return { success: true, message: 'Agenda rapat berhasil ditunda.', data: updated };
   });
 }
@@ -968,8 +1045,9 @@ function rescheduleAgendaRapat(payload) {
       jam_selesai: nextJamSelesai,
       status: 'Terjadwal'
     }, { action: 'agendaReschedule', agendaId: target.agenda.id });
-    if (typeof autoSortAllSheets === 'function') autoSortAllSheets(ss);
-    const updated = getRapatCalendar().data.find(r => String(r.id) === String(target.agenda.id)) || null;
+    if (typeof autoSortAllSheets_ === 'function') autoSortAllSheets_(ss);
+    else if (typeof autoSortAllSheets === 'function') autoSortAllSheets(ss);
+    const updated = (typeof getRapatCalendar_ === 'function' ? getRapatCalendar_() : getRapatCalendar()).data.find(r => String(r.id) === String(target.agenda.id)) || null;
     return { success: true, message: 'Agenda rapat berhasil dijadwalkan ulang.', data: updated };
   });
 }
@@ -981,7 +1059,7 @@ function lockAgendaRapat(payload) {
     const target = findEditableMeetingRow_(ss, rapatId);
     if (String(target.row[12] || '') === 'Ditunda') throw new Error('Agenda rapat berstatus Ditunda tidak dapat dikunci sebelum dijadwalkan ulang.');
     target.sheetRapat.getRange(target.sheetRow, 13).setValue('Terkunci');
-    const updated = getRapatCalendar().data.find(r => String(r.id) === String(target.agenda.id)) || Object.assign({}, target.agenda, { locked: true, status: 'Terkunci' });
+    const updated = (typeof getRapatCalendar_ === 'function' ? getRapatCalendar_() : getRapatCalendar()).data.find(r => String(r.id) === String(target.agenda.id)) || Object.assign({}, target.agenda, { locked: true, status: 'Terkunci' });
     return { success: true, message: 'Agenda rapat berhasil dikonfirmasi dan dikunci.', data: updated };
   });
 }
@@ -1001,6 +1079,11 @@ function cancelAgendaRapat(payload) {
 }
 
 function createRapatSchedule(p) {
+  try {
+    requireVisitAdmin_();
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
   validateMeetingSchedule_({judul:p.judul_rapat,ruangan:p.ruangan_id,tanggal:p.tanggal,jam_mulai:p.jam_mulai,jam_selesai:p.jam_selesai,bidang:p.penyelenggara_bidang,pimpinan:p.pimpinan_rapat,agenda:p.agenda});
   const lock=LockService.getScriptLock(); lock.waitLock(30000);
   try { return createRapatScheduleLocked_(p); } finally { lock.releaseLock(); }
@@ -1021,8 +1104,7 @@ function createRapatScheduleLocked_(p) {
     if (found) namaRuangan = found[1];
   }
 
-  const storedIds=sheet.getLastRow()>1?sheet.getRange(2,1,sheet.getLastRow()-1,1).getValues().map(r=>r[0]):[];
-  const nextId = storedIds.reduce((max,id)=>Math.max(max,Number(id)||0),0)+1;
+  const nextId = nextRecordId_(sheet);
   const dateStr = p.tanggal.replace(/-/g, '');
   const randomSuffix = Math.floor(100 + Math.random() * 900);
   const kodeRapat = `RPT-${dateStr}-${randomSuffix}`;
@@ -1065,7 +1147,7 @@ function submitAdminPresensiRapat(p) {
 }
 
 function savePresensiRapat_(p, source) {
-  const meeting=getRapatCalendar().data.find(item=>String(item.id)===String(p.rapat_id));
+  const meeting=(typeof getRapatCalendar_==='function'?getRapatCalendar_():getRapatCalendar()).data.find(item=>String(item.id)===String(p.rapat_id));
   if(!meeting)return {success:false,error:'Agenda tidak ditemukan.'};
   const availability=source==='Admin'||source==='AdminEntry'?adminAttendanceAvailability_(meeting):attendanceAvailability_(meeting);
   if(!availability.open)return {success:false,error:availability.message};
@@ -1093,8 +1175,8 @@ function savePresensiRapat_(p, source) {
   const sheet = ss.getSheetByName('Data_Presensi');
   if(sheet.getLastColumn()<12)sheet.getRange(1,11,1,2).setValues([['Anggota Kunjungan ID','Sumber Presensi']]);
   if(sheet.getLastColumn()<13)sheet.getRange(1,13).setValue('Waktu Pencatatan');
-  const nextId = sheet.getLastRow();
-  if(source==='AdminEntry')sheet.getRange(nextId+1,10).setNumberFormat('@');
+  const nextId = nextRecordId_(sheet);
+  if(source==='AdminEntry')sheet.getRange(sheet.getLastRow()+1,10).setNumberFormat('@');
 
   sheet.appendRow([
     nextId, p.rapat_id, meeting.judul_rapat, p.kategori_peserta,
@@ -1103,10 +1185,19 @@ function savePresensiRapat_(p, source) {
   ]);
 
   autoSortPresensi(ss);
+  if(typeof SpreadsheetApp!=='undefined'&&typeof SpreadsheetApp.flush==='function')SpreadsheetApp.flush();
   return { success: true, message: `Presensi atas nama ${p.nama} berhasil dicatat!` };
 }
 
 function getSppdList(spreadsheet) {
+  try {
+    requireVisitAdmin_();
+    return getSppdList_(spreadsheet);
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+function getSppdList_(spreadsheet) {
   const ss = spreadsheet || getSpreadsheet();
   const sheet = ss.getSheetByName('Kendali_SPPD');
   if (!sheet || sheet.getLastRow() <= 1) return { success: true, data: [] };
@@ -1136,6 +1227,11 @@ function getSppdList(spreadsheet) {
 }
 
 function uploadBuktiSppd(p) {
+  try {
+    requireVisitAdmin_();
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
   rejectLegacyVisitSppd_(p.sppd_id);
   const ss = getSpreadsheet();
   const sheet = ss.getSheetByName('Kendali_SPPD');
@@ -1160,13 +1256,13 @@ function uploadBuktiSppd(p) {
   let urlNotulen = current[7];
 
   if (p.foto_base64) {
-    urlFoto = saveBase64ToDrive(p.foto_base64, `Foto_Kegiatan_${current[2]}.jpg`, 'image/jpeg', 'bukti');
+    urlFoto = saveBase64ToDrive_(p.foto_base64, `Foto_Kegiatan_${current[2]}.jpg`, 'image/jpeg', 'bukti');
   }
   if (p.absen_base64) {
-    urlAbsen = saveBase64ToDrive(p.absen_base64, `Absen_${current[2]}.pdf`, 'application/pdf', 'bukti');
+    urlAbsen = saveBase64ToDrive_(p.absen_base64, `Absen_${current[2]}.pdf`, 'application/pdf', 'bukti');
   }
   if (p.notulen_base64) {
-    urlNotulen = saveBase64ToDrive(p.notulen_base64, `Notulen_${current[2]}.pdf`, 'application/pdf', 'bukti');
+    urlNotulen = saveBase64ToDrive_(p.notulen_base64, `Notulen_${current[2]}.pdf`, 'application/pdf', 'bukti');
   }
 
   const isComplete = Boolean(urlFoto && urlAbsen && urlNotulen);
@@ -1192,6 +1288,11 @@ function uploadBuktiSppd(p) {
 }
 
 function ttdPejabatTeknis(sppdId) {
+  try {
+    requireVisitAdmin_();
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
   rejectLegacyVisitSppd_(sppdId);
   const ss = getSpreadsheet();
   const sheet = ss.getSheetByName('Kendali_SPPD');
@@ -1223,6 +1324,11 @@ function ttdPejabatTeknis(sppdId) {
 }
 
 function ttdKasubagUmpeg(sppdId) {
+  try {
+    requireVisitAdmin_();
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
   rejectLegacyVisitSppd_(sppdId);
   const ss = getSpreadsheet();
   const sheet = ss.getSheetByName('Kendali_SPPD');

@@ -29,6 +29,10 @@ function onEdit(e) {
  * Jalankan pengurutan otomatis untuk seluruh lembar kerja
  */
 function autoSortAllSheets(ss) {
+  requireVisitAdmin_();
+  return autoSortAllSheets_(ss);
+}
+function autoSortAllSheets_(ss) {
   if (!ss) ss = SpreadsheetApp.getActiveSpreadsheet();
   autoSortTamu(ss);
   autoSortRapat(ss);

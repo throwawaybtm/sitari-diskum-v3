@@ -26,7 +26,12 @@ function readMeetingRoomOptions_(ss) {
   return normalizeMeetingRooms_(rows.map(r=>({id:r[0],nama_ruangan:r[1],kapasitas:r[2],fasilitas:r[3],lokasi:r[4],warna:r[5]})));
 }
 function getMeetingRoomOptions() {
-  return {success:true,data:{ruangan:readCachedMeetingRoomOptions_(getSpreadsheet())}};
+  try {
+    requireVisitAdmin_();
+    return {success:true,data:{ruangan:readCachedMeetingRoomOptions_(getSpreadsheet())}};
+  } catch (error) {
+    return {success:false,error:error.message};
+  }
 }
 function readCachedMeetingRoomOptions_(ss) {
   const read=()=>readMeetingRoomOptions_(ss);

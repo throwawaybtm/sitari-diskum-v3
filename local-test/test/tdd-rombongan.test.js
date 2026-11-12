@@ -124,7 +124,7 @@ test('local TDD rejects empty/whitespace pengikut_list and preserves TDD-specifi
 
 test('Admin dashboard, modal, search and backward compatibility handle TDD Ketua & Anggota Rombongan', async () => {
   // 1. GAS getDashboardData maps pengikut_list alongside ketua_nama in recentTamu
-  const gasContext = vm.createContext({ Utilities: { formatDate: () => '2026-11-10' } });
+  const gasContext = vm.createContext({ requireVisitAdmin_: () => {}, Utilities: { formatDate: () => '2026-11-10' } });
   vm.runInContext(fs.readFileSync(path.join(root, 'Admin/Code.js'), 'utf8'), gasContext);
   const tddRow = [
     12, 'TDD-10112026-001', 'dalam_daerah_fo', 'Perorangan', '', 2,

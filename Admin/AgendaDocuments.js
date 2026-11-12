@@ -82,7 +82,7 @@ function getAgendaNotulaContext(payload) {
   try {
     requireVisitAdmin_();
     const rapatId=payload&&(payload.rapat_id!=null?payload.rapat_id:payload.id);
-    const agenda=getRapatCalendar().data.find(r=>String(r.id)===String(rapatId));
+    const agenda=(typeof getRapatCalendar_==='function'?getRapatCalendar_():getRapatCalendar()).data.find(r=>String(r.id)===String(rapatId));
     if(!agenda)throw new Error('Agenda rapat tidak ditemukan.');
     if(agenda.status==='Dibatalkan')throw new Error('Agenda yang dibatalkan tidak dapat diubah.');
     const ss=getSpreadsheet();
@@ -112,9 +112,11 @@ function getAgendaNotula_(id,spreadsheet) {
   return row?JSON.parse(row[1]):null;
 }
 function saveAgendaNotula(payload) {
-  const lock=LockService.getScriptLock();lock.waitLock(30000);
+  let lock;
   try {
-    requireVisitAdmin_();const agenda=getRapatCalendar().data.find(r=>String(r.id)===String(payload.rapat_id));
+    requireVisitAdmin_();
+    lock=LockService.getScriptLock();lock.waitLock(30000);
+    const agenda=(typeof getRapatCalendar_==='function'?getRapatCalendar_():getRapatCalendar()).data.find(r=>String(r.id)===String(payload.rapat_id));
     if(!agenda)throw new Error('Agenda tidak ditemukan.');
     const internal=isInternalMeeting_(agenda);
     if(agenda.status==='Dibatalkan')throw new Error('Agenda yang dibatalkan tidak dapat diubah.');
@@ -136,7 +138,7 @@ function saveAgendaNotula(payload) {
     const agendaIndex=agendas.findIndex(r=>String(r[0])===String(agenda.id));
     if(agendaIndex>=0)calendar.getRange(agendaIndex+2,13).setValue('Selesai');
     return {success:true,data:document};
-  }catch(error){return {success:false,error:error.message};}finally{lock.releaseLock();}
+  }catch(error){return {success:false,error:error.message};}finally{if(lock)lock.releaseLock();}
 }
 
 function isInternalMeeting_(agenda) {
@@ -233,10 +235,11 @@ function validateMeetingPhotoBatch_(files,existingCount) {
   if(total>10*1024*1024)throw new Error('Total foto setiap unggahan maksimal 10 MB.');
 }
 function saveAgendaPhotos(payload) {
-  const lock=LockService.getScriptLock();lock.waitLock(30000);
+  let lock;
   try {
     requireVisitAdmin_();
-    const agenda=getRapatCalendar().data.find(row=>String(row.id)===String(payload.rapat_id));
+    lock=LockService.getScriptLock();lock.waitLock(30000);
+    const agenda=(typeof getRapatCalendar_==='function'?getRapatCalendar_():getRapatCalendar()).data.find(row=>String(row.id)===String(payload.rapat_id));
     if(!agenda)throw new Error('Agenda tidak ditemukan.');
     if(agenda.status==='Dibatalkan')throw new Error('Agenda yang dibatalkan tidak dapat diubah.');
     if(agenda.status==='Ditunda')throw new Error('Agenda rapat berstatus Ditunda. Jadwalkan ulang terlebih dahulu sebelum mengunggah dokumentasi.');
@@ -249,7 +252,7 @@ function saveAgendaPhotos(payload) {
     const photos=current.concat(payload.files.map(file=>Object.assign(saveVisitWorkflowFile_(file,agenda.kode_rapat,kind),{label:label})));
     writeAgendaPhotosRow_(ss,agenda.id,photos);
     return {success:true,data:photos};
-  }catch(error){return {success:false,error:error.message};}finally{lock.releaseLock();}
+  }catch(error){return {success:false,error:error.message};}finally{if(lock)lock.releaseLock();}
 }
 function readAgendaPhotoDocument_(photos,index) {
   if(!Number.isInteger(index)||index<0||index>=photos.length)throw new Error('Foto tidak ditemukan.');
@@ -262,7 +265,7 @@ function readAgendaPhotoDocument_(photos,index) {
 function getAgendaPhotoDocument(payload) {
   try {
     requireVisitAdmin_();
-    const agenda=getRapatCalendar().data.find(row=>String(row.id)===String(payload.rapat_id));
+    const agenda=(typeof getRapatCalendar_==='function'?getRapatCalendar_():getRapatCalendar()).data.find(row=>String(row.id)===String(payload.rapat_id));
     if(!agenda)throw new Error('Agenda rapat tidak ditemukan.');
     const photosMap=getAgendaPhotosMap_(getSpreadsheet());
     const rowPhotos=photosMap[String(agenda.id)]||[];
@@ -273,7 +276,7 @@ function getAgendaPhotoDocument(payload) {
 }
 function findActiveVisitAgenda_(code) {
   const key=visitPhotoStorageKey_(code);
-  return getRapatCalendar().data.find(row=>row.status!=='Dibatalkan'&&(String(row.kode_rapat||'')===key||String(row.kode_kunjungan||'')===String(code)))||null;
+  return (typeof getRapatCalendar_==='function'?getRapatCalendar_():getRapatCalendar()).data.find(row=>row.status!=='Dibatalkan'&&(String(row.kode_rapat||'')===key||String(row.kode_kunjungan||'')===String(code)))||null;
 }
 function saveTddPhotos(payload) {
   let lock;
