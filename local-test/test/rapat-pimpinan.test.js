@@ -8,96 +8,97 @@ const vm = require('node:vm');
 const { once } = require('node:events');
 const { createLocalTestServer, renderAdminHtml } = require('../server');
 const { createFixtureStore } = require('../fixtures');
+const { people: syntheticPeople } = require('./synthetic-fixtures');
 
 const EXPECTED_RAPAT_PIMPINAN = [
   {
     no: 1,
-    nama: 'Salim, S.Sos, M.Si',
-    nip: '19681021 199010 1 001',
+    nama: syntheticPeople.leader1.nama,
+    nip: syntheticPeople.leader1.nip,
     pangkat_golongan: 'Pembina Utama Muda - IV/c',
     bidang: 'Dinas'
   },
   {
     no: 2,
-    nama: 'Adrial, S.K.M, M.K.M.',
-    nip: '19710520 199403 1 009',
+    nama: syntheticPeople.leader2.nama,
+    nip: syntheticPeople.leader2.nip,
     pangkat_golongan: 'Pembina Tingkat I - IV/b',
     bidang: 'Sekretariat'
   },
   {
     no: 3,
-    nama: 'Syofya Nora, S.H.I.',
-    nip: '19771107 200212 2 007',
+    nama: syntheticPeople.leader3.nama,
+    nip: syntheticPeople.leader3.nip,
     pangkat_golongan: 'Pembina - IV/a',
     bidang: 'Bidang Kewirausahaan'
   },
   {
     no: 4,
-    nama: 'Padlinsono, M.Si.',
-    nip: '19761206 200212 1 012',
+    nama: syntheticPeople.leader4.nama,
+    nip: syntheticPeople.leader4.nip,
     pangkat_golongan: 'Pembina - IV/a',
     bidang: 'Bidang Pemberdayaan dan Pelindungan Koperasi'
   },
   {
     no: 5,
-    nama: 'Eva Corrina, S.E.',
-    nip: '19750426 199403 2 003',
+    nama: syntheticPeople.leader5.nama,
+    nip: syntheticPeople.leader5.nip,
     pangkat_golongan: 'Pembina - IV/a',
     bidang: 'Bidang Pengawasan Koperasi'
   },
   {
     no: 6,
-    nama: 'Leny Nuriskawaty, S.Si. Apt., M.H.',
-    nip: '19780604 200502 2 005',
+    nama: syntheticPeople.leader6.nama,
+    nip: syntheticPeople.leader6.nip,
     pangkat_golongan: 'Pembina - IV/a',
     bidang: 'Bidang Pengembangan Usaha Mikro'
   },
   {
     no: 7,
-    nama: 'Zulfahri, S.E., M.M.',
-    nip: '19781119 200212 1 003',
+    nama: syntheticPeople.leader7.nama,
+    nip: syntheticPeople.leader7.nip,
     pangkat_golongan: 'Pembina - IV/a',
     bidang: 'UPTD Pengelolaan Dana Bergulir'
   },
   {
     no: 8,
-    nama: 'Meydiana Esterawaty Jastina, S.E.',
-    nip: '19760521 201001 2 002',
+    nama: syntheticPeople.leader8.nama,
+    nip: syntheticPeople.leader8.nip,
     pangkat_golongan: 'Penata Tingkat I - III/d',
     bidang: 'UPTD PLUT KUMKM'
   },
   {
     no: 9,
-    nama: 'Zuziani, S.E.',
-    nip: '19810902 200212 2 004',
+    nama: syntheticPeople.leader9.nama,
+    nip: syntheticPeople.leader9.nip,
     pangkat_golongan: 'Penata Tingkat I - III/d',
     bidang: 'Subbagian Keuangan dan Aset'
   },
   {
     no: 10,
-    nama: 'Maslinda, S.E.',
-    nip: '19750525 200212 2 015',
+    nama: syntheticPeople.leader10.nama,
+    nip: syntheticPeople.leader10.nip,
     pangkat_golongan: 'Penata Tingkat I - III/d',
     bidang: 'Subbagian Perencanaan Program'
   },
   {
     no: 11,
-    nama: 'Septia Yorita, S.E.',
-    nip: '19810906 200901 2 002',
+    nama: syntheticPeople.leader11.nama,
+    nip: syntheticPeople.leader11.nip,
     pangkat_golongan: 'Penata - III/c',
     bidang: 'Subbagian Umum dan Kepegawaian'
   },
   {
     no: 12,
-    nama: 'Intan Permata Sari, S.E.',
-    nip: '19810322 200604 2 012',
+    nama: syntheticPeople.leader12.nama,
+    nip: syntheticPeople.leader12.nip,
     pangkat_golongan: 'Penata Tingkat I - III/d',
     bidang: 'Subbagian Tata Usaha UPTD Pengelolaan Dana Bergulir'
   },
   {
     no: 13,
-    nama: 'Hafidz Qodli Abdillah, S.E.',
-    nip: '19920215 202012 1 005',
+    nama: syntheticPeople.leader13.nama,
+    nip: syntheticPeople.leader13.nip,
     pangkat_golongan: 'Penata Muda Tingkat I - III/b',
     bidang: 'Subbagian Tata Usaha UPTD PLUT KUMKM'
   }
@@ -239,20 +240,20 @@ test('Pimpinan Rapat allows manual override, preserves custom input on clear, an
 
   selectBidang.value = 'Bidang Pemberdayaan dan Pelindungan Koperasi';
   context.applyRapatBidangAutoFill();
-  assert.equal(inputPimpinan.value, 'Padlinsono, M.Si.');
+  assert.equal(inputPimpinan.value, syntheticPeople.leader4.nama);
   assert.equal(inputPimpinan.readOnly, false);
   assert.equal(inputPimpinan.disabled, false);
 
-  inputPimpinan.value = 'Salim, S.Sos, M.Si (Plh.)';
-  assert.equal(inputPimpinan.value, 'Salim, S.Sos, M.Si (Plh.)');
+  inputPimpinan.value = syntheticPeople.leader1.nama + ' (Plh.)';
+  assert.equal(inputPimpinan.value, syntheticPeople.leader1.nama + ' (Plh.)');
 
   selectBidang.value = '';
   context.applyRapatBidangAutoFill();
-  assert.equal(inputPimpinan.value, 'Salim, S.Sos, M.Si (Plh.)');
+  assert.equal(inputPimpinan.value, syntheticPeople.leader1.nama + ' (Plh.)');
 
   selectBidang.value = 'Subbagian Tata Usaha UPTD PLUT KUMKM';
   context.applyRapatBidangAutoFill();
-  assert.equal(inputPimpinan.value, 'Hafidz Qodli Abdillah, S.E.');
+  assert.equal(inputPimpinan.value, syntheticPeople.leader13.nama);
 
   context.tutupModalRapat();
   assert.equal(selectBidang.value, '');
@@ -313,7 +314,7 @@ test('existing storage/schema accepts auto-filled and manually overridden values
         jam_mulai: '09:00',
         jam_selesai: '10:30',
         bidang: 'Bidang Pengawasan Koperasi',
-        pimpinan: 'Eva Corrina, S.E.',
+        pimpinan: syntheticPeople.leader5.nama,
         agenda: 'Pembahasan tindak lanjut hasil pengawasan.'
       })
     });
@@ -329,7 +330,7 @@ test('existing storage/schema accepts auto-filled and manually overridden values
         jam_mulai: '13:00',
         jam_selesai: '14:30',
         bidang: 'Subbagian Tata Usaha UPTD PLUT KUMKM',
-        pimpinan: 'Meydiana Esterawaty Jastina, S.E.',
+        pimpinan: syntheticPeople.leader8.nama,
         agenda: 'Koordinasi operasional layanan PLUT.'
       })
     });
@@ -339,9 +340,9 @@ test('existing storage/schema accepts auto-filled and manually overridden values
     const savedAuto = calendar.find(m => m.judul_rapat === 'Rapat Koordinasi Pengawasan');
     const savedOverride = calendar.find(m => m.judul_rapat === 'Rapat Teknis PLUT');
     assert.equal(savedAuto.penyelenggara_bidang, 'Bidang Pengawasan Koperasi');
-    assert.equal(savedAuto.pimpinan_rapat, 'Eva Corrina, S.E.');
+    assert.equal(savedAuto.pimpinan_rapat, syntheticPeople.leader5.nama);
     assert.equal(savedOverride.penyelenggara_bidang, 'Subbagian Tata Usaha UPTD PLUT KUMKM');
-    assert.equal(savedOverride.pimpinan_rapat, 'Meydiana Esterawaty Jastina, S.E.');
+    assert.equal(savedOverride.pimpinan_rapat, syntheticPeople.leader8.nama);
   } finally {
     server.close();
     await once(server, 'close');
@@ -386,7 +387,7 @@ test('GAS simpanJadwalRapat and getRapatCalendar reuse existing 14-column schema
     jam_mulai: '10:00',
     jam_selesai: '11:30',
     bidang: 'Subbagian Tata Usaha UPTD Pengelolaan Dana Bergulir',
-    pimpinan: 'Zulfahri, S.E., M.M.',
+    pimpinan: syntheticPeople.leader7.nama,
     agenda: 'Evaluasi penyaluran dana bergulir'
   });
 
@@ -394,12 +395,12 @@ test('GAS simpanJadwalRapat and getRapatCalendar reuse existing 14-column schema
   assert.equal(writes.length, 1);
   assert.equal(writes[0].length, 14);
   assert.equal(writes[0][8], 'Subbagian Tata Usaha UPTD Pengelolaan Dana Bergulir');
-  assert.equal(writes[0][9], 'Zulfahri, S.E., M.M.');
+  assert.equal(writes[0][9], syntheticPeople.leader7.nama);
 
   const calendar = context.getRapatCalendar().data;
   assert.equal(calendar.length, 2);
   assert.equal(calendar[0].penyelenggara_bidang, 'Subbagian Tata Usaha UPTD Pengelolaan Dana Bergulir');
-  assert.equal(calendar[0].pimpinan_rapat, 'Zulfahri, S.E., M.M.');
+  assert.equal(calendar[0].pimpinan_rapat, syntheticPeople.leader7.nama);
   assert.equal(calendar[1].penyelenggara_bidang, 'Sekretariat / Umpeg');
   assert.equal(calendar[1].pimpinan_rapat, 'Pimpinan Lama');
 });

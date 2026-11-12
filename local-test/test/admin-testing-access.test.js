@@ -1,6 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const source=file=>fs.readFileSync(path.join(__dirname,'../../Admin',file),'utf8');
+const { deploymentConfigSource } = require('./synthetic-fixtures');
 function access(properties={},email='',key='wife-session') {
   const context=vm.createContext({Session:{getActiveUser:()=>({getEmail:()=>email}),getTemporaryActiveUserKey:()=>key},PropertiesService:{getScriptProperties:()=>({getProperty:name=>properties[name]||null})}});
   vm.runInContext(source('VisitWorkflowStorage.js'),context);return context;
@@ -23,10 +24,10 @@ test('explicit demo mode allows all demo users while normal mode restricts workf
   assert.throws(()=>access({...enabled,ADMIN_DEMO_MODE:'false'},'wife@example.com').requireVisitAdmin_(),/belum diberi akses admin/);
   assert.throws(()=>access({...enabled,ADMIN_DEMO_MODE:'yes'}).requireVisitAdmin_(),/belum diberi akses admin/);
 });
-test('new deployment fails closed by default and preserves an explicit demo mode setting',()=>{
+test('synthetic deployment configuration fails closed and preserves an explicit demo setting',()=>{
   const props={ADMIN_DEMO_MODE:'true'};
   const c=vm.createContext({PropertiesService:{getScriptProperties:()=>({getProperty:name=>props[name],setProperty:(name,value)=>props[name]=value,setProperties:values=>Object.assign(props,values)})}});
-  vm.runInContext(source('DeploymentConfig.js'),c);c.configureNewDeployment_();
+  vm.runInContext(deploymentConfigSource,c);c.configureNewDeployment_();
   assert.equal(props.ADMIN_DEMO_MODE,'true');delete props.ADMIN_DEMO_MODE;c.configureNewDeployment_();
   assert.equal(props.ADMIN_DEMO_MODE,'false');
   assert.equal(props.TAMU_FO_URL,props.PUBLIC_FORMS_BASE_URL+'?page=tdd');

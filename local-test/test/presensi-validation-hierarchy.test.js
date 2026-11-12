@@ -1,4 +1,5 @@
 'use strict';
+const { people: syntheticPeople } = require('./synthetic-fixtures');
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -389,14 +390,14 @@ test('hierarchy sorting handles leaders, unit order, equal/unknown ranks, and pr
     [5, 9, 'Rapat Gabungan', 'Tamu_Luar', 'Tamu Kadis Belakangan', '-', 'Kepala Dinas', 'Pemkab Lain', '', '2026-11-02 08:05:40', 'ketua', 'QR', '2026-11-02 08:05:40'],
     [4, 9, 'Rapat Gabungan', 'Diskum', 'Diskum Tidak Terdaftar B', '-', 'Tenaga Ahli', 'Diskum Batam', '', '2026-11-02 08:04:50', '', 'QR', '2026-11-02 08:04:50'],
     [3, 9, 'Rapat Gabungan', 'Diskum', 'Diskum Tidak Terdaftar A', '-', 'Staf Honorer', 'Diskum Batam', '', '2026-11-02 08:04:10', '', 'QR', '2026-11-02 08:04:10'],
-    [2, 9, 'Rapat Gabungan', 'Diskum', 'Vinggo Sepco Putra, A.Md.', '19960913 202203 1 003', 'Pengolah Data dan Informasi', 'Diskum Batam', '', '2026-11-02 08:10:00', '', 'QR', '2026-11-02 08:10:00'],
-    [1, 9, 'Rapat Gabungan', 'Diskum', 'Adrial, S.K.M, M.K.M.', '19710520 199403 1 009', 'Sekretaris', 'Diskum Batam', '', '2026-11-02 08:20:00', '', 'QR', '2026-11-02 08:20:00'],
-    [7, 9, 'Rapat Gabungan', 'Diskum', 'Salim, S.Sos, M.Si', '19681021 199010 1 001', 'Kepala Dinas', 'Diskum Batam', '', '2026-11-02 08:30:00', '', 'QR', '2026-11-02 08:30:00']
+    [2, 9, 'Rapat Gabungan', 'Diskum', syntheticPeople.staffSecretariat.nama, syntheticPeople.staffSecretariat.nip, 'Pengolah Data dan Informasi', 'Diskum Batam', '', '2026-11-02 08:10:00', '', 'QR', '2026-11-02 08:10:00'],
+    [1, 9, 'Rapat Gabungan', 'Diskum', syntheticPeople.leader2.nama, syntheticPeople.leader2.nip, 'Sekretaris', 'Diskum Batam', '', '2026-11-02 08:20:00', '', 'QR', '2026-11-02 08:20:00'],
+    [7, 9, 'Rapat Gabungan', 'Diskum', syntheticPeople.leader1.nama, syntheticPeople.leader1.nip, 'Kepala Dinas', 'Diskum Batam', '', '2026-11-02 08:30:00', '', 'QR', '2026-11-02 08:30:00']
   ];
   const snapshotBefore = JSON.stringify(storedRows);
 
   const { context, presensiSheet } = createGasContext({
-    meetings: [[9, 'RPT-9', 'Rapat Gabungan', 1, 'Ruang Rapat Utama Diskum', '2026-11-02', '08:00', '10:00', 'Dinas', 'Salim', 10, 'Koordinasi', 'Terjadwal', '']],
+    meetings: [[9, 'RPT-9', 'Rapat Gabungan', 1, 'Ruang Rapat Utama Diskum', '2026-11-02', '08:00', '10:00', 'Dinas', syntheticPeople.leader1.nama, 10, 'Koordinasi', 'Terjadwal', '']],
     attendance: storedRows,
     employees: employeeRows
   });
@@ -404,9 +405,9 @@ test('hierarchy sorting handles leaders, unit order, equal/unknown ranks, and pr
   const view = context.getAgendaAttendance({ rapat_id: 9 });
   assert.equal(view.success, true, view.error);
   assert.deepEqual(view.data.attendance.map(r => r.nama), [
-    'Salim, S.Sos, M.Si',         // Leader #1
-    'Adrial, S.K.M, M.K.M.',      // Leader #2
-    'Vinggo Sepco Putra, A.Md.',  // Ranked staff in Master_Pegawai
+    syntheticPeople.leader1.nama,         // Leader #1
+    syntheticPeople.leader2.nama,      // Leader #2
+    syntheticPeople.staffSecretariat.nama,  // Ranked staff in Master_Pegawai
     'Diskum Tidak Terdaftar A',   // Unknown rank 08:04:10 (before 08:04:50 even though sheet row was after)
     'Diskum Tidak Terdaftar B',   // Unknown rank 08:04:50
     'Tamu Staf Awal',             // External TLD 08:05:00 (not overtaken by "Kepala Dinas" text!)
@@ -418,16 +419,16 @@ test('hierarchy sorting handles leaders, unit order, equal/unknown ranks, and pr
 
   // Equal/missing timestamps preserve stable input order across external TLD, TDD, and Pemko without Jabatan or Diskum-name ranking
   const stable = context.makeAgendaAttendanceList_([
-    { kategori: 'Tamu_Luar', nama: 'Salim, S.Sos, M.Si', jabatan: 'Kepala Dinas Luar', waktu: '' },
+    { kategori: 'Tamu_Luar', nama: syntheticPeople.leader1.nama, jabatan: 'Kepala Dinas Luar', waktu: '' },
     { kategori: 'TDD', nama: 'Tamu TDD Pertama', jabatan: 'Staf', waktu: '' },
     { kategori: 'OPD_Pemko', nama: 'Peserta Pemko Sekda', jabatan: 'Sekretaris Daerah', waktu: '' },
-    { kategori: '', member_id: 'ketua', nama: 'Adrial, S.K.M, M.K.M.', jabatan: 'Ketua Rombongan', waktu: '' }
+    { kategori: '', member_id: 'ketua', nama: syntheticPeople.leader2.nama, jabatan: 'Ketua Rombongan', waktu: '' }
   ], 'Asia/Jakarta', { employees: dir });
   assert.deepEqual(stable.map(r => r.nama), [
-    'Salim, S.Sos, M.Si',
+    syntheticPeople.leader1.nama,
     'Tamu TDD Pertama',
     'Peserta Pemko Sekda',
-    'Adrial, S.K.M, M.K.M.'
+    syntheticPeople.leader2.nama
   ]);
 
   // Mixed Internal Diskum + external TLD/TDD/Pemko: Diskum sorted by hierarchy; externals keep chronological/registration order after Diskum
@@ -435,12 +436,12 @@ test('hierarchy sorting handles leaders, unit order, equal/unknown ranks, and pr
     { kategori: 'OPD_Pemko', nama: 'Pemko Pertama', jabatan: 'Sekretaris Daerah', waktu: '2026-10-26 08:00:00' },
     { kategori: 'TDD', nama: 'TDD Kedua', jabatan: 'Kepala Dinas', waktu: '2026-10-26 08:01:00' },
     { kategori: 'Tamu_Luar', nama: 'TLD Ketiga', jabatan: 'Staf', waktu: '2026-10-26 08:02:00' },
-    { kategori: 'Diskum', nama: 'Vinggo Sepco Putra, A.Md.', nip: '19960913 202203 1 003', jabatan: 'Pengolah Data dan Informasi', waktu: '2026-10-26 08:20:00' },
-    { kategori: 'Internal', nama: 'Salim, S.Sos, M.Si', nip: '19681021 199010 1 001', jabatan: 'Kepala Dinas', waktu: '2026-10-26 08:30:00' }
+    { kategori: 'Diskum', nama: syntheticPeople.staffSecretariat.nama, nip: syntheticPeople.staffSecretariat.nip, jabatan: 'Pengolah Data dan Informasi', waktu: '2026-10-26 08:20:00' },
+    { kategori: 'Internal', nama: syntheticPeople.leader1.nama, nip: syntheticPeople.leader1.nip, jabatan: 'Kepala Dinas', waktu: '2026-10-26 08:30:00' }
   ], 'Asia/Jakarta', { employees: dir });
   assert.deepEqual(mixed.map(r => r.nama), [
-    'Salim, S.Sos, M.Si',
-    'Vinggo Sepco Putra, A.Md.',
+    syntheticPeople.leader1.nama,
+    syntheticPeople.staffSecretariat.nama,
     'Pemko Pertama',
     'TDD Kedua',
     'TLD Ketiga'
@@ -476,8 +477,8 @@ test('attendance ordering is consistent across Lihat Presensi (getAgendaAttendan
   const storedAttendance = [
     [4, 50, 'Kunjungan', 'Tamu_Luar', 'Ketua Eksternal', '-', 'Ketua Rombongan', 'Dinas Koperasi Kab. Tetangga', '', '2026-11-02 09:05:00', 'ketua', 'QR', '2026-11-02 09:05:00'],
     [3, 50, 'Kunjungan', 'Tamu_Luar', 'Anggota Satu', '-', 'Kepala Bidang', 'Dinas Koperasi Kab. Tetangga', '', '2026-11-02 09:02:00', 'anggota-1', 'QR', '2026-11-02 09:02:00'],
-    [2, 50, 'Kunjungan', 'Diskum', 'Afrinaldi', '19890917 202521 1 023', 'Pengadministrasi Perkantoran', 'Diskum Batam', '', '2026-11-02 09:10:00', '', 'QR', '2026-11-02 09:10:00'],
-    [1, 50, 'Kunjungan', 'Diskum', 'Salim, S.Sos, M.Si', '19681021 199010 1 001', 'Kepala Dinas', 'Diskum Batam', '', '2026-11-02 09:15:00', '', 'QR', '2026-11-02 09:15:00']
+    [2, 50, 'Kunjungan', 'Diskum', syntheticPeople.staffEnterprise.nama, syntheticPeople.staffEnterprise.nip, 'Pengadministrasi Perkantoran', 'Diskum Batam', '', '2026-11-02 09:10:00', '', 'QR', '2026-11-02 09:10:00'],
+    [1, 50, 'Kunjungan', 'Diskum', syntheticPeople.leader1.nama, syntheticPeople.leader1.nip, 'Kepala Dinas', 'Diskum Batam', '', '2026-11-02 09:15:00', '', 'QR', '2026-11-02 09:15:00']
   ];
 
   const { context } = createGasContext({
@@ -489,8 +490,8 @@ test('attendance ordering is consistent across Lihat Presensi (getAgendaAttendan
   });
 
   const expectedOrder = [
-    'Salim, S.Sos, M.Si',
-    'Afrinaldi',
+    syntheticPeople.leader1.nama,
+    syntheticPeople.staffEnterprise.nama,
     'Anggota Satu',
     'Ketua Eksternal'
   ];

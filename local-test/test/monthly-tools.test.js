@@ -1,6 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const {createFixtureStore}=require('../fixtures'),{completeTldPayload}=require('./tld-test-data');
+const { destinations } = require('./synthetic-fixtures');
 test('new TLD ignores public destination input; admin assigns canonical PIC before notifying',()=>{
   const store=createFixtureStore(new Date('2026-10-30T00:00:00Z'));
   const code=store.handleMutation('registerTamuLuar',completeTldPayload()).data.kode_kunjungan;
@@ -9,7 +10,7 @@ test('new TLD ignores public destination input; admin assigns canonical PIC befo
   const act=(action,extra={})=>store.handleMutation('saveVisitWorkflow',{kode_kunjungan:code,version:d.workflow.version,action,...extra});
   assert.equal(act('notifyContact').success,false);
   const selected=act('destinations',{destinations:['Bidang Pengawasan Koperasi']});assert.equal(selected.success,true,selected.error);d=selected.data;
-  assert.equal(d.visit.lo_nama,'Mery Sefina Simor, S.Kom.');assert.equal(act('notifyContact').success,true);
+  assert.equal(d.visit.lo_nama,destinations.find(item=>item.id==='pengawasan-koperasi').pic);assert.equal(act('notifyContact').success,true);
   assert.equal(act('destinations',{destinations:['Invalid']} ).success,false);
 });
 test('monthly report includes both guest types, excludes other months and numbers rows',()=>{

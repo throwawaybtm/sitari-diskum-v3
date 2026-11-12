@@ -7,6 +7,8 @@ const vm = require('node:vm');
 const { once } = require('node:events');
 const { createLocalTestServer } = require('../server');
 const { completeTddPayload } = require('./tdd-test-data');
+const { destinations } = require('./synthetic-fixtures');
+const picFor = id => destinations.find(item => item.id === id).pic;
 
 function loadFo() {
   const context = vm.createContext({});
@@ -24,7 +26,7 @@ test('TDD directory matches all TLD destinations, PICs and private contacts', ()
   assert.equal(fo.getTddPublicDestinations_().length, 9);
   assert.ok(fo.getTddPublicDestinations_().every(item => Object.keys(item).sort().join(',') === 'bidang,pic'));
   const selected = fo.prepareTddVisit_(completeTddPayload({ tujuan_bidang: ['Bidang Pengawasan Koperasi', 'UPTD PLUT KUMKM', 'UPTD PLUT KUMKM'] }));
-  assert.equal(selected.pic, 'Mery Sefina Simor, S.Kom.; Hafidz Qodli Abdillah, S.E.');
+  assert.equal(selected.pic, [picFor('pengawasan-koperasi'), picFor('plut-kumkm')].join('; '));
   assert.throws(() => fo.prepareTddVisit_(completeTddPayload({ tujuan_bidang: [] })), /minimal satu/);
   assert.throws(() => fo.prepareTddVisit_(completeTddPayload({ tujuan_bidang: ['unknown'] })), /tersedia/);
   assert.throws(() => fo.prepareTddVisit_(completeTddPayload({ jumlah_orang: 0 })), /minimal 1/);
@@ -53,12 +55,12 @@ test('GAS TDD records rombongan members, headcount, server arrival and Non-SPPD,
   assert.equal(rows[0][13], '20:45');
   assert.equal(rows[0][18], 0);
   assert.equal(response.data.kode_kunjungan, 'TDD-26102026-001');
-  assert.equal(response.data.lo_nama, 'Mery Sefina Simor, S.Kom.');
+  assert.equal(response.data.lo_nama, picFor('pengawasan-koperasi'));
   assert.ok(!touched.includes('Kendali_SPPD'));
 });
 
 test('local TDD keeps the compact form with rombongan fields and submits multiple recipients without removed fields', async () => {
-  const server = createLocalTestServer({ now: new Date('2026-10-26T13:45:00Z') });
+  const server = createLocalTestServer({ now: new Date('2026-11-12T13:45:00Z') });
   server.listen(0, '127.0.0.1');
   await once(server, 'listening');
   const base = 'http://127.0.0.1:' + server.address().port;
@@ -80,12 +82,12 @@ test('local TDD keeps the compact form with rombongan fields and submits multipl
     }));
     assert.equal(result.success, true);
     const list = await post('getTamuList', {});
-    assert.equal(list.data[0].lo_nama, 'Mery Sefina Simor, S.Kom.; Hafidz Qodli Abdillah, S.E.');
+    assert.equal(list.data[0].lo_nama, [picFor('pengawasan-koperasi'), picFor('plut-kumkm')].join('; '));
     assert.equal(list.data[0].bawa_sppd, false);
     assert.equal(list.data[0].ketua_nama, 'Ketua Lokal');
     assert.equal(list.data[0].pengikut_list, 'Anggota A\nAnggota B');
     assert.equal(list.data[0].jam_kunjungan, '20:45');
     assert.equal((await post('registerTamuFo', {})).success, false);
-    assert.equal((await post('getTamuList', {})).data.length, 21);
+    assert.equal((await post('getTamuList', {})).data.length, 1);
   } finally { server.close(); await once(server, 'close'); }
 });

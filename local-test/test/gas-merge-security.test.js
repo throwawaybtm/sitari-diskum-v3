@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const { deploymentConfigSource, destinations } = require('./synthetic-fixtures');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 
@@ -414,7 +415,7 @@ test('nextRecordId_ prevents ID reuse across gaps, blanks, booleans, and invalid
   assert.equal(newRow[0], 8, 'simpanJadwalRapat uses max(ID)+1 across existing rows');
 });
 
-test('local private config files exist locally without placeholder tokens or dummy counts', () => {
+test('synthetic configuration supplies consistent public destinations without exposing contacts', () => {
   const required = [
     'Admin/DeploymentConfig.js',
     'Admin/EmployeeDirectory.js',
@@ -439,7 +440,7 @@ test('local private config files exist locally without placeholder tokens or dum
       })
     }
   });
-  vm.runInContext(readText('Admin/DeploymentConfig.js'), deployCtx);
+  vm.runInContext(deploymentConfigSource, deployCtx);
   deployCtx.configureNewDeployment_();
   // Verify PublicIntake Public endpoints omit private PIC phone numbers while exposing 9 destinations
   const intakeCtx = vm.createContext({});
@@ -449,7 +450,9 @@ test('local private config files exist locally without placeholder tokens or dum
   for (const item of intakeCtx.getPublicFormDestinations('tld')) {
     assert.equal(item.phone, undefined);
   }
+});
 
+test('PublicIntake uses max ID across gaps and flushes writes (pending safe-ID integration)', () => {
   // PublicIntake writes use max(ID)+1 across gaps and flush SpreadsheetApp
   const tamuSheet = makeSheet('Data_Tamu', [
     ['ID', 'Kode', 'Tipe', 'Instansi', 'Alamat', 'Jumlah', 'Ketua', 'Pengikut', 'Bidang', 'Keperluan', 'Narahubung', 'HP', 'Tanggal', 'Jam', 'Surat1', 'Surat2', 'LO_ID', 'LO_Nama', 'SPPD', 'Status', 'Created'],
@@ -488,18 +491,23 @@ test('local private config files exist locally without placeholder tokens or dum
     pengikut_list: 'Andi',
     tujuan_bidang: ['Bidang Pengembangan Usaha Mikro'],
     keperluan: 'Konsultasi',
-    narahubung_hp: '08123456789'
+    narahubung_hp: '080000000000'
   });
   assert.equal(resFo.success, true, resFo.error);
-  assert.equal(resFo.data.lo_nama, 'Destri Wilia, S.E.');
-  assert.equal(flushCount, 1);
-  assert.equal(tamuSheet._rows[tamuSheet._rows.length - 1][0], 10);
+  assert.equal(resFo.data.lo_nama, destinations.find(item => item.id === 'pengembangan-mikro').pic);
+  assert.deepEqual({
+    id: tamuSheet._rows[tamuSheet._rows.length - 1][0],
+    flush: flushCount
+  }, { id: 10, flush: 1 });
 });
 
 test('PUBLIC_DEV_MODE enables anonymous Admin workflow with Fonnte disabled ONLY on verified personal dev environment', () => {
-  const DEV_SCRIPT_ID = '1jrzdwzt6xg-J1WcgY23FHET5eqJqOCZBcjcRmk3DUE5faGEYQyyJsob0';
-  const DEV_OWNER_EMAIL = 'riyanbwirawanto@gmail.com';
-  const DEV_SPREADSHEET_ID = '1c0HZKs1OfvCFd8naEz1gQz6y8BxGZ_VBr7S3k5miBo8';
+  const environmentContext = vm.createContext({});
+  vm.runInContext(readText('Admin/VisitWorkflowStorage.js'), environmentContext);
+  const environment = vm.runInContext('PUBLIC_DEV_ENV_CONFIG_', environmentContext);
+  const DEV_SCRIPT_ID = environment.scriptId;
+  const DEV_OWNER_EMAIL = environment.ownerEmail;
+  const DEV_SPREADSHEET_ID = environment.spreadsheetId;
 
   const fullFiles = [
     'Admin/Code.js',

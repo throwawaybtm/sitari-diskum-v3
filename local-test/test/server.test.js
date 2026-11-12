@@ -8,6 +8,7 @@ const { createLocalTestServer, renderAdminHtml } = require('../server');
 const { testDocument } = require('./tld-test-data');
 const { completeTddPayload } = require('./tdd-test-data');
 const { completeMeetingPayload } = require('./meeting-test-data');
+const { destinations } = require('./synthetic-fixtures');
 
 const FIXED_NOW = new Date('2026-11-04T18:30:00.000Z');
 
@@ -285,7 +286,7 @@ test('adds local TDD and TLD submissions to the Admin visitor data', async () =>
     assert.deepEqual(foPayload.data, {
       kode_kunjungan: foCode,
       tujuan_bidang: 'Bidang Pengawasan Koperasi',
-      lo_nama: 'Mery Sefina Simor, S.Kom.'
+      lo_nama: destinations.find(item => item.id === 'pengawasan-koperasi').pic
     });
     assert.equal(luarPayload.success, true);
     assert.deepEqual(luarPayload.data, {

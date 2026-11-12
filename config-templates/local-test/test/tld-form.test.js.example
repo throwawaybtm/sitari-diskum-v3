@@ -8,6 +8,8 @@ const vm = require('node:vm');
 const { once } = require('node:events');
 const { createLocalTestServer } = require('../server');
 const { completeTldPayload } = require('./tld-test-data');
+const { destinations } = require('./synthetic-fixtures');
+const picFor = id => destinations.find(item => item.id === id).pic;
 
 function loadTld() {
   const context = vm.createContext({});
@@ -53,8 +55,8 @@ test('TLD directory provides nine public PIC cards without phone numbers', () =>
   const context = loadTld();
   const options = context.getTldPublicDestinations_();
   assert.equal(options.length, 9);
-  assert.equal(options[0].pic, 'Novirianti, A.Md.');
-  assert.equal(options[8].pic, 'Intan Permata Sari, S.E.');
+  assert.equal(options[0].pic, picFor('sekretariat-umpeg'));
+  assert.equal(options[8].pic, picFor('dana-bergulir'));
   assert.ok(options.every(option => Object.keys(option).sort().join(',') === 'bidang,pic'));
 });
 
@@ -143,12 +145,12 @@ test('Admin renders selected destinations as distinct badges with multiple recei
   }
   context.renderTamuTable([{
     tujuan_bidang: 'Bidang Pengawasan Koperasi; Bidang Pengembangan Usaha Mikro; Sekretariat (Keuangan dan Aset)',
-    lo_nama: 'Mery Sefina Simor, S.Kom.; Dewi Astuti, S.E.; Zuziani, S.E.'
+    lo_nama: [picFor('pengawasan-koperasi'), picFor('pengembangan-mikro'), picFor('sekretariat-keuangan')].join('; ')
   }]);
   assert.match(body.innerHTML, /bg-teal-100/);
   assert.match(body.innerHTML, /bg-blue-100/);
   assert.match(body.innerHTML, /bg-fuchsia-100/);
-  assert.match(body.innerHTML, /Mery Sefina Simor, S.Kom.<br>Dewi Astuti, S\.E\.;?/);
+  assert.ok(body.innerHTML.includes([picFor('pengawasan-koperasi'), picFor('pengembangan-mikro')].join('<br>')));
 });
 
 test('TLD requires every data field and both documents without an SPPD checkbox', () => {

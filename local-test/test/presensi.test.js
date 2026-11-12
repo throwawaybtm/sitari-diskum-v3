@@ -1,4 +1,5 @@
 'use strict';
+const { people: syntheticPeople } = require('./synthetic-fixtures');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -167,9 +168,9 @@ test('Admin and Public Presensi merge UPTD Pemberdayaan into Bidang Pemberdayaan
     ctx.onBidangDiskumChange();
     const memberNames=fields.selectPegawaiDiskum.options.slice(1).map(o=>o.text);
     assert.equal(memberNames.length,9,`${label} combined filter should return 9 employees (7 + 2)`);
-    assert.ok(memberNames.includes('Muhammad Irfan Baharudin'));
-    assert.ok(memberNames.includes('Randy Wirapratama'));
-    assert.ok(memberNames.includes('Padlinsono, M.Si.'));
+    assert.ok(memberNames.includes(syntheticPeople.legacy80.nama));
+    assert.ok(memberNames.includes(syntheticPeople.legacy81.nama));
+    assert.ok(memberNames.includes(syntheticPeople.leader4.nama));
     results[label]=deptOpts;
   }
   assert.deepEqual(results.Admin,results.Public);

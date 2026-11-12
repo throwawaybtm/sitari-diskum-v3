@@ -1,4 +1,5 @@
 'use strict';
+const { people: syntheticPeople } = require('./synthetic-fixtures');
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -255,7 +256,7 @@ test('Edit Rapat modal handles Ditunda state, hides/disables invalid transitions
   };
 
   const historyEntry = { tanggal: '2026-11-10', jam_mulai: '09:00', jam_selesai: '10:30', nama_ruangan: 'Ruang Rapat Utama Diskum' };
-  const scheduledMeeting = { id: 1, kode_rapat: 'RPT-1', judul_rapat: 'Rapat Terjadwal', ruangan_id: 6001, nama_ruangan: 'Ruang Rapat Utama Diskum', tanggal: '2026-11-12', jam_mulai: '09:00', jam_selesai: '10:30', penyelenggara_bidang: 'Sekretariat', pimpinan_rapat: 'Adrial', agenda: 'Agenda', status: 'Terjadwal', photos: [], schedule_history: [] };
+  const scheduledMeeting = { id: 1, kode_rapat: 'RPT-1', judul_rapat: 'Rapat Terjadwal', ruangan_id: 6001, nama_ruangan: 'Ruang Rapat Utama Diskum', tanggal: '2026-11-12', jam_mulai: '09:00', jam_selesai: '10:30', penyelenggara_bidang: 'Sekretariat', pimpinan_rapat: syntheticPeople.leader2.nama, agenda: 'Agenda', status: 'Terjadwal', photos: [], schedule_history: [] };
   const postponedMeeting = { ...scheduledMeeting, id: 2, status: 'Ditunda', schedule_history: [historyEntry] };
   const completedMeeting = { ...scheduledMeeting, id: 3, status: 'Selesai', photos: [{ name: 'f.jpg', url: '/local-doc/1' }], notula: { name: 'n.pdf', url: '/local-doc/2' } };
   const lockedMeeting = { ...completedMeeting, id: 4, status: 'Terkunci', locked: true, schedule_history: [historyEntry] };
@@ -434,8 +435,8 @@ test('Tunda Rapat and Jadwalkan Ulang client dialogs confirm before calling RPC 
 
 test('GAS backend enforces postponeAgendaRapat and rescheduleAgendaRapat permissions, transitions, slot release, history, and 14-column schema', () => {
   const rows = [
-    [1, 'RPT-20261115-001', 'Rapat Revisi 04', 1, 'Ruang Rapat Utama Diskum', '2026-11-15', '09:00', '10:30', 'Sekretariat', 'Adrial, S.K.M, M.K.M.', 10, 'Pembahasan revisi 04', 'Terjadwal', '2026-11-10 08:00:00'],
-    [2, 'RPT-20261116-002', 'Rapat Bentrok', 1, 'Ruang Rapat Utama Diskum', '2026-11-16', '13:00', '14:30', 'Sekretariat', 'Adrial, S.K.M, M.K.M.', 10, 'Rapat pembanding', 'Terjadwal', '2026-11-10 08:00:00']
+    [1, 'RPT-20261115-001', 'Rapat Revisi 04', 1, 'Ruang Rapat Utama Diskum', '2026-11-15', '09:00', '10:30', 'Sekretariat', syntheticPeople.leader2.nama, 10, 'Pembahasan revisi 04', 'Terjadwal', '2026-11-10 08:00:00'],
+    [2, 'RPT-20261116-002', 'Rapat Bentrok', 1, 'Ruang Rapat Utama Diskum', '2026-11-16', '13:00', '14:30', 'Sekretariat', syntheticPeople.leader2.nama, 10, 'Rapat pembanding', 'Terjadwal', '2026-11-10 08:00:00']
   ];
 
   // Unauthenticated caller fails before reading spreadsheet
@@ -458,7 +459,7 @@ test('GAS backend enforces postponeAgendaRapat and rescheduleAgendaRapat permiss
   assert.equal(auth.context.lockAgendaRapat({ rapat_id: 1 }).success, false, 'cannot lock while Ditunda');
   assert.equal(auth.context.updateJadwalRapat({
     rapat_id: 1, judul: 'Edit', ruangan: '1|Ruang Rapat Utama Diskum', tanggal: '2026-11-17', jam_mulai: '09:00', jam_selesai: '10:30',
-    bidang: 'Sekretariat', pimpinan: 'Adrial', agenda: 'Agenda'
+    bidang: 'Sekretariat', pimpinan: syntheticPeople.leader2.nama, agenda: 'Agenda'
   }).success, false, 'cannot change schedule of Ditunda meeting outside Jadwalkan Ulang');
 
   // Freed slot can be booked by another meeting while meeting 1 is Ditunda
@@ -583,12 +584,12 @@ test('attendance list orders Diskum attendees by official organizational hierarc
   const attendanceRows = [
     // Deliberately submitted out of hierarchy order (non-Diskum first, staff before Kabid/Sekretaris/Kadis)
     [1, 9, 'Rapat Koordinasi', 'OPD_Pemko', 'Budi Pemko', '-', 'Kabid OPD', 'Dinas Perdagangan', '', '2026-11-11 08:01:00', '', 'QR', '2026-11-11 08:01:00'],
-    [2, 9, 'Rapat Koordinasi', 'Diskum', 'Afrinaldi', '19890917 202521 1 023', 'Pengadministrasi Perkantoran', 'Diskum Batam', '', '2026-11-11 08:02:00', '', 'QR', '2026-11-11 08:02:00'],
-    [3, 9, 'Rapat Koordinasi', 'Diskum', 'Vinggo Sepco Putra, A.Md.', '19960913 202203 1 003', 'Pengolah Data dan Informasi', 'Diskum Batam', '', '2026-11-11 08:03:00', '', 'QR', '2026-11-11 08:03:00'],
-    [4, 9, 'Rapat Koordinasi', 'Diskum', 'Septia Yorita, S.E.', '19810906 200901 2 002', 'Kepala Subbagian Umum dan Kepegawaian', 'Diskum Batam', '', '2026-11-11 08:04:00', '', 'QR', '2026-11-11 08:04:00'],
-    [5, 9, 'Rapat Koordinasi', 'Diskum', 'Padlinsono, M.Si.', '19761206 200212 1 012', 'Kepala Bidang Pemberdayaan dan Pelindungan Koperasi', 'Diskum Batam', '', '2026-11-11 08:05:00', '', 'QR', '2026-11-11 08:05:00'],
-    [6, 9, 'Rapat Koordinasi', 'Diskum', 'Adrial, S.K.M, M.K.M.', '19710520 199403 1 009', 'Sekretaris', 'Diskum Batam', '', '2026-11-11 08:06:00', '', 'QR', '2026-11-11 08:06:00'],
-    [7, 9, 'Rapat Koordinasi', 'Diskum', 'Salim, S.Sos, M.Si', '19681021 199010 1 001', 'Kepala Dinas', 'Diskum Batam', '', '2026-11-11 08:07:00', '', 'QR', '2026-11-11 08:07:00'],
+    [2, 9, 'Rapat Koordinasi', 'Diskum', syntheticPeople.staffEnterprise.nama, syntheticPeople.staffEnterprise.nip, 'Pengadministrasi Perkantoran', 'Diskum Batam', '', '2026-11-11 08:02:00', '', 'QR', '2026-11-11 08:02:00'],
+    [3, 9, 'Rapat Koordinasi', 'Diskum', syntheticPeople.staffSecretariat.nama, syntheticPeople.staffSecretariat.nip, 'Pengolah Data dan Informasi', 'Diskum Batam', '', '2026-11-11 08:03:00', '', 'QR', '2026-11-11 08:03:00'],
+    [4, 9, 'Rapat Koordinasi', 'Diskum', syntheticPeople.leader11.nama, syntheticPeople.leader11.nip, 'Kepala Subbagian Umum dan Kepegawaian', 'Diskum Batam', '', '2026-11-11 08:04:00', '', 'QR', '2026-11-11 08:04:00'],
+    [5, 9, 'Rapat Koordinasi', 'Diskum', syntheticPeople.leader4.nama, syntheticPeople.leader4.nip, 'Kepala Bidang Pemberdayaan dan Pelindungan Koperasi', 'Diskum Batam', '', '2026-11-11 08:05:00', '', 'QR', '2026-11-11 08:05:00'],
+    [6, 9, 'Rapat Koordinasi', 'Diskum', syntheticPeople.leader2.nama, syntheticPeople.leader2.nip, 'Sekretaris', 'Diskum Batam', '', '2026-11-11 08:06:00', '', 'QR', '2026-11-11 08:06:00'],
+    [7, 9, 'Rapat Koordinasi', 'Diskum', syntheticPeople.leader1.nama, syntheticPeople.leader1.nip, 'Kepala Dinas', 'Diskum Batam', '', '2026-11-11 08:07:00', '', 'QR', '2026-11-11 08:07:00'],
     [8, 9, 'Rapat Koordinasi', 'Tamu_Luar', 'Tamu Eksternal', '-', 'Staf', 'Kemenkop', '', '2026-11-11 08:00:00', '', 'QR', '2026-11-11 08:00:00']
   ];
 
@@ -596,7 +597,7 @@ test('attendance list orders Diskum attendees by official organizational hierarc
   const employeeSheetRows = dir.map((e, i) => [i + 1, e.nip, e.nama, e.jabatan, e.bidang, 0, 0, 'Aktif', e.pangkat]);
 
   const { context } = createGasHarness({
-    initialMeetings: [[9, 'RPT-9', 'Rapat Koordinasi', 1, 'Ruang Rapat Utama Diskum', '2026-11-11', '08:00', '10:00', 'Dinas', 'Salim, S.Sos, M.Si', 10, 'Koordinasi', 'Terjadwal', '2026-11-11 07:00:00']],
+    initialMeetings: [[9, 'RPT-9', 'Rapat Koordinasi', 1, 'Ruang Rapat Utama Diskum', '2026-11-11', '08:00', '10:00', 'Dinas', syntheticPeople.leader1.nama, 10, 'Koordinasi', 'Terjadwal', '2026-11-11 07:00:00']],
     initialEmployees: employeeSheetRows,
     initialAttendance: attendanceRows
   });
@@ -611,12 +612,12 @@ test('attendance list orders Diskum attendees by official organizational hierarc
   const res = context.getAgendaAttendance({ rapat_id: 9 });
   assert.equal(res.success, true, res.error);
   assert.deepEqual(res.data.attendance.map(r => r.nama), [
-    'Salim, S.Sos, M.Si',         // Leader #1
-    'Adrial, S.K.M, M.K.M.',      // Leader #2
-    'Padlinsono, M.Si.',          // Leader #4
-    'Septia Yorita, S.E.',        // Leader #11
-    'Vinggo Sepco Putra, A.Md.',  // Sekretariat staff (unit order before Bidang Kewirausahaan)
-    'Afrinaldi',                  // Bidang Kewirausahaan staff
+    syntheticPeople.leader1.nama,         // Leader #1
+    syntheticPeople.leader2.nama,      // Leader #2
+    syntheticPeople.leader4.nama,          // Leader #4
+    syntheticPeople.leader11.nama,        // Leader #11
+    syntheticPeople.staffSecretariat.nama,  // Sekretariat staff (unit order before Bidang Kewirausahaan)
+    syntheticPeople.staffEnterprise.nama,                  // Bidang Kewirausahaan staff
     'Tamu Eksternal',             // Non-Diskum 08:00
     'Budi Pemko'                  // Non-Diskum 08:01
   ]);
@@ -628,7 +629,7 @@ test('local HTTP server supports Revision 04 postpone, reschedule with history, 
     now: () => new Date('2026-11-10T05:00:00Z'),
     seed: {
       meetings: [
-        { id: 101, kode_rapat: 'RPT-20261102-101', judul_rapat: 'Rapat Seed 1', ruangan_id: 6001, nama_ruangan: 'Ruang Rapat Utama Diskum', tanggal: '2026-11-02', jam_mulai: '09:00', jam_selesai: '10:30', penyelenggara_bidang: 'Sekretariat', pimpinan_rapat: 'Adrial', jumlah_peserta: 5, agenda: 'Agenda 1', status: 'Terjadwal' },
+        { id: 101, kode_rapat: 'RPT-20261102-101', judul_rapat: 'Rapat Seed 1', ruangan_id: 6001, nama_ruangan: 'Ruang Rapat Utama Diskum', tanggal: '2026-11-02', jam_mulai: '09:00', jam_selesai: '10:30', penyelenggara_bidang: 'Sekretariat', pimpinan_rapat: syntheticPeople.leader2.nama, jumlah_peserta: 5, agenda: 'Agenda 1', status: 'Terjadwal' },
         { id: 102, kode_rapat: 'RPT-20261103-102', judul_rapat: 'Rapat Seed 2', ruangan_id: 6002, nama_ruangan: 'Ruangan Bidang Koperasi & UMKM', tanggal: '2026-11-03', jam_mulai: '13:00', jam_selesai: '14:30', penyelenggara_bidang: 'Bidang Koperasi', pimpinan_rapat: 'Kabid', jumlah_peserta: 4, agenda: 'Agenda 2', status: 'Terjadwal' }
       ]
     }
@@ -659,7 +660,7 @@ test('local HTTP server supports Revision 04 postpone, reschedule with history, 
       jam_mulai: '09:00',
       jam_selesai: '10:30',
       bidang: 'Sekretariat',
-      pimpinan: 'Adrial, S.K.M, M.K.M.',
+      pimpinan: syntheticPeople.leader2.nama,
       agenda: 'Pengujian Tunda dan Jadwalkan Ulang'
     })).success, true);
 
@@ -673,7 +674,7 @@ test('local HTTP server supports Revision 04 postpone, reschedule with history, 
 
     // Attendance blocked while Ditunda
     assert.equal((await rpc('submitAdminPresensiRapat', {
-      rapat_id: created.id, kategori_peserta: 'Diskum', nama: 'Salim, S.Sos, M.Si', jam_kehadiran: '09:10'
+      rapat_id: created.id, kategori_peserta: 'Diskum', nama: syntheticPeople.leader1.nama, jam_kehadiran: '09:10'
     })).success, false);
 
     // Jadwalkan Ulang -> Terjadwal, preserves original schedule in history
@@ -691,15 +692,15 @@ test('local HTTP server supports Revision 04 postpone, reschedule with history, 
       rapat_id: created.id, kategori_peserta: 'OPD_Pemko', nama: 'Peserta Luar', nama_opd: 'Dinas Perdagangan', jam_kehadiran: '10:00'
     })).success, true);
     assert.equal((await rpc('submitAdminPresensiRapat', {
-      rapat_id: created.id, kategori_peserta: 'Diskum', nama: 'Afrinaldi', nip: '19890917 202521 1 023', jam_kehadiran: '10:05'
+      rapat_id: created.id, kategori_peserta: 'Diskum', nama: syntheticPeople.staffEnterprise.nama, nip: syntheticPeople.staffEnterprise.nip, jam_kehadiran: '10:05'
     })).success, true);
     assert.equal((await rpc('submitAdminPresensiRapat', {
-      rapat_id: created.id, kategori_peserta: 'Diskum', nama: 'Salim, S.Sos, M.Si', nip: '19681021 199010 1 001', jam_kehadiran: '10:15'
+      rapat_id: created.id, kategori_peserta: 'Diskum', nama: syntheticPeople.leader1.nama, nip: syntheticPeople.leader1.nip, jam_kehadiran: '10:15'
     })).success, true);
 
     const att = await rpc('getAgendaAttendance', { rapat_id: created.id });
     assert.equal(att.success, true, att.error);
-    assert.deepEqual(att.data.attendance.map(r => r.nama), ['Salim, S.Sos, M.Si', 'Afrinaldi', 'Peserta Luar']);
+    assert.deepEqual(att.data.attendance.map(r => r.nama), [syntheticPeople.leader1.nama, syntheticPeople.staffEnterprise.nama, 'Peserta Luar']);
 
     // Lock prevents subsequent postpone/reschedule
     assert.equal((await rpc('lockAgendaRapat', { rapat_id: created.id })).success, true);
@@ -773,8 +774,8 @@ test('renderTodayMeetings and renderMeetingsList do not duplicate Bidang label p
     vm.runInContext(extractFn(html, fn), ctx);
   }
   const sample = [
-    { id: 1, judul_rapat: 'Rapat Kewirausahaan', nama_ruangan: 'Ruang Rapat Utama Diskum', tanggal: '2026-11-12', jam_mulai: '09:00', jam_selesai: '10:00', penyelenggara_bidang: 'Bidang Kewirausahaan', pimpinan_rapat: 'Syofya Nora, S.H.I.', status: 'Terjadwal' },
-    { id: 2, judul_rapat: 'Rapat Dinas', nama_ruangan: 'Ruang Rapat Pimpinan / Kadis', tanggal: '2026-11-12', jam_mulai: '13:00', jam_selesai: '14:00', penyelenggara_bidang: 'Dinas', pimpinan_rapat: 'Salim, S.Sos, M.Si', status: 'Terjadwal' }
+    { id: 1, judul_rapat: 'Rapat Kewirausahaan', nama_ruangan: 'Ruang Rapat Utama Diskum', tanggal: '2026-11-12', jam_mulai: '09:00', jam_selesai: '10:00', penyelenggara_bidang: 'Bidang Kewirausahaan', pimpinan_rapat: syntheticPeople.leader3.nama, status: 'Terjadwal' },
+    { id: 2, judul_rapat: 'Rapat Dinas', nama_ruangan: 'Ruang Rapat Pimpinan / Kadis', tanggal: '2026-11-12', jam_mulai: '13:00', jam_selesai: '14:00', penyelenggara_bidang: 'Dinas', pimpinan_rapat: syntheticPeople.leader1.nama, status: 'Terjadwal' }
   ];
   ctx.renderTodayMeetings(sample);
   ctx.renderMeetingsList(sample);
