@@ -248,7 +248,7 @@ test('Admin and Public manifests satisfy personal public dev mode policy and rev
   assert.equal(publicManifest.webapp.access, 'ANYONE_ANONYMOUS');
   const coreLib = publicManifest.dependencies.libraries.find(l => l.userSymbol === 'SiTariCore');
   assert.ok(coreLib);
-  assert.equal(coreLib.version, '47');
+  assert.equal(coreLib.version, '48');
 });
 
 test('doGet, include, and ADMIN_INCLUDE_FILES_ fail closed on consumer empty email and non-allowlisted includes', () => {
