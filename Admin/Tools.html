@@ -77,10 +77,18 @@
   function renderMonthlyReport() {
     updateMonthlyGuestFilterButtons();
     const input=document.getElementById('reportMonth'),body=document.getElementById('monthlyReportRows');if(!input||!body)return;
-    const source=typeof allTamuData!=='undefined'?allTamuData:[];
-    const rows=monthlyGuestRows(source,input.value,monthlyGuestFilter);
     const filterSuffix=monthlyGuestFilter==='all'?'':' '+monthlyGuestFilter.toUpperCase();
     const countEl=document.getElementById('monthlyReportCount');
+    const loadError=typeof visitListError!=='undefined'?String(visitListError||'').trim():'';
+    if(loadError){
+      const safeError=typeof escapeHtml==='function'?escapeHtml(loadError):String(loadError).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+      if(countEl)countEl.textContent='Data kunjungan tidak tersedia'+filterSuffix+' · '+monthlyReportMonthLabel(input.value);
+      body.innerHTML=`<tr><td colspan="3" class="text-center text-rose-600 p-6"><i class="fa-solid fa-triangle-exclamation mr-1.5"></i>${safeError}</td></tr>`;
+      ['monthlyPdf','monthlyImage'].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=true;});
+      return;
+    }
+    const source=typeof allTamuData!=='undefined'?allTamuData:[];
+    const rows=monthlyGuestRows(source,input.value,monthlyGuestFilter);
     if(countEl)countEl.textContent=rows.length+' kunjungan'+filterSuffix+' · '+monthlyReportMonthLabel(input.value);
     const emptyText=monthlyGuestFilter==='all'?'Tidak ada kunjungan pada bulan ini.':'Tidak ada kunjungan '+monthlyGuestFilter.toUpperCase()+' pada bulan ini.';
     body.innerHTML=rows.length?rows.map(r=>`<tr class="border-b border-slate-100"><td class="px-4 py-3 text-center">${r.no}</td><td class="px-4 py-3 font-semibold">${escapeHtml(r.nama)}</td><td class="px-4 py-3">${escapeHtml(r.agenda)}</td></tr>`).join(''):`<tr><td colspan="3" class="text-center text-slate-400 p-6">${emptyText}</td></tr>`;
@@ -101,7 +109,7 @@
     pages.forEach((p,i)=>{const c=p.getContext('2d');c.fillStyle='#64748b';c.font='18px Arial';c.fillText(rows.length+' kunjungan',40,1715);c.fillText((i+1)+' / '+pages.length,1120,1715);});return pages;
   }
   async function exportMonthlyReport(type) {
-    if(monthlyReportBusy)return;const month=document.getElementById('reportMonth')?.value,source=typeof allTamuData!=='undefined'?allTamuData:[];const rows=monthlyGuestRows(source,month,monthlyGuestFilter);if(!rows.length)return;
+    if(monthlyReportBusy||(typeof visitListError!=='undefined'&&String(visitListError||'').trim()))return;const month=document.getElementById('reportMonth')?.value,source=typeof allTamuData!=='undefined'?allTamuData:[];const rows=monthlyGuestRows(source,month,monthlyGuestFilter);if(!rows.length)return;
     monthlyReportBusy=true;renderMonthlyReport();
     try{
       const pages=buildMonthlyReportCanvases(rows,month,monthlyGuestFilter),name=monthlyReportFileName(month,monthlyGuestFilter);

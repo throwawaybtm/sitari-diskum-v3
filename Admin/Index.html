@@ -1027,11 +1027,12 @@
     const QR_SERVICE_BASE = 'https://api.qrserver.com/v1/create-qr-code/';
     let activeSppdItem = null;
     let allTamuData = [];
+    let visitListError = '';
     const tamuTableState = { key: null, direction: 'asc' };
     let allRapatData = [];
     let editingRapatId = null, pendingLockRapatId = null, lockRapatBusy = false, pendingCancelRapatId = null, cancelRapatBusy = false, pendingPostponeRapatId = null, postponeRapatBusy = false, pendingRescheduleRapatId = null, rescheduleRapatBusy = false;
     let meetingRoomOptions = null, meetingRoomRequest = null;
-    let visitListRevision = 0, visitListPatches = new Map(), dashboardRequestRevision = 0, calendarRequestRevision = 0;
+    let visitListRevision = 0, visitListPatches = new Map(), visitListRequestRevision = 0, dashboardRequestRevision = 0, calendarRequestRevision = 0;
 
 
     function _printHtml(htmlStr) {
@@ -1158,7 +1159,11 @@
     }
 
     function switchTab(tabId) {
-      if (tabId === 'tamu') clearVisitStatusFilter();
+      const hasVisitError = typeof visitListError !== 'undefined' && Boolean(String(visitListError || '').trim());
+      if (tabId === 'tamu') {
+        if (!hasVisitError) clearVisitStatusFilter();
+        else if (typeof renderTamuTable === 'function' && typeof allTamuData !== 'undefined') renderTamuTable(allTamuData);
+      }
       ['dashboard', 'tamu', 'calendar', 'qrcode'].forEach(t => {
         const btn = document.getElementById(`tab-${t}`);
         const mobileBtn = document.getElementById(`mobile-tab-${t}`);
@@ -1207,7 +1212,27 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(args && args.length > 0 ? args[0] : {})
         })
-          .then(r => r.json())
+          .then(async r => {
+            const text = await r.text();
+            let payload = null;
+            if (text) {
+              try { payload = JSON.parse(text); } catch (_) { payload = null; }
+            }
+            if (!r.ok) {
+              const fallback = `Permintaan ${fnName} gagal (HTTP ${r.status}).`;
+              const message = typeof responseMessage === 'function'
+                ? responseMessage(payload, fallback)
+                : ((payload && typeof payload === 'object' && (payload.message || payload.error)) || fallback);
+              const err = new Error(message);
+              err.status = r.status;
+              if (payload && typeof payload === 'object') err.payload = payload;
+              throw err;
+            }
+            if (!payload || typeof payload !== 'object') {
+              throw new Error(`Respons server untuk ${fnName} tidak valid.`);
+            }
+            return payload;
+          })
           .then(onSuccess)
           .catch(handleErr);
       }
@@ -1230,9 +1255,26 @@
           }, error => { try { failure(error); } finally { resolve(false); } });
         } catch (error) { resolve(false); }
       }));
+      const notifyError = (title, message) => {
+        if (typeof showToast === 'function') showToast('error', title, message);
+      };
+      const errorDetail = (source, fallback) => {
+        const msg = typeof responseMessage === 'function'
+          ? responseMessage(source, '')
+          : String((source && (source.message || (typeof source.error === 'string' ? source.error : source.error?.message))) || '');
+        if (!msg) return fallback;
+        return msg.toLowerCase().includes('gagal') ? msg : `${fallback} (${msg})`;
+      };
       const summaryRequest = options.summary !== false ? ++dashboardRequestRevision : 0;
       const summaryVisitRevision = visitListRevision;
       if (options.summary !== false) {
+        const handleSummaryFailure = source => {
+          if (summaryRequest !== dashboardRequestRevision) return;
+          if (typeof renderPanelState === 'function') renderPanelState(document.getElementById('todayMeetingsList'), 'error', errorDetail(source, 'Agenda hari ini gagal dimuat.'));
+          if (typeof renderTableState === 'function') renderTableState(document.getElementById('recentTamuTableBody'), 7, 'error', errorDetail(source, 'Kunjungan terbaru gagal dimuat.'));
+          if (typeof resetDashboardStats === 'function') resetDashboardStats();
+          notifyError('Dashboard Gagal Dimuat', errorDetail(source, 'Periksa koneksi lalu muat ulang halaman.'));
+        };
         request('getDashboardSummary', [], res => {
           if (summaryRequest !== dashboardRequestRevision) return;
           if (res && res.success) {
@@ -1250,44 +1292,54 @@
             renderTodayMeetings(d.todayMeetings);
             renderRecentTamu(mergeVisitPatches(d.recentTamu || [], summaryVisitRevision));
           } else {
-            renderPanelState(document.getElementById('todayMeetingsList'), 'error', responseMessage(res, 'Agenda hari ini gagal dimuat.'));
-            renderTableState(document.getElementById('recentTamuTableBody'), 7, 'error', responseMessage(res, 'Kunjungan terbaru gagal dimuat.'));
-            if (typeof resetDashboardStats === 'function') resetDashboardStats();
+            handleSummaryFailure(res);
           }
         }, err => {
-          if (summaryRequest !== dashboardRequestRevision) return;
           console.error('getDashboardSummary failed:', err);
-          renderPanelState(document.getElementById('todayMeetingsList'), 'error', 'Agenda hari ini gagal dimuat. Silakan muat ulang halaman.');
-          renderTableState(document.getElementById('recentTamuTableBody'), 7, 'error', 'Kunjungan terbaru gagal dimuat. Silakan muat ulang halaman.');
-          if (typeof resetDashboardStats === 'function') resetDashboardStats();
-          showToast('error', 'Dashboard Gagal Dimuat', 'Periksa koneksi lalu muat ulang halaman.');
+          handleSummaryFailure(err);
         });
       }
 
       if (options.visitors !== false) {
         const revision = visitListRevision;
+        const visitRequest = typeof visitListRequestRevision !== 'undefined' ? ++visitListRequestRevision : 0;
+        const handleTamuFailure = source => {
+          if (typeof visitListRequestRevision !== 'undefined' && visitRequest !== visitListRequestRevision) return;
+          if (visitListRevision !== revision) return;
+          const msg = errorDetail(source, 'Data kunjungan gagal dimuat. Silakan muat ulang halaman.');
+          visitListError = msg;
+          allTamuData = [];
+          if (typeof renderTamuTable === 'function') renderTamuTable(allTamuData);
+          if (typeof renderTableState === 'function') renderTableState(document.getElementById('tamuTableBody'), 7, 'error', msg);
+          if (typeof renderMonthlyReport === 'function') renderMonthlyReport();
+          notifyError('Data Kunjungan Gagal Dimuat', msg);
+        };
         request('getTamuList', [], res => {
+          if (typeof visitListRequestRevision !== 'undefined' && visitRequest !== visitListRequestRevision) return;
           if (res && res.success) {
+            visitListError = '';
             allTamuData = mergeVisitPatches(Array.isArray(res.data) ? res.data : [], revision);
             renderTamuTable(allTamuData);
             renderMonthlyReport();
           } else {
-            if (visitListRevision !== revision) return;
-            allTamuData = [];
-            renderMonthlyReport();
-            renderTableState(document.getElementById('tamuTableBody'), 7, 'error', responseMessage(res, 'Data kunjungan gagal dimuat.'));
+            handleTamuFailure(res);
           }
         }, err => {
           console.error('getTamuList failed:', err);
-          if (visitListRevision !== revision) return;
-          allTamuData = [];
-          renderMonthlyReport();
-          renderTableState(document.getElementById('tamuTableBody'), 7, 'error', 'Data kunjungan gagal dimuat. Silakan muat ulang halaman.');
+          handleTamuFailure(err);
         });
       }
 
       if (options.calendar !== false) {
         const calendarRequest = ++calendarRequestRevision;
+        const handleCalendarFailure = source => {
+          if (calendarRequest !== calendarRequestRevision) return;
+          allRapatData = [];
+          if (typeof setBookingCalendarState === 'function') setBookingCalendarState('error');
+          const msg = errorDetail(source, 'Agenda rapat gagal dimuat. Silakan muat ulang halaman.');
+          if (typeof renderPanelState === 'function') renderPanelState(document.getElementById('meetingsListContainer'), 'error', msg);
+          notifyError('Agenda Rapat Gagal Dimuat', msg);
+        };
         request('getRapatCalendar', [], res => {
           if (calendarRequest !== calendarRequestRevision) return;
           if (res && res.success) {
@@ -1295,16 +1347,11 @@
             if (typeof setBookingCalendarState === 'function') setBookingCalendarState('ready');
             renderMeetingsList(allRapatData);
           } else {
-            allRapatData = [];
-            if (typeof setBookingCalendarState === 'function') setBookingCalendarState('error');
-            renderPanelState(document.getElementById('meetingsListContainer'), 'error', responseMessage(res, 'Agenda rapat gagal dimuat.'));
+            handleCalendarFailure(res);
           }
         }, err => {
-          if (calendarRequest !== calendarRequestRevision) return;
           console.error('getRapatCalendar failed:', err);
-          allRapatData = [];
-          if (typeof setBookingCalendarState === 'function') setBookingCalendarState('error');
-          renderPanelState(document.getElementById('meetingsListContainer'), 'error', 'Agenda rapat gagal dimuat. Silakan muat ulang halaman.');
+          handleCalendarFailure(err);
         });
       }
 
@@ -1482,6 +1529,11 @@
     function clearVisitStatusFilter() {
       const filter = document.getElementById('visitStatusFilter');
       if (filter) { filter.dataset.status = ''; filter.classList.add('hidden'); }
+      const loadError = typeof visitListError !== 'undefined' ? String(visitListError || '').trim() : '';
+      if (loadError) {
+        if (typeof renderTableState === 'function') renderTableState(document.getElementById('tamuTableBody'), 7, 'error', loadError);
+        return;
+      }
       renderTamuTable(allTamuData);
     }
 
@@ -1497,8 +1549,14 @@
     function renderTamuTable(tamus) {
       const tbody = document.getElementById('tamuTableBody');
       if (!tbody) return;
+      const loadError = typeof visitListError !== 'undefined' ? String(visitListError || '').trim() : '';
+      if (loadError) {
+        if (typeof renderTableState === 'function') renderTableState(tbody, 7, 'error', loadError);
+        return;
+      }
+      const list = Array.isArray(tamus) ? tamus : [];
       const status = document.getElementById('visitStatusFilter')?.dataset?.status;
-      const records = status ? tamus.filter(t => getVisitStatus(t).label === status) : tamus;
+      const records = status ? list.filter(t => getVisitStatus(t).label === status) : list;
       const filtered = filterAgendaRecords_(records, document.getElementById('visitSearch')?.value, document.getElementById('visitSearchDate')?.value);
       const sorted = getSortedTamu(filtered, tamuTableState);
       updateTamuSortHeadings();
