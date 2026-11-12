@@ -395,10 +395,17 @@
         selPegawai.replaceChildren(new Option('-- Pilih Nama Pegawai Diskum --', ''));
 
         if (res && res.success) {
-          masterPegawai = Array.isArray(res.data && res.data.pegawai) ? res.data.pegawai : [];
+          const normalizeUnit = value => {
+            const raw = String(value || '').trim();
+            return raw === 'UPTD Pemberdayaan dan Pelindungan Koperasi'
+              ? 'Bidang Pemberdayaan dan Pelindungan Koperasi'
+              : raw;
+          };
+          masterPegawai = (Array.isArray(res.data && res.data.pegawai) ? res.data.pegawai : [])
+            .map(p => Object.assign({}, p, { bidang: normalizeUnit(p.bidang) }));
           const department=document.getElementById('selectBidangDiskum');
           department.replaceChildren(new Option('-- Pilih Bidang / Unit Kerja --',''));
-          const preferred=['Dinas','Sekretariat','Bidang Pemberdayaan dan Pelindungan Koperasi','Bidang Pengawasan Koperasi','Bidang Kewirausahaan','Bidang Pengembangan Usaha Mikro','UPTD Pengelolaan Dana Bergulir','UPTD PLUT KUMKM','UPTD Pemberdayaan dan Pelindungan Koperasi'];
+          const preferred=['Dinas','Sekretariat','Bidang Pemberdayaan dan Pelindungan Koperasi','Bidang Pengawasan Koperasi','Bidang Kewirausahaan','Bidang Pengembangan Usaha Mikro','UPTD Pengelolaan Dana Bergulir','UPTD PLUT KUMKM'];
           const departments=[...new Set(masterPegawai.map(p=>p.bidang).filter(Boolean))].sort((a,b)=>{const i=preferred.indexOf(a),j=preferred.indexOf(b);return (i<0?99:i)-(j<0?99:j)||a.localeCompare(b,'id');});
           departments.forEach(name=>department.add(new Option(name+' ('+masterPegawai.filter(p=>p.bidang===name).length+')',name)));
           department.disabled=!departments.length;onBidangDiskumChange();

@@ -22,9 +22,15 @@ const OFFICIAL_UNIT_ORDER_ = [
   'Bidang Kewirausahaan',
   'Bidang Pengembangan Usaha Mikro',
   'UPTD Pengelolaan Dana Bergulir',
-  'UPTD PLUT KUMKM',
-  'UPTD Pemberdayaan dan Pelindungan Koperasi'
+  'UPTD PLUT KUMKM'
 ];
+function normalizeAttendanceUnit_(value) {
+  if (typeof normalizeDiskumDepartment_ === 'function') return normalizeDiskumDepartment_(value);
+  const raw = String(value || '').trim();
+  return raw === 'UPTD Pemberdayaan dan Pelindungan Koperasi'
+    ? 'Bidang Pemberdayaan dan Pelindungan Koperasi'
+    : raw;
+}
 function normalizeAttendanceNip_(value) {
   return String(value || '').replace(/\s+/g, '').replace(/^-$/, '');
 }
@@ -38,7 +44,7 @@ function readMasterEmployeesForOrder_(ss) {
     const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, width).getValues();
     const valid = rows
       .filter(r => String(r[2] || '').trim() && String(r[3] || '').trim() && String(r[4] || '').trim())
-      .map(r => ({ nip: r[1], nama: r[2], jabatan: r[3], bidang: r[4] }));
+      .map(r => ({ nip: r[1], nama: r[2], jabatan: r[3], bidang: normalizeAttendanceUnit_(r[4]) }));
     if (valid.length) return valid;
   }
   return typeof DISKUM_EMPLOYEE_DIRECTORY !== 'undefined' && Array.isArray(DISKUM_EMPLOYEE_DIRECTORY)
@@ -57,7 +63,7 @@ function buildAttendanceHierarchyLookup_(employees) {
   const empByNip = new Map();
   const empByName = new Map();
   (Array.isArray(employees) ? employees : []).forEach((emp, idx) => {
-    const unitRank = OFFICIAL_UNIT_ORDER_.indexOf(String(emp.bidang || '').trim());
+    const unitRank = OFFICIAL_UNIT_ORDER_.indexOf(normalizeAttendanceUnit_(emp.bidang));
     const pos = { unitRank: unitRank < 0 ? OFFICIAL_UNIT_ORDER_.length : unitRank, empIdx: idx };
     const nip = normalizeAttendanceNip_(emp.nip);
     const name = normalizeAttendanceName_(emp.nama);

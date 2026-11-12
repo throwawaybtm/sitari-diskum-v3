@@ -128,3 +128,49 @@ test('admin attendance defaults the editable hour to the selected agenda and ord
   if(admin){assert.equal(fields.inputJamKehadiran.value,'09:30');fields.inputJamKehadiran.value='10:15';context.setKategoriPeserta('Diskum');assert.equal(fields.inputJamKehadiran.value,'10:15');}
  }
 });
+
+test('Admin and Public Presensi merge UPTD Pemberdayaan into Bidang Pemberdayaan dan Pelindungan Koperasi (9) consistently',()=>{
+  const dir=JSON.parse(fs.readFileSync(path.join(__dirname,'../previews/employee-directory.json'),'utf8'));
+  const legacyPayload=dir.map(e=>({
+    ...e,
+    bidang:(e.id==='80'||e.id==='81')?'UPTD Pemberdayaan dan Pelindungan Koperasi':e.bidang
+  }));
+  const results={};
+  for(const [label,relPath,policyPath,admin] of [
+    ['Admin','../../Admin/Presensi.html','Admin/AttendancePolicy.html',true],
+    ['Public','../../Public/Presensi.html','Public/AttendancePolicy.html',false]
+  ]){
+    const html=fs.readFileSync(path.join(__dirname,relPath),'utf8');
+    const fields={};
+    const ctx=vm.createContext({
+      document:{
+        body:{dataset:{adminAttendance:String(admin)}},
+        addEventListener(){},
+        getElementById(id){
+          return fields[id]||={value:'',required:false,disabled:false,options:[],innerHTML:'',replaceChildren(...items){this.options=items;},add(item){this.options.push(item);},reportValidity:()=>true,classList:{add(){},remove(){}}};
+        }
+      },
+      Option:class{constructor(text,value){this.text=text;this.value=value;}},
+      alert(){},console:{error(){}},location:{reload(){}}
+    });
+    vm.runInContext(fs.readFileSync(policyPath,'utf8').match(/<script>([^]*?)<\/script>/)[1],ctx);
+    vm.runInContext(html.match(/<script>([^]*?)<\/script>/)[1],ctx);
+    ctx.callBackend=(name,args,success)=>success({success:true,data:name==='getRapatCalendar'?[]:{pegawai:legacyPayload,opd:[{id:1,nama_opd:'OPD Uji'}]}});
+    ctx.loadInitialData();
+    const deptOpts=fields.selectBidangDiskum.options.slice(1).map(o=>({value:o.value,text:o.text}));
+    assert.equal(deptOpts.length,8,`${label} should have 8 merged Diskum departments`);
+    assert.equal(deptOpts.some(o=>o.value==='UPTD Pemberdayaan dan Pelindungan Koperasi'),false,`${label} must not show removed UPTD option`);
+    const merged=deptOpts.find(o=>o.value==='Bidang Pemberdayaan dan Pelindungan Koperasi');
+    assert.ok(merged);
+    assert.equal(merged.text,'Bidang Pemberdayaan dan Pelindungan Koperasi (9)');
+    fields.selectBidangDiskum.value='Bidang Pemberdayaan dan Pelindungan Koperasi';
+    ctx.onBidangDiskumChange();
+    const memberNames=fields.selectPegawaiDiskum.options.slice(1).map(o=>o.text);
+    assert.equal(memberNames.length,9,`${label} combined filter should return 9 employees (7 + 2)`);
+    assert.ok(memberNames.includes('Muhammad Irfan Baharudin'));
+    assert.ok(memberNames.includes('Randy Wirapratama'));
+    assert.ok(memberNames.includes('Padlinsono, M.Si.'));
+    results[label]=deptOpts;
+  }
+  assert.deepEqual(results.Admin,results.Public);
+});

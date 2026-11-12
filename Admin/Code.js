@@ -47,6 +47,14 @@ function include(filename) {
 const DISPLAY_START_DATE_ = '2026-11-02';
 const VISIT_DISPLAY_START_DATE_ = '2026-11-05';
 const JAKARTA_TIMEZONE_ = 'Asia/Jakarta';
+const DISKUM_DEPARTMENT_ALIASES_ = {
+  'UPTD Pemberdayaan dan Pelindungan Koperasi': 'Bidang Pemberdayaan dan Pelindungan Koperasi'
+};
+
+function normalizeDiskumDepartment_(bidang) {
+  const raw = String(bidang || '').trim();
+  return DISKUM_DEPARTMENT_ALIASES_[raw] || raw;
+}
 
 function formatDateInJakarta_(date) {
   if (!(date instanceof Date) || isNaN(date.getTime())) return '';
@@ -653,7 +661,7 @@ function readMasterData_(ss) {
   const sheetRuangan = ss.getSheetByName('Master_Ruangan');
 
   const pegawai = sheetPegawai && sheetPegawai.getLastRow() > 1 
-    ? sheetPegawai.getRange(2, 1, sheetPegawai.getLastRow() - 1, sheetPegawai.getLastColumn()).getValues().map(r => ({ id: r[0], nip: r[1], nama: r[2], jabatan: r[3], bidang: r[4], pangkat:r[8]||'' }))
+    ? sheetPegawai.getRange(2, 1, sheetPegawai.getLastRow() - 1, sheetPegawai.getLastColumn()).getValues().map(r => ({ id: r[0], nip: r[1], nama: r[2], jabatan: r[3], bidang: normalizeDiskumDepartment_(r[4]), pangkat:r[8]||'' }))
     : [];
 
   const opd = PEMKO_OPD_OPTIONS_.map((nama_opd, idx) => ({ id: idx + 1, nama_opd: nama_opd, kategori: 'Pemko Batam' }));

@@ -33,6 +33,13 @@ function jakartaTime(date) {
   }).format(date);
 }
 
+function normalizeDiskumDepartment(bidang) {
+  const raw = String(bidang || '').trim();
+  return raw === 'UPTD Pemberdayaan dan Pelindungan Koperasi'
+    ? 'Bidang Pemberdayaan dan Pelindungan Koperasi'
+    : raw;
+}
+
 function loadRealEmployeeDirectory() {
   const filePath = path.join(__dirname, 'previews', 'employee-directory.json');
   if (!fs.existsSync(filePath)) return [];
@@ -41,7 +48,7 @@ function loadRealEmployeeDirectory() {
     if (!Array.isArray(raw)) return [];
     return raw
       .filter(item => item && String(item.nama || '').trim())
-      .map((item, idx) => ({ ...item, id: item.id || (10001 + idx) }));
+      .map((item, idx) => ({ ...item, id: item.id || (10001 + idx), bidang: normalizeDiskumDepartment(item.bidang) }));
   } catch (_) {
     return [];
   }
@@ -73,7 +80,7 @@ function createFixtureStore(now = new Date(), options = {}) {
   const sppd = [];
 
   const masterData = {
-    pegawai: Array.isArray(options.employees) ? options.employees.map((p, idx) => ({ ...p, id: p.id || (10001 + idx) })) : loadRealEmployeeDirectory(),
+    pegawai: Array.isArray(options.employees) ? options.employees.map((p, idx) => ({ ...p, id: p.id || (10001 + idx), bidang: normalizeDiskumDepartment(p.bidang) })) : loadRealEmployeeDirectory(),
     opd: PEMKO_OPD_OPTIONS.map((nama_opd, idx) => ({ id: 4001 + idx, nama_opd, kategori: 'Pemko Batam' })),
     ruangan: [
       { id: 6001, nama_ruangan: 'Ruang Rapat Utama Diskum', kapasitas: 50, fasilitas: 'Proyektor', lokasi: 'Lantai 1', warna: 'blue' },

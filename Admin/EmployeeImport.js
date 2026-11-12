@@ -22,7 +22,7 @@ function ensureEmployeeDirectory_() {
     const original=sheet.getDataRange().getValues(),directory=DISKUM_EMPLOYEE_DIRECTORY;
     if(directory.length!==70||new Set(directory.map(p=>p.nama)).size!==70)throw new Error('Daftar pegawai tidak valid.');
     const rows=buildEmployeeMasterRows_(original.slice(1),directory),departments=new Set(rows.map(r=>r[4]));
-    if(departments.size!==9||new Set(rows.map(r=>String(r[0]))).size!==70)throw new Error('Bidang atau ID pegawai tidak valid.');
+    if(departments.size!==8||new Set(rows.map(r=>String(r[0]))).size!==70)throw new Error('Bidang atau ID pegawai tidak valid.');
     const backup=ss.copy('SI-TARI Backup Before Employee Import '+Utilities.formatDate(new Date(),'Asia/Jakarta','yyyy-MM-dd HHmmss'));
     if(DriveApp.getFileById(backup.getId()).getSharingAccess()!==DriveApp.Access.PRIVATE)throw new Error('Backup pegawai harus privat.');
     if(JSON.stringify(backup.getSheetByName('Master_Pegawai').getDataRange().getValues())!==JSON.stringify(original)||JSON.stringify(sheet.getDataRange().getValues())!==JSON.stringify(original))throw new Error('Verifikasi backup pegawai gagal.');
@@ -33,7 +33,7 @@ function ensureEmployeeDirectory_() {
       sheet.getRange(2,2,rows.length,1).setNumberFormat('@');
       sheet.getRange(2,1,rows.length,rows[0].length).setValues(rows);SpreadsheetApp.flush();
       if(sheet.getLastRow()!==71||JSON.stringify(sheet.getRange(2,1,70,rows[0].length).getValues())!==JSON.stringify(rows))throw new Error('Verifikasi impor pegawai gagal.');
-      const result={count:70,departments:9,withoutNip:rows.filter(r=>!r[1]).length,backupUrl:backup.getUrl(),at:new Date().toISOString()};props.setProperty(key,JSON.stringify(result));if(typeof invalidateMasterReadCache_==='function')invalidateMasterReadCache_(ss);return result;
+      const result={count:70,departments:8,withoutNip:rows.filter(r=>!r[1]).length,backupUrl:backup.getUrl(),at:new Date().toISOString()};props.setProperty(key,JSON.stringify(result));if(typeof invalidateMasterReadCache_==='function')invalidateMasterReadCache_(ss);return result;
     }catch(error){sheet.clearContents();sheet.getRange(1,1,original.length,original[0].length).setValues(original);SpreadsheetApp.flush();throw error;}
   }finally{lock.releaseLock();}
 }
