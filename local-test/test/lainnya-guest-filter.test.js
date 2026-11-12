@@ -176,6 +176,22 @@ test('Lainnya renders Semua | TLD | TDD filter buttons defaulting to Semua and h
   assert.match(card, /id="monthlyReportTableWrapper"/);
   assert.doesNotMatch(html, /#monthlyReportCard\s*>\s*div:nth-child\(2\)/);
 
+  const header = card.match(/<div id="monthlyReportHeader"[\s\S]*?(?=<div id="monthlyReportTableWrapper")/i)?.[0] || '';
+  assert.ok(header, 'monthlyReportHeader wraps title, filters, and export controls before table wrapper');
+  assert.match(header, /class="[^"]*\bflex\b[^"]*\bitems-center\b[^"]*\bjustify-between\b/);
+  assert.ok(header.indexOf('Laporan Tamu Bulanan') >= 0, 'title is in monthlyReportHeader');
+  assert.ok(header.indexOf('id="monthlyReportCount"') >= 0, 'visit count is in monthlyReportHeader');
+  assert.ok(header.indexOf('id="monthlyGuestFilterBar"') > header.indexOf('id="monthlyReportCount"'), 'filter bar follows title block');
+  assert.ok(header.indexOf('id="monthlyReportControls"') > header.indexOf('id="monthlyGuestFilterBar"'), 'export controls follow filter bar');
+  assert.ok(header.indexOf('id="reportMonth"') > header.indexOf('id="monthlyReportControls"'));
+  assert.ok(header.indexOf('id="monthlyPdf"') > header.indexOf('id="reportMonth"'));
+  assert.ok(header.indexOf('id="monthlyImage"') > header.indexOf('id="monthlyPdf"'));
+  assert.doesNotMatch(bar, /\bmt-4\b/, 'inline filter bar has no top margin pushing it onto a second row');
+  assert.match(html, /\.monthly-report-toolbar\s*\{[^}]*flex-direction:column[^}]*width:100%/);
+  assert.match(html, /#monthlyReportControls\s*\{[^}]*grid-template-columns:1fr 1fr/);
+  assert.match(html, /#monthlyGuestFilterBar\s*\{[^}]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)[^}]*margin-top:0/);
+  assert.doesNotMatch(html, /#monthlyReportCard\s*>\s*\.flex\s*>\s*\.flex/);
+
   // Verify all rendered client scripts parse cleanly without syntax errors.
   const scripts = [...html.matchAll(/<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map(m => m[1]);
   assert.ok(scripts.length >= 2);

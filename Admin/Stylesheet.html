@@ -592,9 +592,12 @@
     #todayMeetingsList .flex {flex-wrap:wrap;gap:10px;}
     #roomBadgesContainer {grid-template-columns:1fr!important;}
     #section-qrcode :is(button,input) {min-height:44px;}
-    #monthlyReportCard > .flex > .flex {display:grid;gap:10px;width:100%;grid-template-columns:1fr 1fr;}
-    #monthlyReportCard label,#reportMonth {grid-column:1 / -1;}
-    #monthlyGuestFilterBar {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%;gap:6px;margin-top:10px;}
+    #monthlyReportHeader {gap:8px;}
+    .monthly-report-toolbar {display:flex;flex-direction:column;align-items:stretch;width:100%;min-width:0;gap:8px;}
+    #monthlyReportControls {display:grid;gap:10px;width:100%;grid-template-columns:1fr 1fr;}
+    #monthlyReportControls label,#reportMonth {grid-column:1 / -1;}
+    #monthlyGuestFilterBar {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%;gap:6px;margin-top:0;}
+    .monthly-guest-filter-btn {min-width:0;padding-left:8px;padding-right:8px;}
     #monthlyReportTableWrapper {max-height:none;overflow:visible;}
     #monthlyReportCard :is(table,tbody,tr) {display:block;width:100%;}
     #monthlyReportCard thead {display:none;}
@@ -747,9 +750,8 @@
     #section-qrcode > div:first-child strong {font-size:14px;line-height:1.3;}
     #section-qrcode > div:first-child .grid button {font-size:14px!important;padding:6px 8px;min-height:44px!important;}
     #section-qrcode > div:first-child .grid .flex {gap:6px;}
-    #monthlyReportCard > .flex {gap:8px;}
-    #monthlyReportCard > .flex > .flex {grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;}
-    #monthlyReportCard label {grid-column:1;}
+    #monthlyReportControls {grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;}
+    #monthlyReportControls label {grid-column:1;align-self:center;}
     #reportMonth {grid-column:2 / -1;}
     #monthlyPdf {grid-column:1 / 3;}
     #monthlyImage {grid-column:3 / -1;}

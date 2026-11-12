@@ -454,33 +454,35 @@
         </div>
       </div>
       <div id="monthlyReportCard" class="bg-white rounded-3xl p-6 shadow-xs border border-slate-200/80">
-        <div class="flex flex-wrap items-center justify-between gap-4">
-          <div>
+        <div id="monthlyReportHeader" class="flex flex-wrap items-center justify-between gap-4">
+          <div class="min-w-0">
             <h2 class="text-xl font-bold text-slate-800"><i
                 class="fa-solid fa-file-lines mr-2 text-emerald-700"></i>Laporan Tamu Bulanan</h2>
             <p id="monthlyReportCount" class="text-xs text-slate-500 mt-1"></p>
           </div>
-          <div class="flex flex-wrap items-center gap-2"><label for="reportMonth"
-              class="text-xs font-semibold text-slate-600">Bulan</label><input type="month" id="reportMonth"
-              onchange="renderMonthlyReport()" class="rounded-xl border border-slate-200 px-3 py-2 text-xs"><button
-              type="button" id="monthlyPdf" onclick="exportMonthlyReport('pdf')" disabled
-              class="px-3 py-2 rounded-xl bg-gradient-to-r from-[#11504a] to-[#143238] text-white text-xs font-bold disabled:opacity-40"><i
-                class="fa-solid fa-file-pdf mr-1"></i>PDF</button><button type="button" id="monthlyImage"
-              onclick="exportMonthlyReport('image')" disabled
-              class="px-3 py-2 rounded-xl bg-teal-50 text-teal-800 text-xs font-bold disabled:opacity-40"><i
-                class="fa-solid fa-image mr-1"></i>Image (PNG)</button></div>
-        </div>
-        <div id="monthlyGuestFilterBar" role="group" aria-label="Filter jenis tamu"
-          class="inline-flex flex-wrap items-center gap-1.5 mt-4 p-1 rounded-2xl bg-slate-100 border border-slate-200/80">
-          <button type="button" id="monthlyFilterAll" data-guest-filter="all"
-            onclick="setMonthlyGuestFilter('all')" aria-pressed="true"
-            class="monthly-guest-filter-btn active-filter px-3.5 py-1.5 rounded-xl text-xs font-bold transition">Semua</button>
-          <button type="button" id="monthlyFilterTld" data-guest-filter="tld"
-            onclick="setMonthlyGuestFilter('tld')" aria-pressed="false"
-            class="monthly-guest-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-bold transition">TLD</button>
-          <button type="button" id="monthlyFilterTdd" data-guest-filter="tdd"
-            onclick="setMonthlyGuestFilter('tdd')" aria-pressed="false"
-            class="monthly-guest-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-bold transition">TDD</button>
+          <div class="monthly-report-toolbar flex flex-wrap items-center gap-3 min-w-0 max-w-full">
+            <div id="monthlyGuestFilterBar" role="group" aria-label="Filter jenis tamu"
+              class="inline-flex flex-wrap items-center gap-1.5 p-1 rounded-2xl bg-slate-100 border border-slate-200/80">
+              <button type="button" id="monthlyFilterAll" data-guest-filter="all"
+                onclick="setMonthlyGuestFilter('all')" aria-pressed="true"
+                class="monthly-guest-filter-btn active-filter px-3.5 py-1.5 rounded-xl text-xs font-bold transition">Semua</button>
+              <button type="button" id="monthlyFilterTld" data-guest-filter="tld"
+                onclick="setMonthlyGuestFilter('tld')" aria-pressed="false"
+                class="monthly-guest-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-bold transition">TLD</button>
+              <button type="button" id="monthlyFilterTdd" data-guest-filter="tdd"
+                onclick="setMonthlyGuestFilter('tdd')" aria-pressed="false"
+                class="monthly-guest-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-bold transition">TDD</button>
+            </div>
+            <div id="monthlyReportControls" class="flex flex-wrap items-center gap-2"><label for="reportMonth"
+                class="text-xs font-semibold text-slate-600">Bulan</label><input type="month" id="reportMonth"
+                onchange="renderMonthlyReport()" class="rounded-xl border border-slate-200 px-3 py-2 text-xs"><button
+                type="button" id="monthlyPdf" onclick="exportMonthlyReport('pdf')" disabled
+                class="px-3 py-2 rounded-xl bg-gradient-to-r from-[#11504a] to-[#143238] text-white text-xs font-bold disabled:opacity-40"><i
+                  class="fa-solid fa-file-pdf mr-1"></i>PDF</button><button type="button" id="monthlyImage"
+                onclick="exportMonthlyReport('image')" disabled
+                class="px-3 py-2 rounded-xl bg-teal-50 text-teal-800 text-xs font-bold disabled:opacity-40"><i
+                  class="fa-solid fa-image mr-1"></i>Image (PNG)</button></div>
+          </div>
         </div>
         <div id="monthlyReportTableWrapper" class="mt-4 max-h-[28rem] overflow-auto rounded-2xl border border-slate-100">
           <table class="w-full text-xs text-left">
