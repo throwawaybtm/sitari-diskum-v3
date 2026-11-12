@@ -32,9 +32,9 @@ test('Non-SPPD dashboard details open a read-only modal without approval actions
 });
 
 test('GAS dashboard supplies the contact and agenda fields used by the shared visitor row',()=>{
-  const context=vm.createContext({requireVisitAdmin_:()=>{},Utilities:{formatDate:()=> '2026-11-02'}});
+  const context=vm.createContext({requireVisitAdmin_:()=>{},Utilities:{formatDate:()=> '2026-11-05'}});
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../../Admin/Code.js'),'utf8'),context);
-  const row=[1,'TLD-02112026-001','luar_daerah','Instansi','Alamat',3,'Ketua','Anggota','Bidang','Agenda Kunjungan','Ketua','080000000001','2026-11-02','09:00','','','pic','PIC',1,'Menunggu Konfirmasi'];
+  const row=[1,'TLD-05112026-001','luar_daerah','Instansi','Alamat',3,'Ketua','Anggota','Bidang','Agenda Kunjungan','Ketua','080000000001','2026-11-05','09:00','','','pic','PIC',1,'Menunggu Konfirmasi'];
   context.getSpreadsheet=()=>({getSheetByName:name=>name==='Data_Tamu'?{getLastRow:()=>2,getLastColumn:()=>21,getRange:()=>({getValues:()=>[row]})}:null});
   const recent=context.getDashboardData().data.recentTamu[0];
   assert.equal(recent.keperluan,'Agenda Kunjungan');assert.equal(recent.narahubung_hp,'080000000001');

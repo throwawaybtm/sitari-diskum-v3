@@ -90,7 +90,8 @@ function createGasContext(options = {}) {
     Data_Tamu: makeSheet('Data_Tamu', [
       ['ID', 'Kode', 'Tipe', 'Instansi', 'Alamat', 'Jumlah', 'Ketua', 'Pengikut', 'Bidang', 'Keperluan', 'Narahubung', 'HP', 'Tanggal', 'Jam', 'Surat1', 'Surat2', 'LO_ID', 'LO_Nama', 'SPPD', 'Status', 'Created'],
       [1, 'TLD-31102026-001', 'luar_daerah', 'Instansi Lama', 'Batam', 1, 'Budi', '', 'Koperasi', 'Konsultasi', 'Budi', '0811', '2026-11-01', '09:00', '', '', '', '', 1, 'Diterima', '2026-11-01'],
-      [5, 'TLD-02112026-002', 'luar_daerah', 'Instansi Cutoff', 'Batam', 2, 'Siti', '', 'Koperasi', 'Koordinasi', 'Siti', '0812', '2026-11-02', '10:00', '', '', '', '', 1, 'Diterima', '2026-11-02']
+      [2, 'TDD-02112026-003', 'dalam_daerah_fo', 'Trial Nov 2', 'Batam', 1, 'Andi', '', 'Sekretariat', 'Trial', 'Andi', '0813', '2026-11-02', '09:00', '', '', '', '', 0, 'Non-SPPD', '2026-11-02'],
+      [5, 'TLD-05112026-002', 'luar_daerah', 'Instansi Cutoff', 'Batam', 2, 'Siti', '', 'Koperasi', 'Koordinasi', 'Siti', '0812', '2026-11-05', '10:00', '', '', '', '', 1, 'Diterima', '2026-11-05']
     ]),
     Data_Rapat: makeSheet('Data_Rapat', [
       ['ID', 'Kode', 'Judul', 'RoomID', 'RoomName', 'Tanggal', 'Mulai', 'Selesai', 'Bidang', 'Pimpinan', 'Jumlah', 'Agenda', 'Status', 'Created'],
@@ -104,7 +105,7 @@ function createGasContext(options = {}) {
     Kendali_SPPD: makeSheet('Kendali_SPPD', [
       ['ID', 'TamuID', 'Kode', 'Instansi', 'Ketua', 'Foto', 'Absen', 'Notulen', 'Status', 'TTD1', 'Nama1', 'Wkt1', 'TTD2', 'Nama2', 'Wkt2', 'Catatan'],
       [1, 1, 'TLD-31102026-001', 'Instansi Lama', 'Budi', '', '', '', 'Belum Lengkap', '', '', '', '', '', '', ''],
-      [2, 5, 'TLD-02112026-002', 'Instansi Cutoff', 'Siti', '', '', '', 'Belum Lengkap', '', '', '', '', '', '', '']
+      [2, 5, 'TLD-05112026-002', 'Instansi Cutoff', 'Siti', '', '', '', 'Belum Lengkap', '', '', '', '', '', '', '']
     ]),
     Master_Pegawai: makeSheet('Master_Pegawai', [
       ['ID', 'NIP', 'Nama', 'Jabatan', 'Bidang', 'Is_LO', 'Workload', 'Status', 'Pangkat']
@@ -293,8 +294,8 @@ test('all Admin RPCs fail closed before acquiring ScriptLock or triggering netwo
     () => c.getRapatCalendar(),
     () => c.getSppdList(),
     () => c.getMeetingRoomOptions(),
-    () => c.getVisitWorkflow({ kode_kunjungan: 'TLD-02112026-002' }),
-    () => c.saveVisitWorkflow({ kode_kunjungan: 'TLD-02112026-002', action: 'acknowledge' }),
+    () => c.getVisitWorkflow({ kode_kunjungan: 'TLD-05112026-002' }),
+    () => c.saveVisitWorkflow({ kode_kunjungan: 'TLD-05112026-002', action: 'acknowledge' }),
     () => c.getTddVisitEdit({ kode_kunjungan: 'TDD-02112026-003' }),
     () => c.submitManualVisitAttendance({ rapat_id: 7, member_ids: ['ketua'] }),
     () => c.submitAdminPresensiRapat({ rapat_id: 7, nama: 'Anon', jam_kehadiran: '09:10' }),
@@ -586,13 +587,13 @@ test('PUBLIC_DEV_MODE enables anonymous Admin workflow with Fonnte disabled ONLY
   assert.equal(devCtx.ctx.getPublicAttendanceCalendar().success, true);
 
   // Full Visit workflow with Fonnte disabled and ZERO external requests
-  let wf = devCtx.ctx.getVisitWorkflow({ kode_kunjungan: 'TLD-02112026-002' });
+  let wf = devCtx.ctx.getVisitWorkflow({ kode_kunjungan: 'TLD-05112026-002' });
   assert.equal(wf.success, true, wf.error);
   assert.equal(wf.data.fonnteDisabled, true);
   assert.equal(wf.data.publicDevMode, true);
 
   let step = devCtx.ctx.saveVisitWorkflow({
-    kode_kunjungan: 'TLD-02112026-002',
+    kode_kunjungan: 'TLD-05112026-002',
     version: wf.data.workflow.version,
     action: 'destinations',
     destinations: ['Bidang Pengembangan Usaha Mikro']
@@ -600,7 +601,7 @@ test('PUBLIC_DEV_MODE enables anonymous Admin workflow with Fonnte disabled ONLY
   assert.equal(step.success, true, step.error);
 
   step = devCtx.ctx.saveVisitWorkflow({
-    kode_kunjungan: 'TLD-02112026-002',
+    kode_kunjungan: 'TLD-05112026-002',
     version: step.data.workflow.version,
     action: 'notifyContact'
   });
@@ -611,7 +612,7 @@ test('PUBLIC_DEV_MODE enables anonymous Admin workflow with Fonnte disabled ONLY
   assert.equal(step.data.workflow.contactNotification.skipped, true);
 
   step = devCtx.ctx.saveVisitWorkflow({
-    kode_kunjungan: 'TLD-02112026-002',
+    kode_kunjungan: 'TLD-05112026-002',
     version: step.data.workflow.version,
     action: 'confirm'
   });
@@ -619,7 +620,7 @@ test('PUBLIC_DEV_MODE enables anonymous Admin workflow with Fonnte disabled ONLY
 
   const samplePdf = 'data:application/pdf;base64,' + Buffer.from('%PDF-1.4\n%test').toString('base64');
   step = devCtx.ctx.saveVisitWorkflow({
-    kode_kunjungan: 'TLD-02112026-002',
+    kode_kunjungan: 'TLD-05112026-002',
     version: step.data.workflow.version,
     action: 'disposisi',
     file: { name: 'disposisi.pdf', data: samplePdf }
@@ -627,7 +628,7 @@ test('PUBLIC_DEV_MODE enables anonymous Admin workflow with Fonnte disabled ONLY
   assert.equal(step.success, true, step.error);
 
   step = devCtx.ctx.saveVisitWorkflow({
-    kode_kunjungan: 'TLD-02112026-002',
+    kode_kunjungan: 'TLD-05112026-002',
     version: step.data.workflow.version,
     action: 'notify'
   });
@@ -636,7 +637,7 @@ test('PUBLIC_DEV_MODE enables anonymous Admin workflow with Fonnte disabled ONLY
   assert.ok(step.data.workflow.notifications.every(n => n.success && n.disabled && !n.sent));
 
   step = devCtx.ctx.saveVisitWorkflow({
-    kode_kunjungan: 'TLD-02112026-002',
+    kode_kunjungan: 'TLD-05112026-002',
     version: step.data.workflow.version,
     action: 'book',
     booking: { ruangan_id: 1, tanggal: '2026-11-15', jam_mulai: '09:00', jam_selesai: '10:30' }

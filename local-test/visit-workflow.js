@@ -423,7 +423,9 @@ module.exports = {
   createVisitWorkflow,
   PEMKO_OPD_OPTIONS: model.getPemkoOpdOptions_(),
   DISPLAY_START_DATE: model.DISPLAY_START_DATE_,
+  VISIT_DISPLAY_START_DATE: model.VISIT_DISPLAY_START_DATE_,
   normalizeJakartaDateKey: model.normalizeJakartaDateKey_,
   isDisplayDateOnOrAfterCutoff: model.isDisplayDateOnOrAfterCutoff_,
+  isVisitDisplayDateOnOrAfterCutoff: model.isVisitDisplayDateOnOrAfterCutoff_,
   parseVisitCodeDateKey: model.parseVisitCodeDateKey_
 };

@@ -45,6 +45,7 @@ function include(filename) {
 }
 
 const DISPLAY_START_DATE_ = '2026-11-02';
+const VISIT_DISPLAY_START_DATE_ = '2026-11-05';
 const JAKARTA_TIMEZONE_ = 'Asia/Jakarta';
 
 function formatDateInJakarta_(date) {
@@ -91,6 +92,10 @@ function isDisplayDateOnOrAfterCutoff_(val, cutoff) {
   return dateKey >= (cutoff || DISPLAY_START_DATE_);
 }
 
+function isVisitDisplayDateOnOrAfterCutoff_(val) {
+  return isDisplayDateOnOrAfterCutoff_(val, VISIT_DISPLAY_START_DATE_);
+}
+
 function buildVisitDateLookup_(ss) {
   const visitDatesByCode = new Map();
   const visitDatesById = new Map();
@@ -129,7 +134,7 @@ function filterSppdRowsByVisitDate_(ss, sppdRows, lookup) {
     } else {
       visitDate = parseVisitCodeDateKey_(codeKey) || normalizeJakartaDateKey_(r && r[16]);
     }
-    return isDisplayDateOnOrAfterCutoff_(visitDate);
+    return isVisitDisplayDateOnOrAfterCutoff_(visitDate);
   });
 }
 
@@ -428,7 +433,7 @@ function readDashboardData_(includeLoStats) {
       if (codeKey) visitDatesByCode.set(codeKey, dateKey);
       if (idKey) visitDatesById.set(idKey, dateKey);
     });
-    const rows = rawRows.filter(r => isDisplayDateOnOrAfterCutoff_(r[12]));
+    const rows = rawRows.filter(r => isVisitDisplayDateOnOrAfterCutoff_(r[12]));
     totalTamu = rows.length;
 
     rows.forEach(r => {
@@ -674,7 +679,7 @@ function getTamuList_(spreadsheet) {
   if (!sheet || sheet.getLastRow() <= 1) return { success: true, data: [] };
 
   const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).getValues()
-    .filter(r => isDisplayDateOnOrAfterCutoff_(r[12]));
+    .filter(r => isVisitDisplayDateOnOrAfterCutoff_(r[12]));
   return { success: true, data: rows.map(mapVisitRow_) };
 }
 function mapVisitRow_(r) {

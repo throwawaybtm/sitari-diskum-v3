@@ -7,7 +7,7 @@ const { completeTldPayload } = require('./tld-test-data');
 const { completeTddPayload } = require('./tdd-test-data');
 const { completeMeetingPayload } = require('./meeting-test-data');
 
-const FIXED_NOW = new Date('2026-11-04T18:30:00.000Z'); // 2026-11-05 01:30 Asia/Jakarta
+const FIXED_NOW = new Date('2026-11-05T18:30:00.000Z'); // 2026-11-06 01:30 Asia/Jakarta
 
 function buildTestSeed({ today, yesterday }) {
   const toCodeDate = d => d.split('-').reverse().join('');
@@ -172,17 +172,17 @@ test('default local store starts completely empty without hardcoded dummy record
 });
 
 test('uses the Jakarta calendar date for dashboard records', () => {
-  const store = createFixtureStore(FIXED_NOW, { seed: buildTestSeed({ today: '2026-11-05', yesterday: '2026-11-04' }) });
+  const store = createFixtureStore(FIXED_NOW, { seed: buildTestSeed({ today: '2026-11-06', yesterday: '2026-11-05' }) });
   const dashboard = store.responses.getDashboardData.data;
 
   assert.equal(dashboard.todayMeetings.length, 1);
-  assert.equal(dashboard.todayMeetings[0].tanggal, '2026-11-05');
+  assert.equal(dashboard.todayMeetings[0].tanggal, '2026-11-06');
   assert.equal(dashboard.stats.tamuHariIni, 2);
   assert.equal(dashboard.stats.rapatHariIni, 1);
 });
 
 test('provides coherent FO and outside visitor statistics', () => {
-  const store = createFixtureStore(FIXED_NOW, { seed: buildTestSeed({ today: '2026-11-05', yesterday: '2026-11-04' }) });
+  const store = createFixtureStore(FIXED_NOW, { seed: buildTestSeed({ today: '2026-11-06', yesterday: '2026-11-05' }) });
   const visitors = store.responses.getTamuList.data;
   const stats = store.responses.getDashboardData.data.stats;
 
@@ -200,7 +200,7 @@ test('provides coherent FO and outside visitor statistics', () => {
 });
 
 test('covers incomplete, pending, and verified SPPD states', () => {
-  const store = createFixtureStore(FIXED_NOW, { seed: buildTestSeed({ today: '2026-11-05', yesterday: '2026-11-04' }) });
+  const store = createFixtureStore(FIXED_NOW, { seed: buildTestSeed({ today: '2026-11-06', yesterday: '2026-11-05' }) });
   const statuses = store.responses.getSppdList.data.map(item => item.status_sppd);
 
   assert.deepEqual(statuses, [
@@ -211,7 +211,7 @@ test('covers incomplete, pending, and verified SPPD states', () => {
 });
 
 test('keeps IDs unique and aligns master room directories without dummy markers', () => {
-  const store = createFixtureStore(FIXED_NOW, { seed: buildTestSeed({ today: '2026-11-05', yesterday: '2026-11-04' }) });
+  const store = createFixtureStore(FIXED_NOW, { seed: buildTestSeed({ today: '2026-11-06', yesterday: '2026-11-05' }) });
   const visitors = store.responses.getTamuList.data;
   const meetings = store.responses.getRapatCalendar.data;
   const masters = store.responses.getMasterData.data;

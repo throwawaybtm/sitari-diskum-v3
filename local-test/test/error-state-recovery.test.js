@@ -473,8 +473,8 @@ test('late failed getTamuList cannot clobber a newer successful reload with erro
   assert.equal(elements.monthlyReportCount.textContent, '1 kunjungan · 11-2026');
 });
 
-test('November 2, 2026 Asia/Jakarta cutoff remains intact across GAS Code.js, local HTTP server, Buku Tamu, and Laporan Bulanan', async () => {
-  // Verify GAS Data_Tamu cutoff across UTC midnight boundary (16:59:59Z = Nov 1 WIB, 17:00:00Z = Nov 2 WIB)
+test('November 5, 2026 Asia/Jakarta visit cutoff remains intact across GAS Code.js, local HTTP server, Buku Tamu, and Laporan Bulanan', async () => {
+  // Verify GAS Data_Tamu cutoff across UTC midnight boundary (16:59:59Z = Nov 4 WIB, 17:00:00Z = Nov 5 WIB)
   const gasContext = vm.createContext({
     requireVisitAdmin_: () => {},
     Utilities: {
@@ -490,11 +490,12 @@ test('November 2, 2026 Asia/Jakarta cutoff remains intact across GAS Code.js, lo
 
   const tamuRows = [
     ['id', 'kode_kunjungan', 'tipe_tamu', 'instansi', 'alamat', 'jumlah_orang', 'ketua_nama', 'pengikut_list', 'tujuan_bidang', 'keperluan', 'narahubung_nama', 'narahubung_hp', 'tanggal_kunjungan', 'jam_kunjungan', 'surat_kunjungan_file', 'surat_tugas_file', 'lo_id', 'lo_nama', 'bawa_sppd', 'status_kunjungan', 'created_at'],
-    [1, 'TLD-01112026-001', 'luar_daerah', 'Excluded Pre-Nov2 UTC', 'Jl. 1', 1, 'Ketua 1', '', 'Sekretariat', 'Agenda Nov 1 UTC', 'Ketua 1', '08111111111', vm.runInContext("new Date('2026-11-01T16:59:59Z')", gasContext), '23:59', '', '', 'lo1', 'LO', 1, 'Menunggu Konfirmasi', ''],
-    [2, 'TLD-01112026-002', 'luar_daerah', 'Excluded Pre-Nov2 ISO', 'Jl. 1b', 1, 'Ketua 1b', '', 'Sekretariat', 'Agenda Nov 1 ISO', 'Ketua 1b', '08111111112', '2026-11-01T16:59:59Z', '23:59', '', '', 'lo1', 'LO', 1, 'Menunggu Konfirmasi', ''],
-    [3, 'TLD-02112026-001', 'luar_daerah', 'Included Midnight WIB', 'Jl. 2', 1, 'Ketua 2', '', 'Sekretariat', 'Agenda Nov 2 Midnight WIB', 'Ketua 2', '08222222222', vm.runInContext("new Date('2026-11-01T17:00:00Z')", gasContext), '00:00', '', '', 'lo1', 'LO', 1, 'Menunggu Konfirmasi', ''],
-    [4, 'TLD-02112026-002', 'luar_daerah', 'Included Midnight WIB ISO', 'Jl. 2b', 1, 'Ketua 2b', '', 'Sekretariat', 'Agenda Nov 2 Midnight ISO', 'Ketua 2b', '08222222223', '2026-11-01T17:00:00Z', '00:00', '', '', 'lo1', 'LO', 1, 'Menunggu Konfirmasi', ''],
-    [5, 'TDD-03112026-001', 'dalam_daerah_fo', 'Included Nov 3 String', 'Jl. 3', 1, 'Ketua 3', '', 'Bidang Usaha Mikro', 'Agenda Nov 3', 'Ketua 3', '08333333333', '2026-11-03', '09:30', '', '', 'lo1', 'LO', 0, 'Non-SPPD', '']
+    [1, 'TLD-02112026-001', 'luar_daerah', 'Excluded Nov 2 Trial', 'Jl. 0', 1, 'Ketua 0', '', 'Sekretariat', 'Agenda Nov 2 Trial', 'Ketua 0', '08111111110', '2026-11-02', '09:00', '', '', 'lo1', 'LO', 1, 'Menunggu Konfirmasi', ''],
+    [2, 'TLD-04112026-001', 'luar_daerah', 'Excluded Pre-Nov5 UTC', 'Jl. 1', 1, 'Ketua 1', '', 'Sekretariat', 'Agenda Nov 4 UTC', 'Ketua 1', '08111111111', vm.runInContext("new Date('2026-11-04T16:59:59Z')", gasContext), '23:59', '', '', 'lo1', 'LO', 1, 'Menunggu Konfirmasi', ''],
+    [3, 'TLD-04112026-002', 'luar_daerah', 'Excluded Pre-Nov5 ISO', 'Jl. 1b', 1, 'Ketua 1b', '', 'Sekretariat', 'Agenda Nov 4 ISO', 'Ketua 1b', '08111111112', '2026-11-04T16:59:59Z', '23:59', '', '', 'lo1', 'LO', 1, 'Menunggu Konfirmasi', ''],
+    [4, 'TLD-05112026-001', 'luar_daerah', 'Included Midnight WIB', 'Jl. 2', 1, 'Ketua 2', '', 'Sekretariat', 'Agenda Nov 5 Midnight WIB', 'Ketua 2', '08222222222', vm.runInContext("new Date('2026-11-04T17:00:00Z')", gasContext), '00:00', '', '', 'lo1', 'LO', 1, 'Menunggu Konfirmasi', ''],
+    [5, 'TLD-05112026-002', 'luar_daerah', 'Included Midnight WIB ISO', 'Jl. 2b', 1, 'Ketua 2b', '', 'Sekretariat', 'Agenda Nov 5 Midnight ISO', 'Ketua 2b', '08222222223', '2026-11-04T17:00:00Z', '00:00', '', '', 'lo1', 'LO', 1, 'Menunggu Konfirmasi', ''],
+    [6, 'TDD-06112026-001', 'dalam_daerah_fo', 'Included Nov 6 String', 'Jl. 3', 1, 'Ketua 3', '', 'Bidang Usaha Mikro', 'Agenda Nov 6', 'Ketua 3', '08333333333', '2026-11-06', '09:30', '', '', 'lo1', 'LO', 0, 'Non-SPPD', '']
   ];
   const fakeSpreadsheet = {
     getSheetByName: name => name === 'Data_Tamu' ? {
@@ -505,15 +506,16 @@ test('November 2, 2026 Asia/Jakarta cutoff remains intact across GAS Code.js, lo
   };
   const gasResult = gasContext.getTamuList(fakeSpreadsheet);
   assert.equal(gasResult.success, true);
-  assert.deepEqual(gasResult.data.map(item => item.instansi), ['Included Midnight WIB', 'Included Midnight WIB ISO', 'Included Nov 3 String']);
+  assert.deepEqual(gasResult.data.map(item => item.instansi), ['Included Midnight WIB', 'Included Midnight WIB ISO', 'Included Nov 6 String']);
 
   // Verify local HTTP server feeds cutoff-compliant records cleanly into Admin UI & Laporan Bulanan
   const server = createLocalTestServer({
-    now: new Date('2026-11-03T10:00:00+07:00'),
+    now: new Date('2026-11-06T10:00:00+07:00'),
     seed: {
       visitors: [
-        { id: 1, kode_kunjungan: 'TLD-01112026-001', tipe_tamu: 'luar_daerah', instansi: 'Excluded Nov 1 Local', ketua_nama: 'A', tujuan_bidang: 'Sekretariat', keperluan: 'Old', tanggal_kunjungan: '2026-11-01', jam_kunjungan: '10:00', bawa_sppd: true, status_kunjungan: 'Menunggu Konfirmasi' },
-        { id: 2, kode_kunjungan: 'TLD-02112026-001', tipe_tamu: 'luar_daerah', instansi: 'Included Nov 2 Local', ketua_nama: 'B', tujuan_bidang: 'Sekretariat', keperluan: 'Valid', tanggal_kunjungan: '2026-11-02', jam_kunjungan: '09:00', bawa_sppd: true, status_kunjungan: 'Menunggu Konfirmasi' }
+        { id: 1, kode_kunjungan: 'TDD-02112026-018', tipe_tamu: 'dalam_daerah_fo', instansi: 'Excluded Nov 2 Local', ketua_nama: 'A0', tujuan_bidang: 'Sekretariat', keperluan: 'Trial', tanggal_kunjungan: '2026-11-02', jam_kunjungan: '10:00', bawa_sppd: false, status_kunjungan: 'Non-SPPD' },
+        { id: 2, kode_kunjungan: 'TLD-04112026-001', tipe_tamu: 'luar_daerah', instansi: 'Excluded Nov 4 Local', ketua_nama: 'A', tujuan_bidang: 'Sekretariat', keperluan: 'Old', tanggal_kunjungan: '2026-11-04', jam_kunjungan: '10:00', bawa_sppd: true, status_kunjungan: 'Menunggu Konfirmasi' },
+        { id: 3, kode_kunjungan: 'TLD-05112026-001', tipe_tamu: 'luar_daerah', instansi: 'Included Nov 5 Local', ketua_nama: 'B', tujuan_bidang: 'Sekretariat', keperluan: 'Valid', tanggal_kunjungan: '2026-11-05', jam_kunjungan: '09:00', bawa_sppd: true, status_kunjungan: 'Menunggu Konfirmasi' }
       ]
     }
   });
@@ -524,8 +526,8 @@ test('November 2, 2026 Asia/Jakarta cutoff remains intact across GAS Code.js, lo
     const { context, elements } = createAdminHarness((url, opts) => fetch(`${baseUrl}${url}`, opts));
     await context.loadAllDashboard();
     assert.equal(context.getAllTamuData().length, 1);
-    assert.match(elements.tamuTableBody.innerHTML, /Included Nov 2 Local/);
-    assert.doesNotMatch(elements.tamuTableBody.innerHTML, /Excluded Nov 1 Local/);
+    assert.match(elements.tamuTableBody.innerHTML, /Included Nov 5 Local/);
+    assert.doesNotMatch(elements.tamuTableBody.innerHTML, /Excluded Nov [24] Local/);
     assert.equal(elements.monthlyReportCount.textContent, '1 kunjungan · 11-2026');
   } finally {
     server.close();

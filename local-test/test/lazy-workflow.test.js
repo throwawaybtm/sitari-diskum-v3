@@ -53,11 +53,11 @@ test('a visit without workflow imports only its own legacy evidence row',()=>{
 });
 
 test('local tab responses expose only the requested stage data and retain full API compatibility',()=>{
-  const store=require('../fixtures').createFixtureStore(new Date('2026-11-02T05:00:00Z'),{
+  const store=require('../fixtures').createFixtureStore(new Date('2026-11-05T05:00:00Z'),{
     seed:{visitors:[{
-      id:1,kode_kunjungan:'TLD-02112026-001',tipe_tamu:'luar_daerah',instansi:'Dinas Koperasi Uji',alamat:'Batam',
+      id:1,kode_kunjungan:'TLD-05112026-001',tipe_tamu:'luar_daerah',instansi:'Dinas Koperasi Uji',alamat:'Batam',
       jumlah_orang:2,ketua_nama:'Ketua Uji',pengikut_list:'Anggota Uji',tujuan_bidang:'Sekretariat',
-      keperluan:'Koordinasi',narahubung_hp:'081200000001',tanggal_kunjungan:'2026-11-02',jam_kunjungan:'09:00',
+      keperluan:'Koordinasi',narahubung_hp:'081200000001',tanggal_kunjungan:'2026-11-05',jam_kunjungan:'09:00',
       lo_nama:'PIC Uji',bawa_sppd:true,status_kunjungan:'Menunggu Konfirmasi'
     }]}
   });const visit=store.responses.getTamuList.data.find(v=>v.tipe_tamu==='luar_daerah');

@@ -10,6 +10,7 @@ const {
   PEMKO_OPD_OPTIONS,
   normalizeJakartaDateKey,
   isDisplayDateOnOrAfterCutoff,
+  isVisitDisplayDateOnOrAfterCutoff,
   parseVisitCodeDateKey
 } = require('./visit-workflow');
 const { jsPDF } = require('./vendor/jspdf.umd.min.js');
@@ -130,7 +131,7 @@ function createFixtureStore(now = new Date(), options = {}) {
   }
 
   function visibleVisitors() {
-    return visitors.filter(item => isDisplayDateOnOrAfterCutoff(item.tanggal_kunjungan));
+    return visitors.filter(item => isVisitDisplayDateOnOrAfterCutoff(item.tanggal_kunjungan));
   }
 
   function visibleMeetings() {
@@ -158,7 +159,7 @@ function createFixtureStore(now = new Date(), options = {}) {
       } else {
         resolvedDate = parseVisitCodeDateKey(codeKey) || normalizeJakartaDateKey(item && item.waktu_persetujuan_kasubag);
       }
-      return isDisplayDateOnOrAfterCutoff(resolvedDate);
+      return isVisitDisplayDateOnOrAfterCutoff(resolvedDate);
     });
   }
 
@@ -169,7 +170,7 @@ function createFixtureStore(now = new Date(), options = {}) {
     const filteredSppd = visibleSppd();
     return {
       totalTamu: filteredVisitors.length,
-      tamuHariIni: filteredVisitors.filter(item => normalizeJakartaDateKey(item.tanggal_kunjungan) === currentDay && isDisplayDateOnOrAfterCutoff(item.tanggal_kunjungan)).length,
+      tamuHariIni: filteredVisitors.filter(item => normalizeJakartaDateKey(item.tanggal_kunjungan) === currentDay && isVisitDisplayDateOnOrAfterCutoff(item.tanggal_kunjungan)).length,
       tamuLuar: filteredVisitors.filter(item => item.tipe_tamu === 'luar_daerah').length,
       tamuFo: filteredVisitors.filter(item => item.tipe_tamu === 'dalam_daerah_fo').length,
       rapatHariIni: filteredMeetings.filter(item => normalizeJakartaDateKey(item.tanggal) === currentDay && item.status !== 'Ditunda').length,

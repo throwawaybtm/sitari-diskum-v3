@@ -577,22 +577,22 @@ test('attendance ordering is consistent across Lihat Presensi (getAgendaAttendan
 
   // 5. Local HTTP served Presensi pages include red * on Jabatan and HTTP API endpoints stay consistent
   const server = createLocalTestServer({
-    now: () => new Date('2026-11-03T12:00:00Z'),
+    now: () => new Date('2026-11-06T12:00:00Z'),
     seed({ visitors, meetings, sppd, visitWorkflow, rooms }) {
       const visit = {
-        id: 1, kode_kunjungan: 'TLD-02112026-001', tipe_tamu: 'luar_daerah', instansi: 'Dinas Koperasi Uji HTTP',
+        id: 1, kode_kunjungan: 'TLD-05112026-001', tipe_tamu: 'luar_daerah', instansi: 'Dinas Koperasi Uji HTTP',
         alamat: 'Batam', jumlah_orang: 2, ketua_nama: 'Ketua HTTP', pengikut_list: 'Anggota HTTP',
         tujuan_bidang: 'Sekretariat', keperluan: 'Koordinasi', narahubung_hp: '081200000001',
-        tanggal_kunjungan: '2026-11-02', jam_kunjungan: '09:00', lo_id: '', lo_nama: 'PIC HTTP',
+        tanggal_kunjungan: '2026-11-05', jam_kunjungan: '09:00', lo_id: '', lo_nama: 'PIC HTTP',
         bawa_sppd: true, status_kunjungan: 'Selesai'
       };
       visitors.push(visit);
-      sppd.push({ id: 1, tamu_id: 1, kode_kunjungan: visit.kode_kunjungan, instansi: visit.instansi, ketua_nama: visit.ketua_nama, file_foto: '/f', file_absen: '/a', file_notulen: '/n', status_sppd: 'Sah & Terverifikasi', disetujui_kasubag: 1, waktu_persetujuan_kasubag: '2026-11-02 15:00:00' });
-      const booking = { id: 101, kode_rapat: 'VISIT-' + visit.kode_kunjungan, judul_rapat: 'Kunjungan HTTP', ruangan_id: rooms[0].id, nama_ruangan: rooms[0].nama_ruangan, tanggal: '2026-11-02', jam_mulai: '09:00', jam_selesai: '10:30', penyelenggara_bidang: 'Sekretariat', pimpinan_rapat: 'PIC HTTP', jumlah_peserta: 2, agenda: 'Koordinasi', status: 'Selesai', kode_kunjungan: visit.kode_kunjungan };
+      sppd.push({ id: 1, tamu_id: 1, kode_kunjungan: visit.kode_kunjungan, instansi: visit.instansi, ketua_nama: visit.ketua_nama, file_foto: '/f', file_absen: '/a', file_notulen: '/n', status_sppd: 'Sah & Terverifikasi', disetujui_kasubag: 1, waktu_persetujuan_kasubag: '2026-11-05 15:00:00' });
+      const booking = { id: 101, kode_rapat: 'VISIT-' + visit.kode_kunjungan, judul_rapat: 'Kunjungan HTTP', ruangan_id: rooms[0].id, nama_ruangan: rooms[0].nama_ruangan, tanggal: '2026-11-05', jam_mulai: '09:00', jam_selesai: '10:30', penyelenggara_bidang: 'Sekretariat', pimpinan_rapat: 'PIC HTTP', jumlah_peserta: 2, agenda: 'Koordinasi', status: 'Selesai', kode_kunjungan: visit.kode_kunjungan };
       meetings.push(booking);
       visitWorkflow.seedVisit(visit, { version: 5, status: 'Selesai', booking, destinations: { bidang: visit.tujuan_bidang, pic: visit.lo_nama, picIds: '' }, files: {}, history: [] }, [
-        { id: 1, rapat_id: 101, kategori: 'Tamu_Luar', nama: 'Ketua HTTP', jabatan: 'Ketua', nama_opd: visit.instansi, waktu: '2026-11-02 09:05:00', member_id: 'ketua' },
-        { id: 2, rapat_id: 101, kategori: 'Tamu_Luar', nama: 'Anggota HTTP', jabatan: 'Anggota', nama_opd: visit.instansi, waktu: '2026-11-02 09:10:00', member_id: 'anggota-1' }
+        { id: 1, rapat_id: 101, kategori: 'Tamu_Luar', nama: 'Ketua HTTP', jabatan: 'Ketua', nama_opd: visit.instansi, waktu: '2026-11-05 09:05:00', member_id: 'ketua' },
+        { id: 2, rapat_id: 101, kategori: 'Tamu_Luar', nama: 'Anggota HTTP', jabatan: 'Anggota', nama_opd: visit.instansi, waktu: '2026-11-05 09:10:00', member_id: 'anggota-1' }
       ]);
     }
   });
