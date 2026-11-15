@@ -18,6 +18,7 @@ AGENTS.md is the shared rulebook (Codex and Antigravity read it too). Do not edi
 - Load SITARI_AGENT_SKILLS.md, the handoff, GLOSSARY.md or ADRs only when the task needs them.
 
 ## Skills
+- Project skills: `sitari-knowledge` (architecture, sheets, code map, tests - load before planning instead of reading big files) and `sitari-revision` (procedure for every client revision, branch + draft PR handoff).
 - Superpowers is optional, never mandatory: SITARI_AGENT_SKILLS.md ("do not invoke ceremony mechanically") takes precedence over using-superpowers' 1% rule. Brainstorming only for ambiguous new behavior; systematic-debugging for defects; verification-before-completion always.
 - Security-sensitive diffs (auth, locks, Public wrappers, uploads): `specialist` with Trail of Bits differential-review / insecure-defaults if installed.
 - Keep the client-approved UI; frontend-design style guidance does not override Admin/Stylesheet.html.
