@@ -8,8 +8,8 @@ description: Step-by-step workflow for implementing an approved SITARI client re
 Load `sitari-knowledge` for architecture, data model and test map. Follow `SITARI_AGENT_SKILLS.md` for style; this skill is the procedure.
 
 ## 0. Start or resume
-- **Resume:** `git fetch origin`, switch to the revision branch, read the open PR description (it is the handoff note), `git log --oneline origin/client/revisions-2026-11-10..HEAD`.
-- **Start:** branch from the latest client branch: `git switch -c rev/<Rnn>-<slug> origin/client/revisions-2026-11-10`. Record branch + base SHA.
+- **Resume:** `git fetch origin`, switch to the revision branch, read the open PR description (it is the handoff note), `git log --oneline origin/client/revisions-2026-11-16..HEAD`.
+- **Start:** branch from the latest client branch: `git switch -c rev/<Rnn>-<slug> origin/client/revisions-2026-11-16`. Record branch + base SHA.
 - Baseline: `node local-test/run-synthetic-tests.js`, record counts.
 
 ## 1. Pin the requirement
@@ -38,7 +38,7 @@ Dispatch `scout` with concrete identifiers and areas. Ask for path:line per hop 
 
 ## 6. Checkpoint (every green step, and before leaving a PC)
 - Commit one coherent unit, push the revision branch: `git push -u origin rev/<...>`.
-- Open/refresh the **draft PR** into `client/revisions-2026-11-10`. Keep its description current:
+- Open/refresh the **draft PR** into `client/revisions-2026-11-16`. Keep its description current:
   `Client wording | Acceptance checklist (ticked) | Done | Next | Tests (cmd, SHA, counts) | Release notes (Public rebuild? migration? owner checks)`.
 
 ## 7. Finish
