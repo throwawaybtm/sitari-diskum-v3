@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(git status *)",
+      "Bash(git log *)",
+      "Bash(git diff *)",
+      "Bash(git show *)",
+      "Bash(git grep *)",
+      "Bash(git ls-files *)",
+      "Bash(node local-test/run-synthetic-tests.js *)",
+      "Bash(node local-test/run-synthetic-tests.js)",
+      "Bash(node --test local-test/test/*)",
+      "Bash(node local-test/setup-local.js --check)"
+    ],
+    "ask": [
+      "Bash(git push *)",
+      "Bash(git commit *)",
+      "Bash(git checkout *)",
+      "Bash(git switch *)",
+      "Bash(npm install *)",
+      "Bash(npx *)",
+      "WebFetch"
+    ],
+    "deny": [
+      "Read(/local-test/vendor/**)",
+      "Read(/Admin/DeploymentConfig.js)",
+      "Read(/Admin/EmployeeDirectory.js)",
+      "Read(/Admin/PublicIntake.js)",
+      "Read(/Admin/VisitPicContacts.js)",
+      "Read(/Tamu-FO/Destinations.js)",
+      "Read(/Tamu-Luar/Destinations.js)",
+      "Read(~/.clasprc.json)",
+      "Read(**/.clasprc.json)",
+      "Edit(/Public/**)",
+      "Edit(/deployments/**)",
+      "Edit(/AGENTS.md)",
+      "Bash(clasp push *)",
+      "Bash(clasp deploy *)",
+      "Bash(clasp pull *)",
+      "Bash(clasp run *)",
+      "Bash(git push --force *)",
+      "mcp__clasp__push_files",
+      "mcp__clasp__pull_files",
+      "mcp__clasp__create_project",
+      "mcp__clasp__clone_project"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/sitari-guard.js\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+  "extraKnownMarketplaces": {
+    "superpowers-dev": {
+      "source": {
+        "source": "github",
+        "repo": "obra/superpowers",
+        "ref": "22f0b463e7a5e579904dd6211a520321035526f7"
+      }
+    },
+    "trailofbits": {
+      "source": {
+        "source": "github",
+        "repo": "trailofbits/skills",
+        "ref": "149d7b21f4067765b82e67029730b42d228ef4b4"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "superpowers@superpowers-dev": true,
+    "differential-review@trailofbits": true,
+    "insecure-defaults@trailofbits": true
+  }
+}
