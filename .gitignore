@@ -40,8 +40,6 @@ node_modules/
 /maintenance/*
 !/maintenance/build-public.js
 !/maintenance/build-legacy-tdd.js
-!/maintenance/build-tailwind.js
-!/maintenance/tailwind/
 !/maintenance/templates/
 
 # Tests that repeat private PIC contact literals (placeholder copies are versioned)
