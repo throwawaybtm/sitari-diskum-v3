@@ -26,6 +26,9 @@ AGENTS.md is the shared rulebook (Codex and Antigravity read it too). Do not edi
 ## Verify
 `node local-test/run-synthetic-tests.js` (287/287 at 0de798d). Focused file first, full suite before any completion claim.
 
+## Autonomous development
+Inside the hard stops below, work end to end without asking: plan, code, run focused then full tests, fix, re-test, commit, push your own branch and open a draft PR. Commit, push (not to main), checkout/switch, `npm ci`/`npm install`, `npx playwright`, the local-test scripts and WebFetch are allowed in `.claude/settings.json` (the hook still blocks main, force push and destructive git). Stop and ask only at a hard stop or when client-facing behaviour is ambiguous. Merging a PR stays with the owner unless the owner has given a standing merge permission in this repo's instructions. Prefer cloud sessions for autonomous runs: they have no real private config and no clasp login.
+
 ## Hard stops (also enforced by .claude/hooks/sitari-guard.js and settings deny rules)
 No clasp push/deploy/pull/run, no Public rebuild, no live Sheets/Drive/Fonnte, no merge or push to main, no force push or history rewrite without the owner's explicit approval in this session.
 
