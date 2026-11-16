@@ -80,7 +80,8 @@ test('GAS registration saves all selected fields and PICs in the shared row', ()
   const context = loadTld();
   const options = context.getTldPublicDestinations_();
   const rows = [];
-  const sheet = { getLastRow: () => 1, appendRow: row => rows.push(row) };
+  const formats = [];
+  const sheet = { getLastRow: () => 1, getRange: (row, column, height, width) => ({ setNumberFormat: format => formats.push({ column, width, format }) }), appendRow: row => rows.push(row) };
   context.LockService = { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) };
   context.Utilities = { formatDate: () => '2026-10-26 10:00:00' };
   context.getSharedSpreadsheet_ = () => ({ getSheetByName: () => sheet });
@@ -93,6 +94,7 @@ test('GAS registration saves all selected fields and PICs in the shared row', ()
   assert.equal(rows.length, 2, 'TLD creates both a visit and its SPPD record');
   assert.equal(rows[0][18], 1, 'stale checkbox values cannot bypass the TLD workflow');
   assert.equal(rows[0][19], 'Menunggu Konfirmasi');
+  assert.ok(formats.some(f => f.format === '@' && f.column <= 12 && f.column + f.width > 12), 'WhatsApp column is text-formatted before append so the leading 0 survives');
   assert.equal(rows[0][8], result.data.tujuan_bidang);
   assert.equal(rows[0][17], '');
   assert.equal(result.data.lo_nama, rows[0][17]);

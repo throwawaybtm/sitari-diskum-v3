@@ -211,6 +211,13 @@ function formatTimeVal(val) {
   return String(val);
 }
 
+/** Keep WhatsApp numbers exactly as entered. Sheets drops the leading 0 of numeric-looking cells, so restore it for legacy rows. */
+function formatPhoneVal_(val) {
+  if (val === null || val === undefined || val === '') return '';
+  const text = String(val).trim();
+  return /^8\d{8,12}$/.test(text) ? '0' + text : text;
+}
+
 /** Read sheet-local wall time; never treat a bare 12-hour cell display as authoritative. */
 function normalizeMeetingTime_(value) {
   if(typeof value==='number'&&Number.isFinite(value)){
@@ -485,7 +492,7 @@ function readDashboardData_(includeLoStats) {
       pengikut_list: r[7],
       tujuan_bidang: r[8],
       keperluan: r[9],
-      narahubung_hp: r[11],
+      narahubung_hp: formatPhoneVal_(r[11]),
       tanggal_kunjungan: formatDateVal(r[12]),
       jam_kunjungan: formatTimeVal(r[13]),
       lo_nama: r[17],
@@ -727,7 +734,7 @@ function mapVisitRow_(r) {
     tujuan_bidang: r[8],
     keperluan: r[9],
     narahubung_nama: r[10],
-    narahubung_hp: r[11],
+    narahubung_hp: formatPhoneVal_(r[11]),
     tanggal_kunjungan: formatDateVal(r[12]),
     jam_kunjungan: formatTimeVal(r[13]),
     surat_kunjungan_file: r[14],
@@ -1213,6 +1220,7 @@ function savePresensiRapat_(p, source) {
   if(sheet.getLastColumn()<12)sheet.getRange(1,11,1,2).setValues([['Anggota Kunjungan ID','Sumber Presensi']]);
   if(sheet.getLastColumn()<13)sheet.getRange(1,13).setValue('Waktu Pencatatan');
   const nextId = nextRecordId_(sheet);
+  sheet.getRange(sheet.getLastRow()+1,9).setNumberFormat('@');
   if(source==='AdminEntry')sheet.getRange(sheet.getLastRow()+1,10).setNumberFormat('@');
 
   sheet.appendRow([

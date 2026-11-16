@@ -38,7 +38,8 @@ test('GAS TDD records rombongan members, headcount, server arrival and Non-SPPD,
   const context = loadFo();
   const rows = [];
   const touched = [];
-  const sheet = { getLastRow: () => 1, appendRow: row => rows.push(row) };
+  const formats = [];
+  const sheet = { getLastRow: () => 1, getRange: (row, column, height, width) => ({ setNumberFormat: format => formats.push({ column, width, format }) }), appendRow: row => rows.push(row) };
   context.LockService = { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) };
   context.Utilities = { formatDate: (date, timezone, format) => ({
     'yyyy-MM-dd': '2026-10-26', 'HH:mm': '20:45', 'yyyy-MM-dd HH:mm:ss': '2026-10-26 20:45:00'
@@ -53,6 +54,7 @@ test('GAS TDD records rombongan members, headcount, server arrival and Non-SPPD,
   assert.equal(rows[0][6], 'Ketua FO');
   assert.equal(rows[0][7], 'Anggota Satu\nAnggota Dua');
   assert.equal(rows[0][13], '20:45');
+  assert.ok(formats.some(f => f.format === '@' && f.column <= 12 && f.column + f.width > 12), 'WhatsApp column is text-formatted before append so the leading 0 survives');
   assert.equal(rows[0][18], 0);
   assert.equal(response.data.kode_kunjungan, 'TDD-26102026-001');
   assert.equal(response.data.lo_nama, picFor('pengawasan-koperasi'));

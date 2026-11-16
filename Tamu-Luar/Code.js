@@ -201,6 +201,7 @@ function registerTamuLuar(payload) {
       ? saveBase64ToDrive_(payload.surat_tugas_base64, `Surat_Tugas_${kodeKunjungan}`, 'application/pdf')
       : '';
 
+    sheetTamu.getRange(sheetTamu.getLastRow() + 1, 12, 1, 3).setNumberFormat('@');
     sheetTamu.appendRow([
       nextId, kodeKunjungan, 'luar_daerah', payload.instansi, payload.alamat || '',
       Number(payload.jumlah_orang) || 1, payload.ketua_nama, payload.pengikut_list || '',
