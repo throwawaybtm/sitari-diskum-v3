@@ -6,7 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <?!= include('MobileBase'); ?>
   <title>Dashboard Presensi</title>
-  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
@@ -69,6 +68,7 @@
       .presensi-page #employeeDataCard {padding:10px;gap:8px;}
     }
   </style>
+  <?!= include('TailwindCompiled'); ?>
 </head>
 <body data-admin-attendance="<?= typeof adminAttendance !== 'undefined' && adminAttendance ? 'true' : 'false' ?>" class="bg-gradient-to-br from-slate-900 via-teal-950 to-emerald-950 text-slate-100 min-h-screen py-8 px-4 sm:px-6">
 
