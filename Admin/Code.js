@@ -4,7 +4,7 @@
  * Backend Controller & Web App Entry Point
  */
 
-const ADMIN_INCLUDE_FILES_=['MobileBase','Stylesheet','BookingCalendar','AttendancePolicy','VisitModal','TddModal','ArchiveClient','NotulaPdf','Tools','MeetingPhotos','AgendaAttendance','AgendaSearch','RapatPimpinan','VisitAttendance'];
+const ADMIN_INCLUDE_FILES_=['MobileBase','Stylesheet','BookingCalendar','AttendancePolicy','VisitModal','TddModal','ArchiveClient','NotulaPdf','Tools','MeetingPhotos','AgendaAttendance','AgendaSearch','RapatPimpinan','VisitAttendance','TailwindCompiled'];
 
 function doGet(e) {
   requireVisitAdmin_();

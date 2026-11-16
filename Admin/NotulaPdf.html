@@ -323,7 +323,7 @@
   }
 
   function buildOfficialNotulaPdfDoc_(rawData) {
-    if (typeof jspdf === 'undefined') throw new Error('Pustaka PDF belum termuat.');
+    if (typeof jspdf === 'undefined') throw new Error('Pustaka PDF belum termuat. Muat ulang halaman.');
     const data = rawData || {};
     const doc = new jspdf.jsPDF({ unit: 'mm', format: 'a4' });
     if (typeof doc.setProperties === 'function') {
