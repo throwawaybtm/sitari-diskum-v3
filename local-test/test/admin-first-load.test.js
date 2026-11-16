@@ -79,9 +79,24 @@ test('Admin dashboard requests still start from initializeApp on DOMContentLoade
   assert.match(indexHtml, /function initializeApp\(\) \{[\s\S]*?loadAllDashboard\(\);/);
 });
 
-test('PDF export call sites still guard on the library globals', () => {
-  const sources = ['Admin/ArchiveClient.html', 'Admin/Tools.html', 'Admin/NotulaPdf.html']
-    .map(file => fs.readFileSync(path.join(ROOT, file), 'utf8')).join('\n');
-  assert.match(sources, /typeof PDFLib==='undefined'/);
-  assert.match(sources, /typeof jspdf==='undefined'/);
+test('every PDF library use in the Admin client is preceded by a guard with a reload hint', () => {
+  const files = ['Admin/ArchiveClient.html', 'Admin/Tools.html', 'Admin/NotulaPdf.html'];
+  const uses = [
+    { name: 'jspdf', use: /new\s+jspdf\.jsPDF\s*\(/g, guard: /typeof\s+jspdf\s*===\s*'undefined'\s*\)\s*throw\s+new\s+Error\('Pustaka PDF belum termuat\. Muat ulang halaman\.'\)/g },
+    { name: 'PDFLib', use: /PDFLib\.[A-Za-z]+/g, guard: /typeof\s+PDFLib\s*===\s*'undefined'\s*\)\s*throw\s+new\s+Error\('Pustaka arsip PDF belum termuat\. Muat ulang halaman\.'\)/g }
+  ];
+  for (const file of files) {
+    const src = fs.readFileSync(path.join(ROOT, file), 'utf8');
+    for (const lib of uses) {
+      const useCount = (src.match(lib.use) || []).length;
+      const guardCount = (src.match(lib.guard) || []).length;
+      if (useCount === 0) continue;
+      assert.ok(guardCount >= 1, `${file}: ${lib.name} is used ${useCount}x but has no guard with reload hint`);
+      const firstUse = src.search(lib.use);
+      const firstGuard = src.search(lib.guard);
+      assert.ok(firstGuard < firstUse, `${file}: first ${lib.name} use comes before its guard`);
+    }
+  }
+  const total = files.map(f => fs.readFileSync(path.join(ROOT, f), 'utf8')).join('\n');
+  assert.ok(/typeof\s+jspdf\s*===/.test(total) && /typeof\s+PDFLib\s*===/.test(total));
 });

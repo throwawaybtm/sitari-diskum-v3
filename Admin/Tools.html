@@ -114,7 +114,7 @@
     try{
       const pages=buildMonthlyReportCanvases(rows,month,monthlyGuestFilter),name=monthlyReportFileName(month,monthlyGuestFilter);
       if(type==='pdf'){
-        if(typeof jspdf==='undefined')throw new Error('Pustaka PDF belum termuat.');const pdf=new jspdf.jsPDF({unit:'pt',format:'a4'});
+        if(typeof jspdf==='undefined')throw new Error('Pustaka PDF belum termuat. Muat ulang halaman.');const pdf=new jspdf.jsPDF({unit:'pt',format:'a4'});
         if(typeof pdf.setProperties==='function')pdf.setProperties({title:monthlyReportTitle(monthlyGuestFilter)});
         pages.forEach((canvas,i)=>{if(i)pdf.addPage();pdf.addImage(canvas.toDataURL('image/png'),'PNG',18,18,559.28,791.89);});pdf.save(name+'.pdf');
       }else{
