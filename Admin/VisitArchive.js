@@ -3,10 +3,23 @@ function visitDriveFileId_(url) {
   const match=/^https:\/\/(?:drive|docs)\.google\.com\/(?:file\/d\/|document\/d\/|open\?(?:[^#]*&)?id=)([A-Za-z0-9_-]+)/.exec(String(url||''));
   return match?match[1]:null;
 }
+function visitDocumentUrls_(value) {
+  if (Array.isArray(value)) return value.filter(url => typeof url === 'string' && url.trim());
+  const text = String(value || '').trim();
+  if (!text) return [];
+  if (text[0] === '[') {
+    try { const parsed = JSON.parse(text); return Array.isArray(parsed) ? visitDocumentUrls_(parsed) : []; } catch (error) { return []; }
+  }
+  return [text];
+}
+function visitDocumentSources_(value,label) {
+  const urls=visitDocumentUrls_(value);
+  return urls.map((url,index)=>({name:label+(urls.length>1?' '+(index+1):''),url}));
+}
 function visitArchiveSources_(data,notula) {
   const v=data.visit,w=data.workflow,items=[
-    {name:'Surat Permohonan Kunjungan',url:v.surat_kunjungan_file},
-    {name:'Surat Tugas Rombongan',url:v.surat_tugas_file},
+    ...visitDocumentSources_(v.surat_kunjungan_file,'Surat Permohonan Kunjungan'),
+    ...visitDocumentSources_(v.surat_tugas_file,'Surat Tugas Rombongan'),
     w.disposisi,w.files.absen,w.files.foto,notula,w.files.notulen,w.signed
   ];
   const seen={};return items.filter(item=>{if(!item||!item.url||seen[item.url])return false;seen[item.url]=true;return true;});

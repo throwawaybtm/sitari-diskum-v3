@@ -168,6 +168,14 @@
       const box=document.getElementById('visitModalError');box.textContent=error.message;box.hidden=false;
     }finally{if(request===visitModalRequest){visitModalBusy=false;visitModalLoading=false;}}
   }
+  function visitDocumentLinks(value, label) {
+    let urls = value;
+    if (typeof value === 'string' && value.trim()[0] === '[') {
+      try { urls = JSON.parse(value); } catch (error) { urls = []; }
+    }
+    if (!Array.isArray(urls)) return visitFileLink({url:value}, label);
+    return urls.filter(url => typeof url === 'string').map((url,index) => visitFileLink({url}, label+' '+(index+1))).join('');
+  }
   function visitFileLink(file, label) {
     if (!file || !file.url || !/^(https:\/\/|\/local-doc\/)/i.test(file.url)) return '';
     return `<div class="visit-document-card"><strong class="visit-document-title">${escapeHtml(label || file.name || 'Dokumen')}</strong><div class="visit-document-preview">${visitDocumentPreview(file,label)}</div><a class="visit-file" href="${escapeHtml(file.url)}" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-arrow-up-right-from-square"></i>Buka / unduh dokumen</a></div>`;
@@ -247,7 +255,7 @@
     let panel = '';
     if (visitModalTab === 0) {
       panel = `<div class="visit-note">${w.status==='Non-SPPD'?'Data kunjungan Non-SPPD ditampilkan untuk dilihat tanpa tindakan pengesahan.':w.acknowledged ? 'Permintaan kunjungan telah diketahui oleh admin.' : 'Dengan menekan KONFIRMASI, admin menyatakan telah mengetahui dan memeriksa permintaan kunjungan berikut. Status tetap Menunggu Konfirmasi sampai surat disposisi disimpan.'}</div>${renderVisitDetailGrid(details)}`
-        + `<div class="visit-document-grid">${visitFileLink({url:v.surat_kunjungan_file},'Surat Permohonan Kunjungan')}${visitFileLink({url:v.surat_tugas_file},'Surat Tugas Rombongan')}</div>`
+        + `<div class="visit-document-grid">${visitDocumentLinks(v.surat_kunjungan_file,'Surat Permohonan Kunjungan')}${visitDocumentLinks(v.surat_tugas_file,'Surat Tugas Rombongan')}</div>`
         + (w.acknowledged ? `<p class="text-emerald-700">Dikonfirmasi oleh ${escapeHtml(w.acknowledged.actor)}</p>` : '');
       if(!readonly&&data.stage<=1){
         panel+=`<form id="visitRescheduleForm" class="visit-panel" hidden><div class="visit-detail-grid"><div><label for="visitNewDate">Tanggal <span class="visit-required">*</span></label><input type="date" lang="en-GB" title="dd-mm-yyyy" id="visitNewDate" required value="${escapeHtml(schedule.tanggal||'')}"></div><div><label for="visitNewTime">Jam <span class="visit-required">*</span></label><input type="time" lang="en-GB" title="hh:mm (24 jam)" step="60" id="visitNewTime" required value="${escapeHtml(schedule.jam||'')}"></div></div>${visitAction('Simpan Perubahan Jadwal','reschedule',true,'fa-floppy-disk')}</form>`;
