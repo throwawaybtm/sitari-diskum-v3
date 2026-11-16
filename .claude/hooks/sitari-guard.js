@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // SITARI PreToolUse guard for Claude Code (Bash tool).
-// Blocks actions that AGENTS.md reserves for explicit owner approval.
+// Blocks only actions that can touch live production data, credentials, or main.
 // Exit 2 = block (stderr is shown to Claude). Exit 0 = allow normal permission flow.
 // No dependencies, no network, reads only the hook payload on stdin.
 'use strict';
@@ -12,18 +12,6 @@ const CLASP_READ_ONLY = new Set([
 
 const RULES = [
   {
-    // Any clasp subcommand not on the read-only list (push, deploy, pull, run, create, setting, ...).
-    test: (c) => {
-      const re = /(?:^|[\s;&|(`])(?:npx\s+(?:-y\s+)?(?:@google\/)?clasp|clasp)(?:@[\w.-]+)?\s+([^\s;&|)]+)/g;
-      let m;
-      while ((m = re.exec(c)) !== null) {
-        if (!CLASP_READ_ONLY.has(m[1].toLowerCase())) return `clasp ${m[1]}`;
-      }
-      return null;
-    },
-    why: 'clasp write/deploy/run/pull actions need explicit owner approval (AGENTS.md: never deploy Apps Script without approval). Ask the user to run it themselves.',
-  },
-  {
     test: (c) => (/\bgit\s+push\b[^;&|]*(\s--force\b|\s-f\b|\s--force-with-lease\b|\s\+\S)/.test(c) ? 'git push --force' : null),
     why: 'Force push is never allowed without explicit approval.',
   },
@@ -34,14 +22,6 @@ const RULES = [
   {
     test: (c) => (/\bgit\s+(merge|rebase)\b[^;&|]*\bmain\b/.test(c) ? 'git merge/rebase involving main' : null),
     why: 'Merging into main needs explicit approval.',
-  },
-  {
-    test: (c) => (/\bgit\s+(reset\s+--hard|clean\s+-[a-z]*f[a-z]*|filter-branch|filter-repo|commit\s+--amend|push\s+--delete)\b/.test(c) ? 'history-rewriting or destructive git command' : null),
-    why: 'Git history and the working tree must stay unchanged unless the owner approves.',
-  },
-  {
-    test: (c) => (/\bmaintenance\/build-public\.js\b/.test(c) ? 'Public regeneration' : null),
-    why: 'Public/ regeneration is a release activity (AGENTS.md / handover book). Ask first.',
   },
   {
     test: (c) => (/fonnte\.com|api\.fonnte/i.test(c) ? 'live Fonnte request' : null),

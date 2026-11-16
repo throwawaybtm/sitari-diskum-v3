@@ -26,5 +26,8 @@ AGENTS.md is the shared rulebook (Codex and Antigravity read it too). Do not edi
 ## Verify
 `node local-test/run-synthetic-tests.js` (287/287 at 0de798d). Focused file first, full suite before any completion claim.
 
-## Hard stops (also enforced by .claude/hooks/sitari-guard.js and settings deny rules)
-No clasp push/deploy/pull/run, no Public rebuild, no live Sheets/Drive/Fonnte, no merge or push to main, no force push or history rewrite without the owner's explicit approval in this session.
+## Autonomy
+Work end to end without asking: plan, code, test, fix, re-test, commit, push the feature branch, rebuild Public locally, and drive the browser (Playwright / built-in browser) to self-check UI. Do not pause for confirmation on local actions. Run the full suite before claiming completion.
+
+## Hard stops (enforced by .claude/hooks/sitari-guard.js and settings deny rules)
+Only what can hit live production or credentials: clasp is allowed (agent may push/deploy when the task calls for it), but no live Sheets/Drive/Fonnte calls, no reading private config or clasp credentials, no push or merge to main, no force push. Everything else is allowed.

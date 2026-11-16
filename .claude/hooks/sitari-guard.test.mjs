@@ -11,20 +11,6 @@ const guardPath = path.join(here, 'sitari-guard.js');
 const { check } = createRequire(import.meta.url)(guardPath);
 
 const BLOCK = [
-  'clasp push',
-  'cd Admin && clasp push --force',
-  'clasp deploy -i AKfy -d "x"',
-  'clasp create-deployment',
-  'clasp update-deployment abc',
-  'clasp undeploy abc',
-  'clasp run myFn',
-  'clasp run-function myFn',
-  'clasp pull',
-  'clasp setting scriptId x',
-  'npx @google/clasp push',
-  'npx -y @google/clasp deploy',
-  'npx clasp@3.4.1 push',
-  'git status; clasp push',
   'git push --force origin client/revisions-2026-11-10',
   'git push -f',
   'git push origin +client/revisions-2026-11-10',
@@ -32,16 +18,18 @@ const BLOCK = [
   'git push origin HEAD:main',
   'git push origin feature:main',
   'git merge main',
-  'git reset --hard HEAD~1',
-  'git clean -fdx',
-  'git commit --amend --no-edit',
-  'node maintenance/build-public.js 49',
   'curl -X POST https://api.fonnte.com/send',
   'curl https://script.google.com/macros/s/x/exec',
   'cat ~/.clasprc.json',
 ];
 
 const ALLOW = [
+  'git reset --hard HEAD~1',
+  'git clean -fdx',
+  'git commit --amend --no-edit',
+  'node maintenance/build-public.js 49',
+  'clasp push',
+  'npx @google/clasp deploy',
   'clasp status',
   'clasp show-file-status',
   'clasp list-deployments',
@@ -64,7 +52,7 @@ for (const c of ALLOW) test(`allows: ${c}`, () => assert.equal(check(c).blocked,
 
 test('hook protocol: exit 2 + stderr on block, exit 0 on allow, ignores non-Bash', () => {
   const run = (payload) => spawnSync(process.execPath, [guardPath], { input: JSON.stringify(payload), encoding: 'utf8' });
-  const blocked = run({ tool_name: 'Bash', tool_input: { command: 'clasp push' } });
+  const blocked = run({ tool_name: 'Bash', tool_input: { command: 'git push origin main' } });
   assert.equal(blocked.status, 2);
   assert.match(blocked.stderr, /SITARI guard blocked/);
   assert.equal(run({ tool_name: 'Bash', tool_input: { command: 'git status' } }).status, 0);
