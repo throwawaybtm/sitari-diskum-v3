@@ -28,3 +28,5 @@ AGENTS.md is the shared rulebook (Codex and Antigravity read it too). Do not edi
 
 ## Hard stops (also enforced by .claude/hooks/sitari-guard.js and settings deny rules)
 No clasp push/deploy/pull/run, no Public rebuild, no live Sheets/Drive/Fonnte, no merge or push to main, no force push or history rewrite without the owner's explicit approval in this session.
+
+Owner switch (owner-only, never set by an agent): if the owner starts a session with `SITARI_OWNER_APPROVED_DEPLOY=1` in the launching shell's environment, the hook allows only `clasp push`, `clasp create-version`/`version` and `clasp deploy -i <deploymentId>`. Everything else stays blocked (pull, run, create, create-deployment, update-deployment, undeploy, setting, login, Public rebuild, main, force push, live Sheets/Fonnte). Settings `ask` rules still prompt the owner for each push/deploy. Deploy only from a PC that has the real private config files (check with `node local-test/setup-local.js --check`), never from placeholder templates.

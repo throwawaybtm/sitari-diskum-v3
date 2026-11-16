@@ -5,23 +5,44 @@
 // No dependencies, no network, reads only the hook payload on stdin.
 'use strict';
 
+// `version` is NOT read-only: `clasp version "<description>"` creates an immutable script version.
 const CLASP_READ_ONLY = new Set([
   'status', 'show-file-status', 'list-versions', 'versions', 'list-deployments', 'deployments',
-  'show-authorized-user', 'help', '--help', '-h', '--version', '-v', 'version',
+  'show-authorized-user', 'help', '--help', '-h', '--version', '-v',
 ]);
+
+// Owner switch. The owner sets this in the environment of the process that LAUNCHES the session
+// (for example in the terminal before starting `claude`). The hook reads its own process
+// environment, so a value typed inside an agent command (`SITARI_OWNER_APPROVED_DEPLOY=1 clasp push`)
+// never reaches it. Only the exact value "1" counts.
+const OWNER_SWITCH = 'SITARI_OWNER_APPROVED_DEPLOY';
+// Even with the switch on, only these release steps are allowed. Everything else stays blocked:
+// pull, run, create, create-deployment, update-deployment, undeploy, setting, login, ...
+const OWNER_ALLOWED = new Set(['push', 'create-version', 'version', 'deploy']);
+
+function ownerApproved(env) {
+  return Boolean(env) && env[OWNER_SWITCH] === '1';
+}
 
 const RULES = [
   {
     // Any clasp subcommand not on the read-only list (push, deploy, pull, run, create, setting, ...).
-    test: (c) => {
-      const re = /(?:^|[\s;&|(`])(?:npx\s+(?:-y\s+)?(?:@google\/)?clasp|clasp)(?:@[\w.-]+)?\s+([^\s;&|)]+)/g;
+    test: (c, env) => {
+      const re = /(?:^|[\s;&|(`])(?:npx\s+(?:-y\s+)?(?:@google\/)?clasp|clasp)(?:@[\w.-]+)?\s+([^\s;&|)]+)([^;&|)]*)/g;
       let m;
       while ((m = re.exec(c)) !== null) {
-        if (!CLASP_READ_ONLY.has(m[1].toLowerCase())) return `clasp ${m[1]}`;
+        const sub = m[1].toLowerCase();
+        if (CLASP_READ_ONLY.has(sub)) continue;
+        if (ownerApproved(env) && OWNER_ALLOWED.has(sub)) {
+          // `deploy` without -i/--deploymentId would create a NEW deployment (new URL).
+          if (sub === 'deploy' && !/(?:^|\s)(?:-i|--deploymentId)(?:\s|=)/.test(m[2])) return 'clasp deploy without -i (would create a new deployment URL)';
+          continue;
+        }
+        return `clasp ${m[1]}`;
       }
       return null;
     },
-    why: 'clasp write/deploy/run/pull actions need explicit owner approval (AGENTS.md: never deploy Apps Script without approval). Ask the user to run it themselves.',
+    why: `clasp write/deploy/run/pull actions need explicit owner approval (AGENTS.md: never deploy Apps Script without approval). Ask the user to run it themselves, or to start the session with ${OWNER_SWITCH}=1 (allows only push, create-version and deploy -i).`,
   },
   {
     test: (c) => (/\bgit\s+push\b[^;&|]*(\s--force\b|\s-f\b|\s--force-with-lease\b|\s\+\S)/.test(c) ? 'git push --force' : null),
@@ -57,10 +78,10 @@ const RULES = [
   },
 ];
 
-function check(command) {
+function check(command, env = {}) {
   const c = ` ${String(command || '')}`;
   for (const r of RULES) {
-    const hit = r.test(c);
+    const hit = r.test(c, env);
     if (hit) return { blocked: true, hit, why: r.why };
   }
   return { blocked: false };
@@ -74,7 +95,7 @@ if (require.main === module) {
     let payload;
     try { payload = JSON.parse(raw || '{}'); } catch { process.exit(0); }
     if (payload.tool_name !== 'Bash') process.exit(0);
-    const res = check(payload.tool_input && payload.tool_input.command);
+    const res = check(payload.tool_input && payload.tool_input.command, process.env);
     if (res.blocked) {
       process.stderr.write(`SITARI guard blocked: ${res.hit}. ${res.why}\n`);
       process.exit(2);

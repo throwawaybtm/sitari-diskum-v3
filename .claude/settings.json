@@ -20,6 +20,11 @@
       "Bash(git switch *)",
       "Bash(npm install *)",
       "Bash(npx *)",
+      "Bash(clasp push)",
+      "Bash(clasp push *)",
+      "Bash(clasp deploy *)",
+      "Bash(clasp create-version *)",
+      "Bash(clasp version *)",
       "WebFetch"
     ],
     "deny": [
