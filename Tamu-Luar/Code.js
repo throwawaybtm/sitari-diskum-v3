@@ -176,6 +176,14 @@ function nextRecordId_(sheet) {
   }, 0) + 1;
 }
 
+/** Save every file of one upload field; a single file keeps the legacy plain-URL cell, several are stored as a JSON array. */
+function saveTldDocuments_(value, fileName) {
+  const documents = normalizeTldUploads_(value, false);
+  const urls = documents.map((data, index) => saveBase64ToDrive_(data,
+    documents.length === 1 ? fileName : fileName + '_' + (index + 1), 'application/pdf'));
+  return urls.length > 1 ? JSON.stringify(urls) : (urls[0] || '');
+}
+
 function registerTamuLuar(payload) {
   validateTldRequiredFields_(payload);
   const destination = prepareTldVisit_(payload);
@@ -194,12 +202,8 @@ function registerTamuLuar(payload) {
     // Every TLD registration follows the admin approval/SPPD workflow.
     const isBawaSppd = 1;
 
-    const urlSuratKunjungan = payload.surat_kunjungan_base64
-      ? saveBase64ToDrive_(payload.surat_kunjungan_base64, `Surat_Kunjungan_${kodeKunjungan}`, 'application/pdf')
-      : '';
-    const urlSuratTugas = payload.surat_tugas_base64
-      ? saveBase64ToDrive_(payload.surat_tugas_base64, `Surat_Tugas_${kodeKunjungan}`, 'application/pdf')
-      : '';
+    const urlSuratKunjungan = saveTldDocuments_(payload.surat_kunjungan_base64, `Surat_Kunjungan_${kodeKunjungan}`);
+    const urlSuratTugas = saveTldDocuments_(payload.surat_tugas_base64, `Surat_Tugas_${kodeKunjungan}`);
 
     sheetTamu.getRange(sheetTamu.getLastRow() + 1, 12, 1, 3).setNumberFormat('@');
     sheetTamu.appendRow([

@@ -29,6 +29,17 @@ function validateTldUpload_(value) {
   }
 }
 
+const TLD_MAX_UPLOAD_FILES = 5;
+
+/** A TLD upload field accepts one data URL (legacy clients) or an array of up to TLD_MAX_UPLOAD_FILES. */
+function normalizeTldUploads_(value, required) {
+  const list = Array.isArray(value) ? value : (value ? [value] : []);
+  if (required && !list.length) throw new Error('Pilih minimal satu dokumen pada setiap kolom unggahan.');
+  if (list.length > TLD_MAX_UPLOAD_FILES) throw new Error('Maksimal ' + TLD_MAX_UPLOAD_FILES + ' dokumen pada setiap kolom unggahan.');
+  if (list.some(item => typeof item !== 'string' || !item.trim())) throw new Error('Dokumen unggahan tidak valid.');
+  return list;
+}
+
 function validateTldRequiredFields_(payload) {
   const fields = {
     instansi: 'Nama instansi', alamat: 'Alamat instansi', ketua_nama: 'Nama ketua rombongan',
@@ -46,8 +57,8 @@ function validateTldRequiredFields_(payload) {
 }
 
 function prepareTldVisit_(payload) {
-  validateTldUpload_(payload.surat_kunjungan_base64);
-  validateTldUpload_(payload.surat_tugas_base64);
+  normalizeTldUploads_(payload && payload.surat_kunjungan_base64, false).forEach(data => validateTldUpload_(data));
+  normalizeTldUploads_(payload && payload.surat_tugas_base64, false).forEach(data => validateTldUpload_(data));
   // Assignment is performed by the admin after reviewing the request.
   return {bidang:'',pic:'',picIds:''};
 }

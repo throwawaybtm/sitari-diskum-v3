@@ -205,6 +205,12 @@ function createFixtureStore(now = new Date(), options = {}) {
     return `${prefix}-${formattedDate}-${String(maxSerial + 1).padStart(3, '0')}`;
   }
 
+  function localTldDocuments(value, label) {
+    const list = Array.isArray(value) ? value : (value ? [value] : []);
+    const urls = list.map((data, index) => visitWorkflow.saveFile({ name: label + (list.length > 1 ? ' ' + (index + 1) : '') + '.pdf', data }, 'surat').url);
+    return urls.length > 1 ? JSON.stringify(urls) : (urls[0] || '');
+  }
+
   function registerVisitor(functionName, payload) {
     const isFo = functionName === 'registerTamuFo';
     let destination;
@@ -233,8 +239,8 @@ function createFixtureStore(now = new Date(), options = {}) {
       narahubung_hp: payload.narahubung_hp || '',
       tanggal_kunjungan: visitDateValue,
       jam_kunjungan: isFo ? jakartaTime(submittedAt) : (payload.jam_kunjungan || ''),
-      surat_kunjungan_file: isFo ? '' : visitWorkflow.saveFile({ name: 'Surat Kunjungan.pdf', data: payload.surat_kunjungan_base64 }, 'surat').url,
-      surat_tugas_file: isFo ? '' : visitWorkflow.saveFile({ name: 'Surat Tugas.pdf', data: payload.surat_tugas_base64 }, 'surat').url,
+      surat_kunjungan_file: isFo ? '' : localTldDocuments(payload.surat_kunjungan_base64, 'Surat Kunjungan'),
+      surat_tugas_file: isFo ? '' : localTldDocuments(payload.surat_tugas_base64, 'Surat Tugas'),
       lo_id: lo.id,
       lo_nama: lo.nama,
       bawa_sppd: !isFo,

@@ -168,35 +168,49 @@ test('TLD requires every data field and both documents without an SPPD checkbox'
   assert.throws(() => context.validateTldRequiredFields_({ ...payload, jam_kunjungan: '25:00' }), /tidak valid/);
 });
 
-test('file picker and camera fill the same required document without losing a previous valid selection', () => {
+test('file picker and camera append to the same required document list, with remove, dedupe and a 5-file cap', () => {
   const html = fs.readFileSync(path.join(__dirname, '../../Tamu-Luar/Index.html'), 'utf8');
+  const makeList = () => ({ children: [], set textContent(v) { this.children = []; }, appendChild(c) { this.children.push(c); } });
   const fields = {
-    fileSuratKunjungan: { required: true }, fileSuratKunjunganStatus: {},
-    fileSuratTugas: { required: true }, fileSuratTugasStatus: {}
+    fileSuratKunjungan: { required: true }, fileSuratKunjunganStatus: {}, fileSuratKunjunganList: makeList(),
+    fileSuratTugas: { required: true }, fileSuratTugasStatus: {}, fileSuratTugasList: makeList()
   };
-  const selectedDocuments = {};
+  const element = () => ({ setAttribute() {}, addEventListener(type, fn) { this.onclick = fn; }, append(...c) { this.parts = c; } });
+  const selectedDocuments = { fileSuratKunjungan: [], fileSuratTugas: [] };
   const context = vm.createContext({
-    document: { getElementById: id => fields[id] }, selectedDocuments,
-    maxUploadBytes: 5 * 1024 * 1024
+    document: { getElementById: id => fields[id], createElement: element }, selectedDocuments,
+    maxUploadBytes: 5 * 1024 * 1024, maxUploadFiles: 5
   });
-  for (const name of ['documentMimeType', 'documentFileError', 'selectDocument']) {
+  for (const name of ['documentMimeType', 'documentFileError', 'renderDocuments', 'removeDocument', 'selectDocument']) {
     vm.runInContext(html.match(new RegExp('    function ' + name + '\\([^]*?\\n    \\}'))[0], context);
   }
-  const pdf = { name: 'surat.pdf', type: 'application/pdf', size: 100 };
-  const photo = { name: 'camera.jpg', type: 'image/jpeg', size: 200 };
-  context.selectDocument({ files: [pdf] }, 'fileSuratKunjungan');
-  assert.equal(selectedDocuments.fileSuratKunjungan, pdf);
+  const pdf = { name: 'surat.pdf', type: 'application/pdf', size: 100, lastModified: 1 };
+  const photo = { name: 'camera.jpg', type: 'image/jpeg', size: 200, lastModified: 2 };
+  const input = files => ({ files, value: 'x' });
+  context.selectDocument(input([pdf]), 'fileSuratKunjungan');
+  assert.deepEqual(selectedDocuments.fileSuratKunjungan, [pdf]);
   assert.equal(fields.fileSuratKunjungan.required, false);
   assert.equal(fields.fileSuratTugas.required, true);
-  context.selectDocument({ files: [photo] }, 'fileSuratKunjungan');
-  assert.equal(selectedDocuments.fileSuratKunjungan, photo);
-  assert.equal(fields.fileSuratKunjunganStatus.textContent, 'camera.jpg');
-  context.selectDocument({ files: [] }, 'fileSuratKunjungan');
-  assert.equal(selectedDocuments.fileSuratKunjungan, photo, 'cancelling keeps the prior document');
-  context.selectDocument({ files: [{ ...photo, size: 6 * 1024 * 1024 }] }, 'fileSuratKunjungan');
-  assert.equal(selectedDocuments.fileSuratKunjungan, photo);
+  context.selectDocument(input([photo, pdf]), 'fileSuratKunjungan');
+  assert.deepEqual(selectedDocuments.fileSuratKunjungan, [pdf, photo], 'camera adds to the list and duplicates are ignored');
+  assert.equal(fields.fileSuratKunjunganStatus.textContent, '2 file dipilih');
+  assert.equal(fields.fileSuratKunjunganList.children.length, 2);
+  context.selectDocument(input([]), 'fileSuratKunjungan');
+  assert.equal(selectedDocuments.fileSuratKunjungan.length, 2, 'cancelling keeps prior documents');
+  context.selectDocument(input([{ ...photo, name: 'big.jpg', size: 6 * 1024 * 1024 }]), 'fileSuratKunjungan');
+  assert.equal(selectedDocuments.fileSuratKunjungan.length, 2);
   assert.match(fields.fileSuratKunjunganStatus.textContent, /5 MB/);
-  context.selectDocument({ files: [{ name: 'invalid.html', type: 'text/html', size: 20 }] }, 'fileSuratTugas');
+  const extra = [3, 4, 5, 6].map(n => ({ name: 'lampiran' + n + '.pdf', type: 'application/pdf', size: 10, lastModified: n }));
+  context.selectDocument(input(extra), 'fileSuratKunjungan');
+  assert.equal(selectedDocuments.fileSuratKunjungan.length, 5, 'list stops at 5 files');
+  assert.match(fields.fileSuratKunjunganStatus.textContent, /maksimal 5 file/);
+  context.removeDocument('fileSuratKunjungan', 0);
+  assert.equal(selectedDocuments.fileSuratKunjungan[0], photo);
+  for (let i = 0; i < 4; i++) context.removeDocument('fileSuratKunjungan', 0);
+  assert.equal(fields.fileSuratKunjungan.required, true, 'emptying the list makes the field required again');
+  context.selectDocument(input([{ name: 'invalid.html', type: 'text/html', size: 20 }]), 'fileSuratTugas');
+  assert.equal(selectedDocuments.fileSuratTugas.length, 0);
   assert.equal(fields.fileSuratTugas.required, true);
-  assert.equal(selectedDocuments.fileSuratTugas, undefined);
+  assert.match(html, /id="fileSuratKunjungan" multiple required/);
+  assert.match(html, /id="fileSuratTugas" multiple required/);
 });
