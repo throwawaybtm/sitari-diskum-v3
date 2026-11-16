@@ -27,6 +27,7 @@ function renderAdminHtml({ baseUrl = 'http://127.0.0.1:4173' } = {}) {
   const tamuLuarUrl = `${baseUrl}/tamu-luar`;
 
   html = replaceAllLiteral(html, "<?!= include('Stylesheet'); ?>", stylesheet);
+  html = replaceAllLiteral(html, "<?!= include('TailwindCompiled'); ?>", fs.readFileSync(path.join(adminDir, 'TailwindCompiled.html'), 'utf8'));
   html = replaceAllLiteral(html, '<?!= JSON.stringify(meetingRooms) ?>', JSON.stringify(meetingRooms));
   html = replaceAllLiteral(html, "<?= typeof adminAppUrl !== 'undefined' ? adminAppUrl : '' ?>", baseUrl);
   html = replaceAllLiteral(html, '<?= tamuFoUrl ?>', tamuFoUrl);

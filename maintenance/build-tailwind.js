@@ -14,7 +14,8 @@ const { execFileSync } = require('node:child_process');
 const ROOT = path.resolve(__dirname, '..');
 const TW_DIR = path.join(__dirname, 'tailwind');
 const OUT_FILE = path.join(ROOT, 'Admin', 'TailwindCompiled.html');
-const CLI = path.join(TW_DIR, 'node_modules', '.bin', process.platform === 'win32' ? 'tailwindcss.cmd' : 'tailwindcss');
+// Run the CLI's JS entry through node: spawning the .cmd shim fails with EINVAL on current Node for Windows.
+const CLI = path.join(TW_DIR, 'node_modules', 'tailwindcss', 'lib', 'cli.js');
 
 function pinnedVersion() {
   const pkg = JSON.parse(fs.readFileSync(path.join(TW_DIR, 'package.json'), 'utf8'));
@@ -25,7 +26,8 @@ function pinnedVersion() {
 
 function compile() {
   if (!fs.existsSync(CLI)) throw new Error('Tailwind CLI not installed. Run: npm ci --prefix maintenance/tailwind');
-  const css = execFileSync(CLI, [
+  const css = execFileSync(process.execPath, [
+    CLI,
     '-c', path.join(TW_DIR, 'tailwind.config.cjs'),
     '-i', path.join(TW_DIR, 'input.css')
   ], { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] });

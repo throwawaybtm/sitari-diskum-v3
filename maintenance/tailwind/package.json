@@ -3,6 +3,6 @@
   "private": true,
   "description": "Dev-time build of Admin/TailwindCompiled.html. Not part of any deploy step.",
   "devDependencies": {
-    "tailwindcss": "3.4.19"
+    "tailwindcss": "3.4.17"
   }
 }

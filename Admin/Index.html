@@ -6,7 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <?!= include('MobileBase'); ?>
   <title>SI-TARI DISKUM</title>
-  <script src="https://cdn.tailwindcss.com"></script>
   <script id="pdf-library-loader">
     // PDF libraries are only needed for exports. Parser-attached <script defer> tags delay
     // DOMContentLoaded, which starts the first dashboard requests, so inject them afterwards.
@@ -35,6 +34,7 @@
   </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <?!= include('Stylesheet'); ?>
+  <?!= include('TailwindCompiled'); ?>
 </head>
 
 <body class="bg-slate-100/70 text-slate-800 antialiased min-h-screen flex flex-col">
