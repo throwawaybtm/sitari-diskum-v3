@@ -11,21 +11,31 @@
       "Bash(node local-test/run-synthetic-tests.js *)",
       "Bash(node local-test/run-synthetic-tests.js)",
       "Bash(node --test local-test/test/*)",
-      "Bash(node local-test/setup-local.js --check)"
-    ],
-    "ask": [
-      "Bash(git push *)",
+      "Bash(node local-test/setup-local.js --check)",
+      "Bash(node local-test/*)",
+      "Bash(node --test *)",
+      "Bash(node maintenance/build-tailwind.js)",
+      "Bash(node .claude/skills/sitari-knowledge/scripts/code-index.mjs *)",
+      "Bash(git add *)",
       "Bash(git commit *)",
+      "Bash(git branch *)",
+      "Bash(git fetch *)",
       "Bash(git checkout *)",
       "Bash(git switch *)",
+      "Bash(git stash *)",
+      "Bash(git push *)",
+      "Bash(npm ci *)",
       "Bash(npm install *)",
+      "Bash(npx playwright *)",
+      "WebFetch"
+    ],
+    "ask": [
       "Bash(npx *)",
       "Bash(clasp push)",
       "Bash(clasp push *)",
       "Bash(clasp deploy *)",
       "Bash(clasp create-version *)",
-      "Bash(clasp version *)",
-      "WebFetch"
+      "Bash(clasp version *)"
     ],
     "deny": [
       "Read(/local-test/vendor/**)",
@@ -43,6 +53,10 @@
       "Bash(clasp pull *)",
       "Bash(clasp run *)",
       "Bash(git push --force *)",
+      "Bash(git push * --delete *)",
+      "Bash(git push --delete *)",
+      "Bash(git push * -d *)",
+      "Bash(git push origin :*)",
       "mcp__clasp__push_files",
       "mcp__clasp__pull_files",
       "mcp__clasp__create_project",

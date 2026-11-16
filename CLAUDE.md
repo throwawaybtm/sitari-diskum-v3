@@ -26,6 +26,11 @@ AGENTS.md is the shared rulebook (Codex and Antigravity read it too). Do not edi
 ## Verify
 `node local-test/run-synthetic-tests.js` (287/287 at 0de798d). Focused file first, full suite before any completion claim.
 
+## Autonomous development
+Inside the hard stops below, work end to end without asking: plan, code, run focused then full tests, fix, re-test, commit, push your own branch and open a draft PR. Commit, push (not to main), checkout/switch, `npm ci`/`npm install`, `npx playwright`, the local-test scripts and WebFetch are allowed in `.claude/settings.json` (the hook still blocks main, force push and destructive git). Stop and ask only at a hard stop or when client-facing behaviour is ambiguous. Prefer cloud sessions for autonomous runs: they have no real private config and no clasp login.
+
+Standing merge permission (given by the owner): an agent may merge a PR it opened itself, with a merge commit, only when ALL of these hold: the base is exactly `client/revisions-2026-11-16`; the full suite is green at the PR head and the count is recorded in the PR; the PR checklist has no unchecked item that starts with "Owner:"; the PR does not touch `.claude/**`, `CLAUDE.md` or `AGENTS.md` (changes to the agents' own guardrails are always merged by the owner); and it is not a draft the owner asked to hold. Never merge into `main`, never merge a PR someone else opened, and merging is not permission to deploy. After merging, say so in the report with the PR number and merge SHA.
+
 ## Hard stops (also enforced by .claude/hooks/sitari-guard.js and settings deny rules)
 No clasp push/deploy/pull/run, no Public rebuild, no live Sheets/Drive/Fonnte, no merge or push to main, no force push or history rewrite without the owner's explicit approval in this session.
 
