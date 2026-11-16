@@ -39,6 +39,48 @@ function setup(){
   context.getRapatCalendar=()=>({data:[]});context.getApprovalActor_=()=> 'Admin';
   return {context,sheets,v};
 }
+
+for (const visitor of ['signed-in', 'signed-out', 'incognito']) {
+  test(`public delegation roster works with unavailable identity for ${visitor} visitors`, () => {
+    const { context, sheets, v } = setup();
+    v.ketua_nama = 'Ketua Terdaftar';
+    v.pengikut_list = 'Anggota A';
+    const state = context.newVisitWorkflow_(v);
+    state.status = 'Menunggu Kedatangan';
+    state.booking = { id: 10 };
+    sheets.Alur_Kunjungan = sheet([[], [v.kode_kunjungan, 0, JSON.stringify(state), 'now']]);
+    context.getRapatCalendar_ = () => ({ data: [{ id: 10, kode_kunjungan: v.kode_kunjungan }] });
+    let identityCalls = 0;
+    context.PropertiesService = { getScriptProperties: () => ({ getProperty: () => null }) };
+    context.ScriptApp = { getScriptId: () => 'public-app' };
+    context.Session = {
+      getEffectiveUser() {
+        identityCalls++;
+        throw new Error('Specified permissions are not sufficient to call Session.getEffectiveUser. Required permissions: https://www.googleapis.com/auth/userinfo.email');
+      },
+      getActiveUser() {
+        identityCalls++;
+        return { getEmail: () => visitor === 'signed-in' ? 'guest@example.com' : '' };
+      }
+    };
+    const result = context.getVisitAttendanceRoster({ rapat_id: 10 });
+    assert.equal(result.success, true, result.error);
+    assert.equal(result.data.roster[0].nama, 'Ketua Terdaftar');
+    assert.deepEqual(Object.keys(result.data).sort(), ['instansi', 'locked', 'rapat_id', 'roster']);
+    assert.equal(identityCalls, 0);
+    sheets.Data_Presensi = sheet([Array(13).fill('Header')]);
+    context.attendanceAvailability_ = () => ({ open: true });
+    context.autoSortPresensi = () => {};
+    const submitted = context.submitPresensiRapat({ rapat_id: 10, member_id: 'ketua', jabatan: 'Ketua' });
+    assert.equal(submitted.success, true, submitted.error);
+    assert.equal(sheets.Data_Presensi.rows[1][4], 'Ketua Terdaftar');
+    assert.equal(identityCalls, 0);
+    assert.equal(context.submitManualVisitAttendance({ rapat_id: 10, member_ids: ['ketua'] }).success, false);
+    state.arrival = { at: '2026-11-13' };
+    sheets.Alur_Kunjungan.rows[1][2] = JSON.stringify(state);
+    assert.equal(context.getVisitAttendanceRoster({ rapat_id: 10 }).data.locked, true);
+  });
+}
 test('GAS saves acknowledgement/version separately without advancing the visit status and rejects stale saves',()=>{
   const {context,sheets,v}=setup();
   const saved=context.saveVisitWorkflow({kode_kunjungan:v.kode_kunjungan,version:0,action:'confirm'});
