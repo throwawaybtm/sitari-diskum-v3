@@ -207,8 +207,26 @@ function formatTimeVal(val) {
     parts.forEach(p => { map[p.type] = p.value; });
     return `${map.hour === '24' ? '00' : map.hour}:${map.minute}`;
   }
-  if (String(val).length >= 5) return String(val).substring(0, 5);
-  return String(val);
+  const text = String(val).trim();
+  const clock = text.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*([AaPp])\.?[Mm]\.?$/);
+  if (clock) {
+    const hour = Number(clock[1]) % 12 + (/[Pp]/.test(clock[3]) ? 12 : 0);
+    return String(hour).padStart(2, '0') + ':' + clock[2];
+  }
+  if (text.length >= 5) return text.substring(0, 5);
+  return text;
+}
+
+/** TLD guests show the scheduled time until the first attendee checks in, then the earliest actual arrival (24h WIB). */
+function updateVisitArrivalTime_(ss, visit, attendance, attendedAt) {
+  if (!visit || visit.tipe_tamu !== 'luar_daerah') return;
+  const clock = value => { const m = String(value || '').match(/(\d{2}):(\d{2})(?::\d{2})?\s*$/); return m ? m[1] + ':' + m[2] : ''; };
+  const times = (attendance || []).map(row => clock(row && (row.waktu || row.rawWaktu))).concat(clock(attendedAt)).filter(Boolean).sort();
+  if (!times.length) return;
+  const sheet = ss.getSheetByName('Data_Tamu');
+  const found = findRecordByColumn_(sheet, 2, visit.kode_kunjungan, 14);
+  if (!found) return;
+  sheet.getRange(found.row, 14).setNumberFormat('@').setValue(times[0]);
 }
 
 /** Keep WhatsApp numbers exactly as entered. Sheets drops the leading 0 of numeric-looking cells, so restore it for legacy rows. */
@@ -1229,6 +1247,7 @@ function savePresensiRapat_(p, source) {
     visitData?p.member_id:'',source==='Admin'?'Admin':source==='AdminEntry'?'AdminEntry':'QR',times.recorded
   ]);
 
+  if(visitData)updateVisitArrivalTime_(ss,visitData.visit,visitData.attendance,times.attendance);
   autoSortPresensi(ss);
   if(typeof SpreadsheetApp!=='undefined'&&typeof SpreadsheetApp.flush==='function')SpreadsheetApp.flush();
   return { success: true, message: `Presensi atas nama ${p.nama} berhasil dicatat!` };

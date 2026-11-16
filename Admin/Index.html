@@ -1536,7 +1536,7 @@
         <tr class="hover:bg-slate-50 transition border-b border-slate-100">
           <td class="px-4 py-3.5">
             <span class="visit-code font-mono font-bold text-slate-900 block">${escapeHtml(t.kode_kunjungan)}</span>
-            <span class="text-[10px] text-slate-400">${escapeHtml(formatVisitDateCompact(t.tanggal_kunjungan))}${t.jam_kunjungan ? ' • ' + escapeHtml(t.jam_kunjungan) + ' WIB' : ''}</span>
+            <span class="text-[10px] text-slate-400">${escapeHtml(formatVisitDateCompact(t.tanggal_kunjungan))}${' • ' + (t.jam_kunjungan ? escapeHtml(t.jam_kunjungan) + ' WIB' : '-')}</span>
           </td>
           <td class="px-4 py-3.5"><span class="font-bold text-slate-800 block">${escapeHtml(t.instansi)}</span><span class="text-[10px] text-slate-400">${escapeHtml(t.alamat || '-')}</span></td>
           <td class="px-4 py-3.5"><span class="font-semibold text-slate-800 block">${escapeHtml(t.ketua_nama)}</span><span class="text-slate-600 block">(${escapeHtml(t.jumlah_orang)} Orang)</span><span class="text-[10px] text-emerald-700 font-mono block"><i class="fa-brands fa-whatsapp"></i> ${escapeHtml(t.narahubung_hp || '-')}</span></td>
