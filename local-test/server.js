@@ -73,7 +73,7 @@ function renderAdminHtml({ baseUrl = 'http://127.0.0.1:4173' } = {}) {
 }
 
 function renderPresensiHtml(adminAttendance=false) {
-  const html = fs.readFileSync(path.join(PROJECT_ROOT, 'Admin', 'Presensi.html'), 'utf8').replace("<?= typeof adminAttendance !== 'undefined' && adminAttendance ? 'true' : 'false' ?>",adminAttendance?'true':'false').replace('<?= employeeImportCount ?>',String(JSON.parse(fs.readFileSync(path.join(__dirname,'previews','employee-directory.json'),'utf8')).length)).replace("<?!= include('AttendancePolicy'); ?>",fs.readFileSync(path.join(PROJECT_ROOT,'Admin','AttendancePolicy.html'),'utf8')).replace("<?!= include('MobileBase'); ?>",fs.readFileSync(path.join(PROJECT_ROOT,'Admin','MobileBase.html'),'utf8'));
+  const html = fs.readFileSync(path.join(PROJECT_ROOT, 'Admin', 'Presensi.html'), 'utf8').replace("<?!= include('TailwindCompiled'); ?>", () => fs.readFileSync(path.join(PROJECT_ROOT, 'Admin', 'TailwindCompiled.html'), 'utf8')).replace("<?= typeof adminAttendance !== 'undefined' && adminAttendance ? 'true' : 'false' ?>",adminAttendance?'true':'false').replace('<?= employeeImportCount ?>',String(JSON.parse(fs.readFileSync(path.join(__dirname,'previews','employee-directory.json'),'utf8')).length)).replace("<?!= include('AttendancePolicy'); ?>",fs.readFileSync(path.join(PROJECT_ROOT,'Admin','AttendancePolicy.html'),'utf8')).replace("<?!= include('MobileBase'); ?>",fs.readFileSync(path.join(PROJECT_ROOT,'Admin','MobileBase.html'),'utf8'));
   if (html.includes('<?') || html.includes('?>')) {
     throw new Error('Presensi template contains an unsupported Apps Script template expression.');
   }
