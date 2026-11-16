@@ -40,8 +40,6 @@
       "Edit(/Public/**)",
       "Edit(/deployments/**)",
       "Edit(/AGENTS.md)",
-      "Bash(clasp push *)",
-      "Bash(clasp deploy *)",
       "Bash(clasp pull *)",
       "Bash(clasp run *)",
       "Bash(git push --force *)",
