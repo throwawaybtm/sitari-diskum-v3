@@ -6,35 +6,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <?!= include('MobileBase'); ?>
   <title>SI-TARI DISKUM</title>
-  <script id="pdf-library-loader">
-    // PDF libraries are only needed for exports. Parser-attached <script defer> tags delay
-    // DOMContentLoaded, which starts the first dashboard requests, so inject them afterwards.
-    (function () {
-      var libs = [
-        ['https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js', 'sha384-qovJwSBbRDPP5cEjCp8S0UP66wrvnjaa60XMOGzTNanrThcrGfXfnZkvgY8N1KT3'],
-        ['https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js', 'sha384-weMABwrltA6jWR8DDe9Jp5blk+tZQh7ugpCsF3JwSA53WZM9/14PjS5LAJNHNjAI']
-      ];
-      var started = false;
-      function inject() {
-        if (started) return;
-        started = true;
-        libs.forEach(function (lib) {
-          var s = document.createElement('script');
-          s.setAttribute('src', lib[0]);
-          s.setAttribute('integrity', lib[1]);
-          s.setAttribute('crossorigin', 'anonymous');
-          s.setAttribute('async', '');
-          document.head.appendChild(s);
-        });
-      }
-      function afterInit() { setTimeout(inject, 0); }
-      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', afterInit);
-      else afterInit();
-    })();
-  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js"
+    integrity="sha384-qovJwSBbRDPP5cEjCp8S0UP66wrvnjaa60XMOGzTNanrThcrGfXfnZkvgY8N1KT3"
+    crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"
+    integrity="sha384-weMABwrltA6jWR8DDe9Jp5blk+tZQh7ugpCsF3JwSA53WZM9/14PjS5LAJNHNjAI"
+    crossorigin="anonymous"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <?!= include('Stylesheet'); ?>
-  <?!= include('TailwindCompiled'); ?>
 </head>
 
 <body class="bg-slate-100/70 text-slate-800 antialiased min-h-screen flex flex-col">

@@ -27,7 +27,7 @@
     return out.save();
   }
   function buildVisitSummaryPdf_(data) {
-    if(typeof jspdf==='undefined')throw new Error('Pustaka PDF belum termuat. Muat ulang halaman.');
+    if(typeof jspdf==='undefined')throw new Error('Pustaka PDF belum termuat.');
     const doc=new jspdf.jsPDF({unit:'mm',format:'a4'}),v=data.visit,w=data.workflow;
     doc.setFontSize(17);doc.text('Arsip Kunjungan',20,24);doc.setFontSize(11);let y=36;
     const lines=['SI-TARI DISKUM',v.kode_kunjungan,v.instansi,'Tanggal kegiatan: '+String(w.booking&&w.booking.tanggal||v.tanggal_kunjungan||'-').split('-').reverse().join('-'),'Agenda: '+v.keperluan,'Status: '+w.status,'Catatan: '+(w.note||'-'),'Dokumen:'];
