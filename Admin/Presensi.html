@@ -11,6 +11,15 @@
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
     .category-short {display:none;}
+    /* Duplicate check-in notice: plain CSS so it does not depend on the precompiled Tailwind set. */
+    .dup-notice {position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(15,23,42,.55);}
+    .dup-notice[hidden] {display:none;}
+    .dup-notice__card {width:100%;max-width:26rem;background:#fff;border-radius:24px;padding:28px 24px 24px;text-align:center;box-shadow:0 20px 50px rgba(15,23,42,.3);}
+    .dup-notice__icon {width:56px;height:56px;margin:0 auto 14px;border-radius:9999px;display:flex;align-items:center;justify-content:center;background:#fef3c7;color:#b45309;font-size:24px;}
+    .dup-notice__title {margin:0 0 8px;font-size:18px;font-weight:800;color:#0f172a;line-height:1.4;}
+    .dup-notice__text {margin:0 0 20px;font-size:14px;color:#475569;line-height:1.55;overflow-wrap:anywhere;}
+    .dup-notice__btn {width:100%;min-height:44px;border:0;border-radius:16px;background:linear-gradient(to right,#11504a,#143238);color:#fff;font-weight:700;font-size:14px;cursor:pointer;}
+    .dup-notice__btn:hover {filter:brightness(1.1);}
     :is(#attendanceWindowMessage,#visitRosterMessage):empty {display:none;}
     @media (min-width: 1024px) {
       body > .presensi-page { width: 48rem; max-width: 100%; }
@@ -219,6 +228,15 @@
           </button>
         </form>
       </div>
+    </div>
+  </div>
+
+  <div id="duplicateNotice" class="dup-notice" role="alertdialog" aria-modal="true" aria-labelledby="duplicateNoticeTitle" aria-describedby="duplicateNoticeText" hidden>
+    <div class="dup-notice__card">
+      <div class="dup-notice__icon"><i class="fa-solid fa-user-check"></i></div>
+      <h2 id="duplicateNoticeTitle" class="dup-notice__title">Anda sudah melakukan presensi pada agenda ini</h2>
+      <p id="duplicateNoticeText" class="dup-notice__text"></p>
+      <button type="button" id="duplicateNoticeClose" class="dup-notice__btn">Mengerti</button>
     </div>
   </div>
 
@@ -626,7 +644,7 @@
           alert(res.message);
           location.reload();
         } else if (res.duplicate) {
-          alert('Anda sudah melakukan presensi pada agenda ini.\n\n' + res.error);
+          showDuplicateNotice(res.error);
         } else {
           alert('Gagal: ' + publicErrorMessage(res.error));
         }
@@ -636,6 +654,17 @@
         btn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i> Simpan Kehadiran Presensi Digital';
         alert('Presensi gagal disimpan. Periksa koneksi lalu coba lagi.');
       });
+    }
+
+    function showDuplicateNotice(message) {
+      const notice=document.getElementById('duplicateNotice'),close=document.getElementById('duplicateNoticeClose');
+      document.getElementById('duplicateNoticeText').textContent=String(message||'Presensi atas nama ini sudah tercatat.');
+      const hide=()=>{notice.hidden=true;document.removeEventListener('keydown',onKey);};
+      const onKey=e=>{if(e.key==='Escape')hide();};
+      close.onclick=hide;
+      notice.onclick=e=>{if(e.target===notice)hide();};
+      document.addEventListener('keydown',onKey);
+      notice.hidden=false;close.focus();
     }
 
     function callBackend(fnName, args, onSuccess, onError) {

@@ -31,5 +31,8 @@ test('empty sheet has no existing attendance',()=>{
 });
 test('the Presensi form shows the duplicate notice instead of a success message',()=>{
  const html=fs.readFileSync('Admin/Presensi.html','utf8');
- assert.match(html,/res\.duplicate/);assert.match(html,/sudah melakukan presensi/i);
+ assert.match(html,/res\.duplicate\) \{\s*showDuplicateNotice\(res\.error\)/);
+ assert.match(html,/id="duplicateNotice"[^>]*role="alertdialog"[^>]*hidden/);
+ assert.match(html,/sudah melakukan presensi pada agenda ini/i);
+ assert.match(html,/duplicateNoticeText'\)\.textContent=/,'message is set as text, never HTML');
 });
