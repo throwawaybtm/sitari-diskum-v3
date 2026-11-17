@@ -217,18 +217,6 @@ function formatTimeVal(val) {
   return text;
 }
 
-/** TLD guests show the scheduled time until the first attendee checks in, then the earliest actual arrival (24h WIB). */
-function updateVisitArrivalTime_(ss, visit, attendance, attendedAt) {
-  if (!visit || visit.tipe_tamu !== 'luar_daerah') return;
-  const clock = value => { const m = String(value || '').match(/(\d{2}):(\d{2})(?::\d{2})?\s*$/); return m ? m[1] + ':' + m[2] : ''; };
-  const times = (attendance || []).map(row => clock(row && (row.waktu || row.rawWaktu))).concat(clock(attendedAt)).filter(Boolean).sort();
-  if (!times.length) return;
-  const sheet = ss.getSheetByName('Data_Tamu');
-  const found = findRecordByColumn_(sheet, 2, visit.kode_kunjungan, 14);
-  if (!found) return;
-  sheet.getRange(found.row, 14).setNumberFormat('@').setValue(times[0]);
-}
-
 /** Keep WhatsApp numbers exactly as entered. Sheets drops the leading 0 of numeric-looking cells, so restore it for legacy rows. */
 function formatPhoneVal_(val) {
   if (val === null || val === undefined || val === '') return '';
@@ -1251,7 +1239,7 @@ function savePresensiRapat_(p, source) {
   phoneCell.setNumberFormat('@');
   phoneCell.setValue(String(p.no_hp||'-').trim());
 
-  if(visitData)updateVisitArrivalTime_(ss,visitData.visit,visitData.attendance,times.attendance);
+  // Buku Tamu keeps the scheduled Jam_Kunjungan; the actual arrival lives in Data_Presensi.
   autoSortPresensi(ss);
   if(typeof SpreadsheetApp!=='undefined'&&typeof SpreadsheetApp.flush==='function')SpreadsheetApp.flush();
   return { success: true, message: `Presensi atas nama ${p.nama} berhasil dicatat!` };

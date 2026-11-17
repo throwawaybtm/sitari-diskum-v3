@@ -39,18 +39,17 @@ function backend({ tipe, existing = [] }) {
   return { context, tamuRows };
 }
 
-test('TLD scheduled time becomes the actual arrival time at first check-in', () => {
+test('TLD keeps its scheduled time in Buku Tamu after the first check-in', () => {
   const { context, tamuRows } = backend({ tipe: 'luar_daerah' });
-  assert.equal(tamuRows[0][13], '09:00');
   const res = context.submitPresensiRapat({ rapat_id: 7, nama: 'Tamu Satu', jabatan: 'Ketua' });
   assert.equal(res.success, true, res.error);
-  assert.equal(tamuRows[0][13], '10:05');
+  assert.equal(tamuRows[0][13], '09:00');
 });
 
-test('TLD arrival keeps the earliest attendee time when a later one checks in', () => {
+test('TLD keeps its scheduled time when later attendees check in', () => {
   const { context, tamuRows } = backend({ tipe: 'luar_daerah', existing: [{ waktu: '12-11-2026 09:48' }] });
   context.submitPresensiRapat({ rapat_id: 7, nama: 'Tamu Dua', jabatan: 'Anggota' });
-  assert.equal(tamuRows[0][13], '09:48');
+  assert.equal(tamuRows[0][13], '09:00');
 });
 
 test('TDD arrival time is never overwritten by presensi', () => {
