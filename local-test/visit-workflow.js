@@ -357,6 +357,9 @@ function createVisitWorkflow({ visitors, meetings, sppd, rooms, employees = [], 
           if (!jabatan) throw new Error('Jabatan wajib diisi.');
           normalizedPayload = { ...normalizedPayload, nama, nama_opd: namaOpd, jabatan };
         }
+        const rows=attendance.map(a=>[a.id||'',a.rapat_id,'',a.kategori_peserta||a.kategori||'',a.nama,a.nip||'-','',a.nama_opd||'','',a.waktu||'']);
+        const existing=model.findExistingPresensi_({getLastRow:()=>rows.length+1,getRange:(r,c,n)=>({getValues:()=>rows.slice(r-2,r-2+n)})},normalizedPayload);
+        if(existing)return {success:false,duplicate:true,error:`${existing.nama} sudah melakukan presensi pada agenda ini${existing.jam?' (pukul '+existing.jam+' WIB)':''}.`};
         attendance.push({ ...normalizedPayload, nama: String(normalizedPayload.nama).trim(), waktu: times.attendance,recorded_at:times.recorded,source });
         return { success: true, message: 'Presensi disimpan sementara di server lokal.' };
       }

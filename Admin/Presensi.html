@@ -625,6 +625,8 @@
         if (res.success) {
           alert(res.message);
           location.reload();
+        } else if (res.duplicate) {
+          alert('Anda sudah melakukan presensi pada agenda ini.\n\n' + res.error);
         } else {
           alert('Gagal: ' + publicErrorMessage(res.error));
         }
