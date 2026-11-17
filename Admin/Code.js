@@ -1196,6 +1196,30 @@ function submitAdminPresensiRapat(p) {
   }catch(error){return {success:false,error:error.message};}finally{if(lock)lock.releaseLock();}
 }
 
+function normalizePresensiKey_(value) {
+  return String(value==null?'':value).toLowerCase().replace(/\s+/g,' ').trim();
+}
+/** Find an existing Data_Presensi row for the same person on the same agenda (NIP for Diskum staff, else name + institution). */
+function findExistingPresensi_(sheet,p) {
+  const lastRow=sheet&&typeof sheet.getLastRow==='function'?sheet.getLastRow():0;
+  if(lastRow<=1||!p)return null;
+  const rapatId=String(p.rapat_id),kategori=String(p.kategori_peserta||'');
+  const nip=String(p.nip||'').trim(),useNip=kategori==='Diskum'&&nip&&nip!=='-';
+  const nama=normalizePresensiKey_(p.nama),opd=normalizePresensiKey_(p.nama_opd);
+  const rows=sheet.getRange(2,1,lastRow-1,10).getValues();
+  const hit=rows.find(r=>{
+    if(String(r[1])!==rapatId)return false;
+    if(useNip&&String(r[3])==='Diskum'&&String(r[5]).trim()===nip)return true;
+    if(normalizePresensiKey_(r[4])!==nama)return false;
+    return kategori==='Diskum'?String(r[3])==='Diskum':normalizePresensiKey_(r[7])===opd;
+  });
+  if(!hit)return null;
+  const when=hit[9];
+  const jam=when instanceof Date||Object.prototype.toString.call(when)==='[object Date]'
+    ?Utilities.formatDate(when,'Asia/Jakarta','HH:mm'):((String(when).match(/(\d{2}:\d{2})/)||[])[1]||'');
+  return {nama:hit[4],jam:jam};
+}
+
 function savePresensiRapat_(p, source) {
   const meeting=(typeof getRapatCalendar_==='function'?getRapatCalendar_():getRapatCalendar()).data.find(item=>String(item.id)===String(p.rapat_id));
   if(!meeting)return {success:false,error:'Agenda tidak ditemukan.'};
@@ -1225,6 +1249,8 @@ function savePresensiRapat_(p, source) {
   const sheet = ss.getSheetByName('Data_Presensi');
   if(sheet.getLastColumn()<12)sheet.getRange(1,11,1,2).setValues([['Anggota Kunjungan ID','Sumber Presensi']]);
   if(sheet.getLastColumn()<13)sheet.getRange(1,13).setValue('Waktu Pencatatan');
+  const existing=findExistingPresensi_(sheet,p);
+  if(existing)return {success:false,duplicate:true,error:`Presensi atas nama ${existing.nama} sudah tercatat${existing.jam?' pukul '+existing.jam+' WIB':''}.`};
   const nextId = nextRecordId_(sheet);
   sheet.getRange(sheet.getLastRow()+1,9).setNumberFormat('@');
   if(source==='AdminEntry')sheet.getRange(sheet.getLastRow()+1,10).setNumberFormat('@');

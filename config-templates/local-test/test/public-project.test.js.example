@@ -9,7 +9,7 @@ test('public app build pins the core and carries current approved form templates
   assert.equal(manifest.dependencies.libraries[0].version,'30');
   assert.equal(manifest.dependencies.libraries[0].userSymbol,'SiTariCore');
   for(const [source,target] of [['Tamu-Luar/Index.html','Tld.html'],['Tamu-FO/Index.html','Tdd.html'],['Admin/Presensi.html','Presensi.html']]){
-    const expected=fs.readFileSync(source,'utf8').replace(/include\('(AttendancePolicy|MobileBase)'\)/g,"include_('$1')");
+    const expected=fs.readFileSync(source,'utf8').replace(/include\('(AttendancePolicy|MobileBase|TailwindCompiled)'\)/g,"include_('$1')");
     assert.equal(fs.readFileSync('output/public-project-test/'+target,'utf8'),expected);
   }
 });

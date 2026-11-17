@@ -24,7 +24,7 @@ test('TDD form matches TLD Ketua & Anggota Rombongan UI and submits pengikut_lis
 
   // Verify public Tdd.html stays synced with Tamu-FO/Index.html.
   const publicTddHtml = fs.readFileSync(path.join(root, 'Public/Tdd.html'), 'utf8');
-  assert.equal(publicTddHtml, tddHtml.replace(/include\('(AttendancePolicy|MobileBase)'\)/g, "include_('$1')"));
+  assert.equal(publicTddHtml, tddHtml.replace(/include\('(AttendancePolicy|MobileBase|TailwindCompiled)'\)/g, "include_('$1')"));
 
   // Exercise real submitFo browser script against a stubbed fetch endpoint.
   const script = tddHtml.match(/<script>([\s\S]*?)<\/script>/)?.[1] || '';
