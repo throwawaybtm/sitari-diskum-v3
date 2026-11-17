@@ -120,7 +120,7 @@ function buildAdmin(config) {
     if (!fs.statSync(from).isFile()) continue;
     let text = fs.readFileSync(from, 'utf8');
     if (name === 'Index.html' || name === 'Presensi.html') {
-      text = text.replace(/(<body[^>]*>)/, '$1\n' + STAGING_BANNER);
+      text = text.replace(/(<body(?:[^>"]|"[^"]*")*>)/, '$1\n' + STAGING_BANNER);
     }
     fs.writeFileSync(path.join(ADMIN_DIR, name), text);
   }
@@ -145,7 +145,7 @@ function buildStagingPublic(config) {
   writeClasp(PUBLIC_DIR, config.publicScriptId);
   for (const name of ['Tld.html', 'Tdd.html', 'Presensi.html']) {
     const file = path.join(PUBLIC_DIR, name);
-    fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replace(/(<body[^>]*>)/, '$1\n' + STAGING_BANNER));
+    fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replace(/(<body(?:[^>"]|"[^"]*")*>)/, '$1\n' + STAGING_BANNER));
   }
 }
 
