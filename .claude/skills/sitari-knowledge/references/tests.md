@@ -3,7 +3,7 @@
 Baseline: `node local-test/run-synthetic-tests.js` -> 287 pass / 0 fail at 0de798d (Node 22 and 24). The runner stages tracked sources + sanitized fixtures in a temp folder, uses fictional data, blocks external fetch (`synthetic-network-guard.js`), and runs HTTP tests on loopback (a loopback-denied sandbox cannot validate HTTP paths).
 
 Focused run: `node local-test/run-synthetic-tests.js local-test/test/<name>.test.js`
-Guard hook tests: `node --test .claude/hooks/sitari-guard.test.mjs` (85).
+Guard hook tests: `node --test .claude/hooks/sitari-guard.test.mjs` (26).
 Legacy raw command `node --test 'local-test/test/*.test.js'` depends on ignored private fixtures; do not use it for checkpoints.
 
 Record in every checkpoint: command, branch, full SHA, pass/fail/skip counts, Node version, exit code.

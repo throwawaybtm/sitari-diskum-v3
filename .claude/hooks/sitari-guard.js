@@ -1,72 +1,11 @@
 #!/usr/bin/env node
 // SITARI PreToolUse guard for Claude Code (Bash tool).
-// Blocks actions that AGENTS.md reserves for explicit owner approval.
 // Exit 2 = block (stderr is shown to Claude). Exit 0 = allow normal permission flow.
 // No dependencies, no network, reads only the hook payload on stdin.
+// git and clasp commands are not blocked (owner decision, 2026-11-17).
 'use strict';
 
-// `version` is NOT read-only: `clasp version "<description>"` creates an immutable script version.
-const CLASP_READ_ONLY = new Set([
-  'status', 'show-file-status', 'list-versions', 'versions', 'list-deployments', 'deployments',
-  'show-authorized-user', 'help', '--help', '-h', '--version', '-v',
-]);
-
-// Owner switch. The owner sets this in the environment of the process that LAUNCHES the session
-// (for example in the terminal before starting `claude`). The hook reads its own process
-// environment, so a value typed inside an agent command (`SITARI_OWNER_APPROVED_DEPLOY=1 clasp push`)
-// never reaches it. Only the exact value "1" counts.
-const OWNER_SWITCH = 'SITARI_OWNER_APPROVED_DEPLOY';
-// Even with the switch on, only these release steps are allowed. Everything else stays blocked:
-// pull, run, create, create-deployment, update-deployment, undeploy, setting, login, ...
-const OWNER_ALLOWED = new Set(['push', 'create-version', 'version', 'deploy']);
-
-function ownerApproved(env) {
-  return Boolean(env) && env[OWNER_SWITCH] === '1';
-}
-
 const RULES = [
-  {
-    // Any clasp subcommand not on the read-only list (push, deploy, pull, run, create, setting, ...).
-    test: (c, env) => {
-      // A quote may precede clasp too, so `node -e "execSync('clasp ...')"` is caught.
-      const re = /(?:^|[\s;&|(`'"])(?:npx\s+(?:-y\s+)?(?:@google\/)?clasp|clasp)(?:@[\w.-]+)?\s+([^\s;&|)]+)([^;&|)]*)/g;
-      let m;
-      while ((m = re.exec(c)) !== null) {
-        const sub = m[1].toLowerCase();
-        if (CLASP_READ_ONLY.has(sub)) continue;
-        if (ownerApproved(env) && OWNER_ALLOWED.has(sub)) {
-          // `deploy` without -i/--deploymentId would create a NEW deployment (new URL).
-          if (sub === 'deploy' && !/(?:^|\s)(?:-i|--deploymentId)(?:\s|=)/.test(m[2])) return 'clasp deploy without -i (would create a new deployment URL)';
-          continue;
-        }
-        return `clasp ${m[1]}`;
-      }
-      return null;
-    },
-    why: `clasp write/deploy/run/pull actions need explicit owner approval (AGENTS.md: never deploy Apps Script without approval). Ask the user to run it themselves, or to start the session with ${OWNER_SWITCH}=1 (allows only push, create-version and deploy -i).`,
-  },
-  {
-    // The staging deploy script runs clasp push/create-version/create-deployment in child processes,
-    // which this hook never sees. Gate the script itself behind the same owner switch.
-    test: (c, env) => (!ownerApproved(env) && /\bnode\b[^;&|]*maintenance[\\/]+staging[\\/]+deploy-staging\b/.test(c) ? 'staging deploy script' : null),
-    why: `maintenance/staging/deploy-staging.js runs clasp push/deploy internally. Ask the owner to run it, or to start the session with ${OWNER_SWITCH}=1.`,
-  },
-  {
-    test: (c) => (/\bgit\s+push\b[^;&|]*(\s--force\b|\s-f\b|\s--force-with-lease\b|\s\+\S)/.test(c) ? 'git push --force' : null),
-    why: 'Force push is never allowed without explicit approval.',
-  },
-  {
-    test: (c) => (/\bgit\s+push\b[^;&|]*(\smain\b|:main\b|refs\/heads\/main\b)/.test(c) ? 'git push to main' : null),
-    why: 'Pushing to main is a merge-to-main action and needs explicit approval.',
-  },
-  {
-    test: (c) => (/\bgit\s+(merge|rebase)\b[^;&|]*\bmain\b/.test(c) ? 'git merge/rebase involving main' : null),
-    why: 'Merging into main needs explicit approval.',
-  },
-  {
-    test: (c) => (/\bgit\s+(reset\s+--hard|clean\s+-[a-z]*f[a-z]*|filter-branch|filter-repo|commit\s+--amend|push\s+--delete)\b/.test(c) ? 'history-rewriting or destructive git command' : null),
-    why: 'Git history and the working tree must stay unchanged unless the owner approves.',
-  },
   {
     test: (c) => (/\bmaintenance\/build-public\.js\b/.test(c) ? 'Public regeneration' : null),
     why: 'Public/ regeneration is a release activity (AGENTS.md / handover book). Ask first.',
@@ -85,10 +24,10 @@ const RULES = [
   },
 ];
 
-function check(command, env = {}) {
+function check(command) {
   const c = ` ${String(command || '')}`;
   for (const r of RULES) {
-    const hit = r.test(c, env);
+    const hit = r.test(c);
     if (hit) return { blocked: true, hit, why: r.why };
   }
   return { blocked: false };
@@ -102,7 +41,7 @@ if (require.main === module) {
     let payload;
     try { payload = JSON.parse(raw || '{}'); } catch { process.exit(0); }
     if (payload.tool_name !== 'Bash') process.exit(0);
-    const res = check(payload.tool_input && payload.tool_input.command, process.env);
+    const res = check(payload.tool_input && payload.tool_input.command);
     if (res.blocked) {
       process.stderr.write(`SITARI guard blocked: ${res.hit}. ${res.why}\n`);
       process.exit(2);

@@ -58,18 +58,7 @@
       "Read(**/.clasprc.json)",
       "Edit(/Public/**)",
       "Edit(/deployments/**)",
-      "Edit(/AGENTS.md)",
-      "Bash(clasp pull *)",
-      "Bash(clasp run *)",
-      "Bash(git push --force *)",
-      "Bash(git push * --delete *)",
-      "Bash(git push --delete *)",
-      "Bash(git push * -d *)",
-      "Bash(git push origin :*)",
-      "mcp__clasp__push_files",
-      "mcp__clasp__pull_files",
-      "mcp__clasp__create_project",
-      "mcp__clasp__clone_project"
+      "Edit(/AGENTS.md)"
     ]
   },
   "hooks": {
