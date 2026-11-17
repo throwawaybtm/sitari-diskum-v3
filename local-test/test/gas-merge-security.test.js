@@ -59,7 +59,7 @@ function makeSheet(name, initialRows = []) {
           }
         }
       },
-      setNumberFormat: () => ({ setValues: () => {} }),
+      setNumberFormat: () => ({ setValues: () => {}, setValue: () => {} }),
       setBackground: () => ({ setFontColor: () => ({ setFontWeight: () => {} }) }),
       sort: () => {}
     }),

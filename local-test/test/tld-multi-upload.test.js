@@ -20,7 +20,7 @@ function load(kind) {
     rows: [],
     getLastRow() { return this.rows.length + 1; },
     getLastColumn: () => 21,
-    getRange: () => ({ setNumberFormat() { return this; }, getValues: () => [], sort() {} }),
+    getRange: () => ({ setNumberFormat() { return this; }, setValue() { return this; }, getValues: () => [], sort() {} }),
     appendRow(row) { this.rows.push(Array.from(row)); }
   });
   const spreadsheet = { getSheetByName: sheetFor };

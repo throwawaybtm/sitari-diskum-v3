@@ -33,3 +33,8 @@ test('Data_Presensi marks the phone column as text before every append', () => {
   const source = fs.readFileSync('Admin/Code.js', 'utf8');
   assert.match(source, /sheet\.getRange\(sheet\.getLastRow\(\)\+1,9\)\.setNumberFormat\('@'\)/);
 });
+
+test('Data_Presensi rewrites the phone cell as text after append so the leading 0 is stored', () => {
+  const source = fs.readFileSync('Admin/Code.js', 'utf8');
+  assert.match(source, /const phoneCell=sheet\.getRange\(sheet\.getLastRow\(\),9\);\s*phoneCell\.setNumberFormat\('@'\);\s*phoneCell\.setValue\(String\(p\.no_hp\|\|'-'\)\.trim\(\)\);/);
+});

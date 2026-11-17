@@ -1246,6 +1246,10 @@ function savePresensiRapat_(p, source) {
     p.nama, p.nip || '-', p.jabatan || '-', p.nama_opd || 'Diskum Batam', p.no_hp || '-', times.attendance,
     visitData?p.member_id:'',source==='Admin'?'Admin':source==='AdminEntry'?'AdminEntry':'QR',times.recorded
   ]);
+  // appendRow ignores the Plain text format prepared above; rewrite the phone as text so a leading 0 survives.
+  const phoneCell=sheet.getRange(sheet.getLastRow(),9);
+  phoneCell.setNumberFormat('@');
+  phoneCell.setValue(String(p.no_hp||'-').trim());
 
   if(visitData)updateVisitArrivalTime_(ss,visitData.visit,visitData.attendance,times.attendance);
   autoSortPresensi(ss);
