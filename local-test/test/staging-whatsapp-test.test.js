@@ -72,8 +72,20 @@ test('the build fails closed if the Admin code no longer matches an anchor', () 
 
 test('the safety net rejects any unredirected send or extra Fonnte call', () => {
   assert.throws(() => staging.assertWhatsappRedirected({ 'Other.js': 'x=sendVisitWhatsapp_(row.phone,"hi");' }), /not redirected/);
-  assert.throws(() => staging.assertWhatsappRedirected({ 'Other.js': 'UrlFetchApp.fetch("https://api.fonnte.com/send")' }), /unexpected Fonnte call/);
+  assert.throws(() => staging.assertWhatsappRedirected({ 'Other.js': 'UrlFetchApp.fetch("https://api.fonnte.com/send")' }), /unexpected Fonnte reference/);
   assert.doesNotThrow(() => staging.assertWhatsappRedirected({ 'A.js': 'function sendVisitWhatsapp_(phone,message){}' }));
+});
+
+test('the safety net also catches split URLs, extra fetches, spacing and aliases', () => {
+  const patched = staging.applyWhatsappTestPatches(adminSources());
+  // A split Fonnte URL in another file is caught because any HTTP call outside the guarded send is refused.
+  assert.throws(() => staging.assertWhatsappRedirected({ ...patched, 'Other.js': 'UrlFetchApp.fetch("https://api."+"fon"+"nte.com/send",{})' }), /unexpected UrlFetchApp call in Other\.js/);
+  // A second HTTP call inside VisitNotifications.js is refused too.
+  const second = patched['VisitNotifications.js'] + '\nfunction extra_(){return UrlFetchApp.fetch(u,{});}';
+  assert.throws(() => staging.assertWhatsappRedirected({ ...patched, 'VisitNotifications.js': second }), /more than one UrlFetchApp call/);
+  assert.throws(() => staging.assertWhatsappRedirected({ 'Other.js': 'x=sendVisitWhatsapp_ (row.phone,"hi");' }), /not redirected/);
+  assert.throws(() => staging.assertWhatsappRedirected({ 'Other.js': 'var send=sendVisitWhatsapp_;' }), /aliased/);
+  assert.doesNotThrow(() => staging.assertWhatsappRedirected(patched));
 });
 
 function runPatchedNotifications() {

@@ -139,18 +139,30 @@ function applyWhatsappTestPatches(files) {
 
 /** Every WhatsApp send in the given files must go to a test number; no other file may call Fonnte. */
 function assertWhatsappRedirected(files) {
+  let fetchCalls = 0;
   for (const [name, text] of Object.entries(files)) {
     if (!/\.(js|html)$/.test(name)) continue;
-    if (name !== 'VisitNotifications.js' && /api\.fonnte\.com/.test(text)) {
-      throw new Error('Refusing to build: unexpected Fonnte call in ' + name + '.');
+    if (name !== 'VisitNotifications.js' && /fonnte\s*\.\s*com/i.test(text)) {
+      throw new Error('Refusing to build: unexpected Fonnte reference in ' + name + '.');
     }
-    for (const match of text.matchAll(/sendVisitWhatsapp_\(([^,)]*)/g)) {
+    // Exactly one outbound HTTP call may exist in Admin, the guarded one inside sendVisitWhatsapp_,
+    // so a new or split Fonnte URL anywhere else cannot bypass the test-number check.
+    const fetches = text.match(/UrlFetchApp\s*\.\s*fetch(All)?\s*\(/g) || [];
+    if (fetches.length && name !== 'VisitNotifications.js') {
+      throw new Error('Refusing to build: unexpected UrlFetchApp call in ' + name + '.');
+    }
+    fetchCalls += fetches.length;
+    if (/[=:,(]\s*sendVisitWhatsapp_\s*[,);]/.test(text)) {
+      throw new Error('Refusing to build: sendVisitWhatsapp_ is aliased in ' + name + '.');
+    }
+    for (const match of text.matchAll(/sendVisitWhatsapp_\s*\(([^,)]*)/g)) {
       if (text.slice(Math.max(0, match.index - 9), match.index) === 'function ') continue;
       if (!/^SITARI_STAGING_WA_TEST_\.(contact|pic)$/.test(match[1].trim())) {
         throw new Error('Refusing to build: WhatsApp call in ' + name + ' is not redirected to a test number.');
       }
     }
   }
+  if (fetchCalls > 1) throw new Error('Refusing to build: more than one UrlFetchApp call in VisitNotifications.js.');
 }
 
 function readAdminBuild() {

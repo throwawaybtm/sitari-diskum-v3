@@ -53,6 +53,9 @@ node maintenance/staging/build-staging.js
 
 Output goes to `.staging/admin` and `.staging/public`. No network, no clasp.
 
+The build needs the gitignored private files (for example `Tamu-Luar/Destinations.js`). On a fresh checkout,
+copy the real ones in, or run `node local-test/setup-local.js --from-templates` for placeholder data.
+
 ## 3. Create and deploy (owner only, once per release candidate)
 
 Requires `clasp` logged in to the owner account. Run it yourself in a terminal (the SITARI guard blocks agents
