@@ -28,7 +28,8 @@ const RULES = [
   {
     // Any clasp subcommand not on the read-only list (push, deploy, pull, run, create, setting, ...).
     test: (c, env) => {
-      const re = /(?:^|[\s;&|(`])(?:npx\s+(?:-y\s+)?(?:@google\/)?clasp|clasp)(?:@[\w.-]+)?\s+([^\s;&|)]+)([^;&|)]*)/g;
+      // A quote may precede clasp too, so `node -e "execSync('clasp ...')"` is caught.
+      const re = /(?:^|[\s;&|(`'"])(?:npx\s+(?:-y\s+)?(?:@google\/)?clasp|clasp)(?:@[\w.-]+)?\s+([^\s;&|)]+)([^;&|)]*)/g;
       let m;
       while ((m = re.exec(c)) !== null) {
         const sub = m[1].toLowerCase();
@@ -43,6 +44,12 @@ const RULES = [
       return null;
     },
     why: `clasp write/deploy/run/pull actions need explicit owner approval (AGENTS.md: never deploy Apps Script without approval). Ask the user to run it themselves, or to start the session with ${OWNER_SWITCH}=1 (allows only push, create-version and deploy -i).`,
+  },
+  {
+    // The staging deploy script runs clasp push/create-version/create-deployment in child processes,
+    // which this hook never sees. Gate the script itself behind the same owner switch.
+    test: (c, env) => (!ownerApproved(env) && /\bnode\b[^;&|]*maintenance[\\/]+staging[\\/]+deploy-staging\b/.test(c) ? 'staging deploy script' : null),
+    why: `maintenance/staging/deploy-staging.js runs clasp push/deploy internally. Ask the owner to run it, or to start the session with ${OWNER_SWITCH}=1.`,
   },
   {
     test: (c) => (/\bgit\s+push\b[^;&|]*(\s--force\b|\s-f\b|\s--force-with-lease\b|\s\+\S)/.test(c) ? 'git push --force' : null),

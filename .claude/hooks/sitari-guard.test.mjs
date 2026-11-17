@@ -43,6 +43,14 @@ const BLOCK = [
   'clasp create-version "release notes"',
   'SITARI_OWNER_APPROVED_DEPLOY=1 clasp push',
   'export SITARI_OWNER_APPROVED_DEPLOY=1; clasp push',
+  // Scripts that run clasp internally: the hook cannot see inside them, so the script itself is gated.
+  'node maintenance/staging/deploy-staging.js',
+  'cd D:/sitari-diskum-v3 && node ./maintenance/staging/deploy-staging.js',
+  'node maintenance\\staging\\deploy-staging.js',
+  'node maintenance/staging/deploy-staging',
+  // clasp hidden in a quoted inline script.
+  `node -e "require('child_process').execSync('clasp push')"`,
+  `node -e "execSync('npx @google/clasp deploy -i x')"`,
 ];
 
 const ALLOW = [
@@ -61,6 +69,8 @@ const ALLOW = [
   'node --test local-test/test/safe-id-generation.test.js',
   'grep -n "clasprc" docs/LOCAL_SETUP.md',
   'echo maintenance-window',
+  'node maintenance/staging/build-staging.js',
+  'git grep -n deploy-staging -- docs',
 ];
 
 for (const c of BLOCK) test(`blocks: ${c}`, () => assert.equal(check(c).blocked, true, c));
@@ -77,6 +87,7 @@ const OWNER_ALLOW = [
   'clasp deploy -i AKfy -d "x"',
   'clasp deploy --deploymentId AKfy',
   'clasp status && clasp push',
+  'node maintenance/staging/deploy-staging.js',
 ];
 
 const OWNER_BLOCK = [
