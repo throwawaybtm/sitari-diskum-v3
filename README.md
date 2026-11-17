@@ -4,8 +4,8 @@ Two active GAS apps share one backend and database:
 
 | Directory | Purpose | Published version |
 |---|---|---|
-| `Admin/` | Dashboard, approvals, shared backend/library | 55 |
-| `Public/` | Generated public TLD, TDD and Presensi app | 23; pinned Admin library 55 |
+| `Admin/` | Dashboard, approvals, shared backend/library | 56 |
+| `Public/` | Generated public TLD, TDD and Presensi app | 24; pinned Admin library 56 |
 
 `Tamu-Luar/` and `Tamu-FO/` remain authoring sources for local tests and the public build. Do not deploy them independently. Former clasp configurations are archived under `deployments/2026-11-01/source-clasp-archive/`. Edit their HTML sources and `Admin/Presensi.html`, then rebuild Public.
 
