@@ -213,6 +213,8 @@ function registerTamuLuar(payload) {
       payload.narahubung_hp, dateValue, payload.jam_kunjungan || '09:00',
       urlSuratKunjungan, urlSuratTugas, destination.picIds, destination.pic, isBawaSppd, 'Menunggu Konfirmasi', timeNow
     ]);
+    // appendRow ignores the Plain text format prepared above, so rewrite the WhatsApp cell as text to keep a leading 0.
+    sheetTamu.getRange(sheetTamu.getLastRow(), 12).setNumberFormat('@').setValue(String(payload.narahubung_hp || '').trim());
 
     if (isBawaSppd) {
       const sheetSppd = ss.getSheetByName('Kendali_SPPD');

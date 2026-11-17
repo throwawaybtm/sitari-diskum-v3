@@ -166,6 +166,8 @@ function registerTamuFo(payload) {
       destination.bidang, payload.keperluan, payload.ketua_nama, payload.narahubung_hp,
       today, nowHours, '', '', destination.picIds, destination.pic, 0, 'Diterima', timeNow
     ]);
+    // appendRow ignores the Plain text format prepared above, so rewrite the WhatsApp cell as text to keep a leading 0.
+    sheetTamu.getRange(sheetTamu.getLastRow(), 12).setNumberFormat('@').setValue(String(payload.narahubung_hp || '').trim());
 
     sortTamu_(ss);
     return {

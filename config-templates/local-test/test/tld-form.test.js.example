@@ -81,7 +81,7 @@ test('GAS registration saves all selected fields and PICs in the shared row', ()
   const options = context.getTldPublicDestinations_();
   const rows = [];
   const formats = [];
-  const sheet = { getLastRow: () => 1, getRange: (row, column, height, width) => ({ setNumberFormat: format => formats.push({ column, width, format }) }), appendRow: row => rows.push(row) };
+  const sheet = { getLastRow: () => 1, getRange: (row, column, height = 1, width = 1) => ({ setNumberFormat(format) { formats.push({ column, width, format }); return this; }, setValue() { return this; } }), appendRow: row => rows.push(row) };
   context.LockService = { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) };
   context.Utilities = { formatDate: () => '2026-10-26 10:00:00' };
   context.getSharedSpreadsheet_ = () => ({ getSheetByName: () => sheet });
