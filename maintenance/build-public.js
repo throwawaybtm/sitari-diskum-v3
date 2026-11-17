@@ -18,7 +18,7 @@ function buildPublic({coreVersion,targetDir='Public',intakeFile='Admin/PublicInt
   write(targetDir+'/.clasp.json',JSON.stringify(publicClasp,null,2)+'\n');
   write(targetDir+'/.claspignore','.clasp.json\n.claspignore\n*.md\nnode_modules/**\n');
   write(targetDir+'/Code.js',read('maintenance/templates/PublicCode.js'));
-  for(const [from,to]of [['Tamu-Luar/Index.html','Tld.html'],['Tamu-FO/Index.html','Tdd.html'],['Tamu-Luar/OrganizationStructure.html','OrganizationStructure.html'],['Admin/Presensi.html','Presensi.html'],['Admin/AttendancePolicy.html','AttendancePolicy.html'],['Admin/MobileBase.html','MobileBase.html']])write(targetDir+'/'+to,read(from).replace(/include\('(AttendancePolicy|MobileBase)'\)/g,"include_('$1')"));
+  for(const [from,to]of [['Tamu-Luar/Index.html','Tld.html'],['Tamu-FO/Index.html','Tdd.html'],['Tamu-Luar/OrganizationStructure.html','OrganizationStructure.html'],['Admin/Presensi.html','Presensi.html'],['Admin/AttendancePolicy.html','AttendancePolicy.html'],['Admin/MobileBase.html','MobileBase.html'],['Admin/TailwindCompiled.html','TailwindCompiled.html']])write(targetDir+'/'+to,read(from).replace(/include\('(AttendancePolicy|MobileBase|TailwindCompiled)'\)/g,"include_('$1')"));
   return {coreVersion:Number(coreVersion),targetDir,intakeFile};
 }
 if(require.main===module)console.log(buildPublic({coreVersion:Number(process.argv[2])}));

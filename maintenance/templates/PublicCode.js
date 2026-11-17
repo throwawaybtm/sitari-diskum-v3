@@ -12,7 +12,7 @@ function doGet(e) {
   return template.evaluate().setTitle(route==='Tld'?'Pendaftaran Kunjungan Tamu Luar Daerah':route==='Tdd'?'Pendaftaran Kunjungan Tamu Dalam Daerah':'Dashboard Presensi').addMetaTag('viewport','width=device-width, initial-scale=1');
 }
 function include_(name) {
-  if(!['AttendancePolicy','MobileBase'].includes(name))throw new Error('Konten tidak tersedia.');
+  if(!['AttendancePolicy','MobileBase','TailwindCompiled'].includes(name))throw new Error('Konten tidak tersedia.');
   return HtmlService.createHtmlOutputFromFile(name).getContent();
 }
 function includeOrganizationStructure_() {return HtmlService.createHtmlOutputFromFile('OrganizationStructure').getContent();}
