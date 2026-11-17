@@ -1250,7 +1250,7 @@ function savePresensiRapat_(p, source) {
   if(sheet.getLastColumn()<12)sheet.getRange(1,11,1,2).setValues([['Anggota Kunjungan ID','Sumber Presensi']]);
   if(sheet.getLastColumn()<13)sheet.getRange(1,13).setValue('Waktu Pencatatan');
   const existing=findExistingPresensi_(sheet,p);
-  if(existing)return {success:false,duplicate:true,error:`${existing.nama} sudah melakukan presensi pada agenda ini${existing.jam?' (pukul '+existing.jam+' WIB)':''}.`};
+  if(existing)return {success:false,duplicate:true,error:`Presensi atas nama ${existing.nama} sudah tercatat${existing.jam?' pukul '+existing.jam+' WIB':''}.`};
   const nextId = nextRecordId_(sheet);
   sheet.getRange(sheet.getLastRow()+1,9).setNumberFormat('@');
   if(source==='AdminEntry')sheet.getRange(sheet.getLastRow()+1,10).setNumberFormat('@');
