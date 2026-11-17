@@ -26,16 +26,25 @@
       "Bash(git push *)",
       "Bash(npm ci *)",
       "Bash(npm install *)",
-      "Bash(npx playwright *)",
+      "Bash(npx *)",
+      "Bash(clasp *)",
       "WebFetch"
     ],
     "ask": [
-      "Bash(npx *)",
-      "Bash(clasp push)",
-      "Bash(clasp push *)",
-      "Bash(clasp deploy *)",
-      "Bash(clasp create-version *)",
-      "Bash(clasp version *)"
+      "Bash(rm *)",
+      "Bash(git rm *)",
+      "Bash(git clean *)",
+      "Bash(git branch -d *)",
+      "Bash(git branch -D *)",
+      "Bash(git branch --delete *)",
+      "Bash(git tag -d *)",
+      "Bash(git tag --delete *)",
+      "Bash(git stash drop *)",
+      "Bash(git stash clear*)",
+      "Bash(npm uninstall *)",
+      "Bash(npm rm *)",
+      "Bash(clasp delete*)",
+      "Bash(clasp undeploy*)"
     ],
     "deny": [
       "Read(/local-test/vendor/**)",
