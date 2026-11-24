@@ -876,6 +876,10 @@
   #meetingEditActionsGrid:not(:has(> div:not([hidden]))) {
     display: none;
   }
+  /* The lock notice is toggled with [hidden]; its `flex` utility must not override that. */
+  #meetingEditLockBanner[hidden] {
+    display: none;
+  }
 
   @media print {
     header, nav, footer, .no-print, button, .modal-backdrop {
