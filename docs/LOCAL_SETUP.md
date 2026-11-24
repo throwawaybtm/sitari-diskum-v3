@@ -36,7 +36,15 @@ This creates local gitignored copies (if absent) for:
 - `local-test/test/tdd-form.test.js`
 - `local-test/test/tld-form.test.js`
 
-With templates alone, `232/238` tests run immediately. The remaining **6** tests (`employee-import.test.js` and hierarchy checks in `rapat-internal-rev04.test.js`) require the authorized employee directory in Step 4.
+With templates alone, `node --test local-test/test/*.test.js` passes **334/358** (checked at `c9acad3`, 2026-11-24). The remaining **24** tests need authorized private data that the templates leave empty: the 70-record employee directory (Step 4), the real destination and PIC lists, and the leadership reference rows. They fail in these files: `employee-import` (5), `rapat-pimpinan` (4), `gas-merge-security` (3), `tdd-form` (3), `presensi-validation-hierarchy` (2), `rapat-internal-rev04` (2), and one each in `fixtures`, `monthly-tools`, `presensi`, `server` and `tld-form`.
+
+To run the whole suite without any private data, use the synthetic runner. It copies the tracked sources to a temporary folder, injects fictional employees, destinations and leaders, and blocks network calls:
+
+```powershell
+node local-test/run-synthetic-tests.js
+```
+
+Expected: **358/358 passed** (at `c9acad3`).
 
 ## 4. Import Authorized `Master_Pegawai` CSV
 
@@ -66,7 +74,7 @@ node --test local-test/test/*.test.js
 node local-test/server.js
 ```
 
-Expected full local regression result: **238/238 passed**.
+With the authorized data from Step 4 and Step 6 restored, all **358** tests should pass. Without it, use `node local-test/run-synthetic-tests.js` (Step 3).
 
 ## 6. Additional Requirements Before Release / GAS Deployment
 
