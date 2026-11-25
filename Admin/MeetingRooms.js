@@ -29,16 +29,13 @@ function getMeetingRoomOptions() {
   try {
     requireVisitAdmin_();
     const ss=getSpreadsheet();
-    return {success:true,data:{ruangan:readCachedMeetingRoomOptions_(ss),pimpinan:readCachedLeadership_(ss)}};
+    // One cached master read serves both: same rooms as readMeetingRoomOptions_, plus Rapat Pimpinan.
+    const all=typeof cachedMasterRead_==='function'&&typeof readMasterData_==='function'?cachedMasterRead_(ss,'all',()=>readMasterData_(ss)):null;
+    if(!all||!all.data)return {success:true,data:{ruangan:readCachedMeetingRoomOptions_(ss),pimpinan:[]}};
+    return {success:true,data:{ruangan:all.data.ruangan||[],pimpinan:Array.isArray(all.data.pimpinan)?all.data.pimpinan:[]}};
   } catch (error) {
     return {success:false,error:error.message};
   }
-}
-/** Rapat Pimpinan from the same cached master read as getMasterData (no extra read on a cache hit). */
-function readCachedLeadership_(ss) {
-  if(typeof cachedMasterRead_!=='function'||typeof readMasterData_!=='function')return [];
-  const result=cachedMasterRead_(ss,'all',()=>readMasterData_(ss));
-  return result&&result.data&&Array.isArray(result.data.pimpinan)?result.data.pimpinan:[];
 }
 function readCachedMeetingRoomOptions_(ss) {
   const read=()=>readMeetingRoomOptions_(ss);

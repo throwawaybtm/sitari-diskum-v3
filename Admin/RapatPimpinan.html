@@ -40,7 +40,8 @@ function setRapatPimpinanDirectory(list) {
     populateRapatBidangOptions();
     const select = document.getElementById('rapatSelectBidang');
     const pimpinanInput = document.getElementById('rapatInputPimpinan');
-    if (select && select.value && pimpinanInput && !String(pimpinanInput.value || '').trim() && !select.disabled) {
+    const creating = typeof editingRapatId === 'undefined' || editingRapatId === null || editingRapatId === '';
+    if (creating && select && select.value && pimpinanInput && !String(pimpinanInput.value || '').trim() && !select.disabled) {
       applyRapatBidangAutoFill();
     }
   }
@@ -76,7 +77,9 @@ function populateRapatBidangOptions() {
   rapatBidangPenyelenggaraOptions().forEach(bidang => {
     select.add(new Option(bidang, bidang));
   });
-  if (current && Array.from(select.options || []).some(opt => opt.value === current)) {
+  if (current) {
+    // A saved value that is not (or no longer) in the list stays selectable instead of being dropped.
+    if (!Array.from(select.options || []).some(opt => opt.value === current)) select.add(new Option(current, current));
     select.value = current;
   }
 }

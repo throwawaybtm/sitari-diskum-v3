@@ -42,9 +42,9 @@ This creates local gitignored copies (if absent) for:
 node local-test/run-synthetic-tests.js
 ```
 
-Expected: **371/371 passed**.
+Expected: **372/372 passed**.
 
-Running the files directly, `node --test local-test/test/*.test.js`, uses your checkout as it is, without those swaps. With templates alone it passes **355/371**; the other **16** fail because they expect the injected fictional data, not because of a code fault:
+Running the files directly, `node --test local-test/test/*.test.js`, uses your checkout as it is, without those swaps. With templates alone it passes **356/372**; the other **16** fail because they expect the injected fictional data, not because of a code fault:
 
 | Group | Failing tests | What the test expects | What a templates-only checkout has |
 |---|---|---|---|
@@ -81,7 +81,7 @@ node local-test/run-synthetic-tests.js
 node local-test/server.js
 ```
 
-The synthetic runner is the regression check, with or without the authorized data: expected **371/371** (Step 3). A direct `node --test local-test/test/*.test.js` run is only useful for seeing which tests depend on the injected fictional data; see the table in Step 3.
+The synthetic runner is the regression check, with or without the authorized data: expected **372/372** (Step 3). A direct `node --test local-test/test/*.test.js` run is only useful for seeing which tests depend on the injected fictional data; see the table in Step 3.
 
 ## 6. Additional Requirements Before Release / GAS Deployment
 

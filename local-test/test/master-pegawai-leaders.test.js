@@ -87,15 +87,17 @@ test('Public master data never carries the leader list or extra leader fields', 
   for (const row of res.data.pegawai) assert.deepEqual(Object.keys(row).sort(), ['bidang', 'id', 'jabatan', 'nama', 'nip']);
 });
 
-test('meeting modal room call adds the leaders from the same cache: no extra sheet read once warm', () => {
+test('meeting modal room call serves rooms and leaders from one cached master read', () => {
   const cache = fakeCache();
   const { context, reads } = loadAdmin({ cache });
+  const cold = plain(context.getMeetingRoomOptions());
+  assert.deepEqual(reads, ['Master_Pegawai', 'Master_Ruangan'], 'cold cache: one master read (2 sheets)');
+  assert.deepEqual(cold.data.pimpinan, leaders);
+  assert.deepEqual(cold.data.ruangan, plain(context.readMeetingRoomOptions_(context.getSpreadsheet())), 'same rooms as the rooms-only reader');
   const master = plain(context.getMasterData());
-  const afterMaster = reads.length;
-  const first = plain(context.getMeetingRoomOptions());
-  assert.deepEqual(first.data.pimpinan, master.data.pimpinan);
-  assert.deepEqual(reads.slice(afterMaster), ['Master_Ruangan'], 'only the existing rooms read on its own cache miss');
+  assert.deepEqual(master.data.pimpinan, cold.data.pimpinan);
   const warm = reads.length;
+  assert.equal(warm, 3, 'getMasterData reused the cache (the extra read is the comparison above)');
   plain(context.getMeetingRoomOptions());
   plain(context.getMasterData());
   assert.equal(reads.length, warm, 'warm cache: zero sheet reads');

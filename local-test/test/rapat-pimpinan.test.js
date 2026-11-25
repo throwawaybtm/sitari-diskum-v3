@@ -227,6 +227,20 @@ test('leaders loaded after the modal opens fill the selected unit without overwr
   assert.equal(inputPimpinan.value, 'Pejabat Pengganti');
 });
 
+test('editing a meeting: late leader list keeps a saved unit outside the list and never auto-fills', () => {
+  const { context, selectBidang, inputPimpinan } = loadRapatPimpinanHarness({ leaders: [] });
+  context.editingRapatId = 9;
+  context.populateRapatBidangOptions();
+  selectBidang.add({ text: 'Sekretariat / Umpeg', value: 'Sekretariat / Umpeg' });
+  selectBidang.value = 'Sekretariat / Umpeg';
+  context.setRapatPimpinanDirectory(leadersFromMasterData());
+  assert.equal(selectBidang.value, 'Sekretariat / Umpeg', 'legacy unit kept');
+  selectBidang.value = 'Sekretariat';
+  context.setRapatPimpinanDirectory(leadersFromMasterData());
+  assert.equal(inputPimpinan.value, '', 'no silent auto-fill while editing');
+  context.editingRapatId = null;
+});
+
 test('Rapat reference data matches all 13 rows, exact values, and exact 1..13 order', () => {
   const { context } = loadRapatPimpinanHarness();
   const actual = JSON.parse(vm.runInContext('JSON.stringify(RAPAT_PIMPINAN_DIRECTORY)', context));
