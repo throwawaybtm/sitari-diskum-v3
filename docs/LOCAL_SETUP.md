@@ -36,15 +36,24 @@ This creates local gitignored copies (if absent) for:
 - `local-test/test/tdd-form.test.js`
 - `local-test/test/tld-form.test.js`
 
-With templates alone, `node --test local-test/test/*.test.js` passes **337/361** (checked at `c686136`, 2026-11-25). The remaining **24** tests need authorized private data that the templates leave empty: the 70-record employee directory (Step 4), the real destination and PIC lists, and the leadership reference rows. They fail in these files: `employee-import` (5), `rapat-pimpinan` (4), `gas-merge-security` (3), `tdd-form` (3), `presensi-validation-hierarchy` (2), `rapat-internal-rev04` (2), and one each in `fixtures`, `monthly-tools`, `presensi`, `server` and `tld-form`.
-
-To run the whole suite without any private data, use the synthetic runner. It copies the tracked sources to a temporary folder, injects fictional employees, destinations and leaders, and blocks network calls:
+**Use the synthetic runner as the pass/fail check.** Most tests are written against the fictional data it injects. It copies the tracked sources to a temporary folder, swaps in fictional employees, PIC/destination lists, approver email and leadership rows (`Admin/EmployeeDirectory.js`, `Admin/VisitPicContacts.js`, both `Destinations.js`, `Admin/PublicIntake.js`, `Admin/DeploymentConfig.js`, `RAPAT_PIMPINAN_DIRECTORY` in `Admin/RapatPimpinan.html` and `OFFICIAL_LEADERSHIP_ORDER_` in `Admin/AgendaAttendanceData.js`), and blocks network calls:
 
 ```powershell
 node local-test/run-synthetic-tests.js
 ```
 
-Expected: **361/361 passed** (at `c686136`).
+Expected: **361/361 passed** (checked at `5c0c2da`, 2026-11-25).
+
+Running the files directly, `node --test local-test/test/*.test.js`, uses your checkout as it is, without those swaps. With templates alone it passes **337/361**; the other **24** fail because they expect the injected fictional data, not because of a code fault:
+
+| Group | Failing tests | What the test expects | What a templates-only checkout has |
+|---|---|---|---|
+| Employee directory | `employee-import` (5), `fixtures` (1), `presensi` (1) | A filled directory (the import tests check 70 people in 8 units) | An empty `DISKUM_EMPLOYEE_DIRECTORY` |
+| PIC/destination lists and deployment config | `tdd-form` (3), `gas-merge-security` (3), `tld-form` (1), `monthly-tools` (1), `server` (1) | The synthetic PICs, contacts and approver email | Template copies with `PHONE_NUMBER_PLACEHOLDER` / `APPROVER_EMAIL_PLACEHOLDER` |
+| Leadership rows | `rapat-pimpinan` (4) | The 13 synthetic leaders from `local-test/test/synthetic-fixtures.js` | The tracked real `RAPAT_PIMPINAN_DIRECTORY` |
+| Hierarchy order | `presensi-validation-hierarchy` (2), `rapat-internal-rev04` (2) | Synthetic leaders and employees in a known order | The real or empty lists above |
+
+Restoring the authorized data (Step 4) is expected to fix the employee-directory group. The leadership and hierarchy tests compare against the synthetic names (none of which match the tracked real leaders), so they are expected to keep failing under a direct `node --test` run even with real data. This has not been checked against the real private files.
 
 ## 4. Import Authorized `Master_Pegawai` CSV
 
@@ -70,11 +79,11 @@ Keep the source CSV outside the repository (or remove any temporary copy) so it 
 ## 5. Run Full Regression & Local Preview
 
 ```powershell
-node --test local-test/test/*.test.js
+node local-test/run-synthetic-tests.js
 node local-test/server.js
 ```
 
-With the authorized data from Step 4 and Step 6 restored, all **361** tests should pass. Without it, use `node local-test/run-synthetic-tests.js` (Step 3).
+The synthetic runner is the regression check, with or without the authorized data: expected **361/361** (Step 3). A direct `node --test local-test/test/*.test.js` run is only useful for seeing which tests depend on the injected fictional data; see the table in Step 3.
 
 ## 6. Additional Requirements Before Release / GAS Deployment
 
