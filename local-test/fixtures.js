@@ -11,7 +11,8 @@ const {
   normalizeJakartaDateKey,
   isDisplayDateOnOrAfterCutoff,
   isVisitDisplayDateOnOrAfterCutoff,
-  parseVisitCodeDateKey
+  parseVisitCodeDateKey,
+  leadershipDirectoryFromEmployees
 } = require('./visit-workflow');
 const { jsPDF } = require('./vendor/jspdf.umd.min.js');
 
@@ -323,8 +324,9 @@ function createFixtureStore(now = new Date(), options = {}) {
         };
       },
       get getSppdList() { return { success: true, data: visibleSppd() }; },
-      getMasterData: { success: true, data: { ...masterData, ruangan: rooms } },
-      getMeetingRoomOptions: { success: true, data: { ruangan: rooms } }
+      // Same shape as GAS: pegawai/opd/ruangan plus the Rapat Pimpinan list from the employee rows.
+      getMasterData: { success: true, data: { ...masterData, ruangan: rooms, pimpinan: leadershipDirectoryFromEmployees(masterData.pegawai) } },
+      getMeetingRoomOptions: { success: true, data: { ruangan: rooms, pimpinan: leadershipDirectoryFromEmployees(masterData.pegawai) } }
     },
     getDocument: visitWorkflow.getDocument,
     handleMutation(functionName, payload = {}) {

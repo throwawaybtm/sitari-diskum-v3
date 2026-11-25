@@ -597,7 +597,7 @@ function cachedMasterRead_(ss,kind,read) {
   let cache,key;
   try {
     if(typeof CacheService!=='undefined'&&typeof ss.getId==='function'){
-      cache=CacheService.getScriptCache();key='si-tari:master:v2:'+ss.getId()+':'+kind;
+      cache=CacheService.getScriptCache();key='si-tari:master:v3:'+ss.getId()+':'+kind;
       const value=cache.get(key);if(value)return JSON.parse(value);
     }
   }catch(error){cache=null;}
@@ -606,7 +606,7 @@ function cachedMasterRead_(ss,kind,read) {
   return result;
 }
 function invalidateMasterReadCache_(ss) {
-  try {const cache=CacheService.getScriptCache();['all','rooms'].forEach(kind=>cache.remove('si-tari:master:v2:'+ss.getId()+':'+kind));}catch(error){}
+  try {const cache=CacheService.getScriptCache();['all','rooms'].forEach(kind=>cache.remove('si-tari:master:v3:'+ss.getId()+':'+kind));}catch(error){}
 }
 const PEMKO_OPD_OPTIONS_ = [
   'Asisten Pemerintahan dan Kesejahteraan Rakyat',
@@ -696,8 +696,14 @@ function readMasterData_(ss) {
   const sheetPegawai = ss.getSheetByName('Master_Pegawai');
   const sheetRuangan = ss.getSheetByName('Master_Ruangan');
 
-  const pegawai = sheetPegawai && sheetPegawai.getLastRow() > 1 
-    ? sheetPegawai.getRange(2, 1, sheetPegawai.getLastRow() - 1, sheetPegawai.getLastColumn()).getValues().map(r => ({ id: r[0], nip: r[1], nama: r[2], jabatan: r[3], bidang: normalizeDiskumDepartment_(r[4]), pangkat:r[8]||'' }))
+  const pegawaiRows = sheetPegawai && sheetPegawai.getLastRow() > 1
+    ? sheetPegawai.getRange(2, 1, sheetPegawai.getLastRow() - 1, sheetPegawai.getLastColumn()).getValues()
+    : [];
+  const pegawai = pegawaiRows.map(r => ({ id: r[0], nip: r[1], nama: r[2], jabatan: r[3], bidang: normalizeDiskumDepartment_(r[4]), pangkat:r[8]||'' }));
+  // Rapat Pimpinan comes from Master_Pegawai J/K (see AgendaAttendanceData.js). Admin only: Public's
+  // getPublicAttendanceMasterData passes pegawai and opd through a field whitelist and never this list.
+  const pimpinan = typeof leadershipDirectoryFromEmployees_ === 'function'
+    ? leadershipDirectoryFromEmployees_(pegawaiRows.map((r, i) => Object.assign({}, pegawai[i], readMasterLeaderFields_(r))))
     : [];
 
   const opd = PEMKO_OPD_OPTIONS_.map((nama_opd, idx) => ({ id: idx + 1, nama_opd: nama_opd, kategori: 'Pemko Batam' }));
@@ -706,7 +712,7 @@ function readMasterData_(ss) {
     ? sheetRuangan.getRange(2, 1, sheetRuangan.getLastRow() - 1, sheetRuangan.getLastColumn()).getValues().map(r => ({ id: r[0], nama_ruangan: r[1], kapasitas: r[2], fasilitas: r[3], lokasi: r[4], warna: r[5] }))
     : [];
 
-  return { success: true, data: { pegawai, opd, ruangan: normalizeMeetingRooms_(ruangan) } };
+  return { success: true, data: { pegawai, opd, ruangan: normalizeMeetingRooms_(ruangan), pimpinan } };
 }
 
 function getTamuList(spreadsheet) {

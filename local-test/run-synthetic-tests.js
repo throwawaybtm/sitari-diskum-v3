@@ -3,9 +3,8 @@
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const vm = require('node:vm');
 const { execFileSync, spawnSync } = require('node:child_process');
-const { employees, leaders, destinations, deploymentConfigSource } = require('./test/synthetic-fixtures');
+const { employees, destinations, deploymentConfigSource } = require('./test/synthetic-fixtures');
 
 const root = path.resolve(__dirname, '..');
 const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'sitari-synthetic-'));
@@ -37,32 +36,12 @@ try {
   }
   const intake = fs.readFileSync(path.join(workspace, 'Admin/PublicIntake.js'), 'utf8');
   write('Admin/PublicIntake.js', intake.replace(/const (TLD_DESTINATIONS|TDD_DESTINATIONS) = \[.*?\];/gs, (_, symbol) => `const ${symbol} = ${JSON.stringify(destinations)};`));
-  // Inject fictional leadership identities at the data seam in disposable copies.
-  // The production hierarchy implementation and unit ordering stay byte-identical.
-  let leadershipReference;
-  for (const [relative, symbol] of [
-    ['Admin/AgendaAttendanceData.js', 'OFFICIAL_LEADERSHIP_ORDER_'],
-    ['Admin/RapatPimpinan.html', 'RAPAT_PIMPINAN_DIRECTORY']
-  ]) {
-    const source = fs.readFileSync(path.join(workspace, relative), 'utf8');
-    const pattern = symbol === 'RAPAT_PIMPINAN_DIRECTORY'
-      ? /const RAPAT_PIMPINAN_DIRECTORY = Object\.freeze\(\[.*?\]\.map\(item => Object\.freeze\(item\)\)\);/s
-      : /const OFFICIAL_LEADERSHIP_ORDER_ = \[.*?\];/s;
-    if (!pattern.test(source)) throw new Error(`Leadership fixture seam missing in ${relative}`);
-    const context = vm.createContext({});
-    vm.runInContext(source.match(pattern)[0], context);
-    const original = JSON.parse(vm.runInContext(`JSON.stringify(${symbol})`, context));
-    const identityContract = JSON.stringify(original.map(({ no, nama, nip }) => ({ no, nama, nip })));
-    if (leadershipReference && identityContract !== leadershipReference) {
-      throw new Error('Checked-in server and UI leadership identity/order contracts differ');
+  // Fictional leaders travel on the injected employee directory (pimpinan_no / pimpinan_unit), the
+  // same path as Master_Pegawai columns J/K in production. No leader list exists in the sources.
+  for (const relative of ['Admin/AgendaAttendanceData.js', 'Admin/RapatPimpinan.html']) {
+    if (/OFFICIAL_LEADERSHIP_ORDER_ = \[|RAPAT_PIMPINAN_DIRECTORY = Object\.freeze\(\[\s*\{/.test(fs.readFileSync(path.join(workspace, relative), 'utf8'))) {
+      throw new Error(`Hard-coded leadership list found in ${relative}`);
     }
-    leadershipReference = identityContract;
-    const replacement = original.map((item, index) => ({ ...item, nama: leaders[index].nama, nip: leaders[index].nip }));
-    const data = JSON.stringify(replacement);
-    const expression = symbol === 'RAPAT_PIMPINAN_DIRECTORY'
-      ? `Object.freeze(${data}.map(item => Object.freeze(item)))`
-      : data;
-    write(relative, source.replace(pattern, `const ${symbol} = ${expression};`));
   }
   const files = process.argv.slice(2);
   const tests = files.length ? files : fs.readdirSync(path.join(workspace, 'local-test/test')).filter(file => file.endsWith('.test.js')).map(file => 'local-test/test/' + file);

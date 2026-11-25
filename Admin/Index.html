@@ -2065,7 +2065,10 @@
       if (meetingRoomOptions) return Promise.resolve(meetingRoomOptions);
       if (!meetingRoomRequest) meetingRoomRequest = new Promise((resolve, reject) => {
         callBackend('getMeetingRoomOptions', [], res => {
-          if (res && res.success) resolve(res.data.ruangan || []); else reject(new Error(responseMessage(res, 'Ruangan gagal dimuat.')));
+          if (res && res.success) {
+            if (Array.isArray(res.data.pimpinan) && typeof setRapatPimpinanDirectory === 'function') setRapatPimpinanDirectory(res.data.pimpinan);
+            resolve(res.data.ruangan || []);
+          } else reject(new Error(responseMessage(res, 'Ruangan gagal dimuat.')));
         }, reject);
       }).then(rooms => { meetingRoomOptions = rooms; return rooms; }).finally(() => { meetingRoomRequest = null; });
       return meetingRoomRequest;
