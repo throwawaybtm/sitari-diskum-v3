@@ -1,5 +1,5 @@
 'use strict';
-const { people: syntheticPeople } = require('./synthetic-fixtures');
+const { people: syntheticPeople, employees: syntheticEmployees, masterPegawaiRow } = require('./synthetic-fixtures');
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -381,8 +381,9 @@ test('GAS and local server reject missing/whitespace Jabatan for TLD Presensi wh
 });
 
 test('hierarchy sorting handles leaders, unit order, equal/unknown ranks, and preserves registration order without inventing ranks or mutating Data_Presensi', () => {
-  const dir = JSON.parse(fs.readFileSync(path.join(ROOT, 'local-test/previews/employee-directory.json'), 'utf8'));
-  const employeeRows = dir.map((e, i) => [i + 1, e.nip, e.nama, e.jabatan, e.bidang, 0, 0, 'Aktif', e.pangkat]);
+  // Self-contained: synthetic employees as Master_Pegawai rows A..K, leaders in Urutan_Pimpinan / Unit_Pimpinan
+  const dir = syntheticEmployees;
+  const employeeRows = dir.map(masterPegawaiRow);
 
   // Deliberately pre-sorted DESC (as GAS autoSortPresensi does) with same-minute timestamps & unknown/external ranks.
   const storedRows = [
@@ -449,8 +450,9 @@ test('hierarchy sorting handles leaders, unit order, equal/unknown ranks, and pr
 });
 
 test('attendance ordering is consistent across Lihat Presensi (getAgendaAttendance), Presensi list (getVisitWorkflow), and attendance exports (Daftar_Hadir PDF) in GAS and local workflow', async () => {
-  const dir = JSON.parse(fs.readFileSync(path.join(ROOT, 'local-test/previews/employee-directory.json'), 'utf8'));
-  const employeeRows = dir.map((e, i) => [i + 1, e.nip, e.nama, e.jabatan, e.bidang, 0, 0, 'Aktif', e.pangkat]);
+  // Self-contained: synthetic employees as Master_Pegawai rows A..K, leaders in Urutan_Pimpinan / Unit_Pimpinan
+  const dir = syntheticEmployees;
+  const employeeRows = dir.map(masterPegawaiRow);
 
   const visitRow = Array(20).fill('');
   visitRow[0] = 1;
@@ -534,7 +536,7 @@ test('attendance ordering is consistent across Lihat Presensi (getAgendaAttendan
   }
 
   // 4. Local fixture store consistency (getAgendaAttendance, getVisitWorkflow, and jsPDF Daftar_Hadir_<kode>.pdf)
-  const store = createFixtureStore(new Date('2026-11-02T12:00:00Z'));
+  const store = createFixtureStore(new Date('2026-11-02T12:00:00Z'), { employees: syntheticEmployees });
   const reg = store.handleMutation('registerTamuLuar', completeTldPayload({
     ketua_nama: 'Ketua Local Konsisten',
     pengikut_list: 'Anggota Pertama\nAnggota Kedua',

@@ -1,5 +1,5 @@
 'use strict';
-const { people: syntheticPeople } = require('./synthetic-fixtures');
+const { people: syntheticPeople, employees: syntheticEmployees, leaders: syntheticLeaders, masterPegawaiRow } = require('./synthetic-fixtures');
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -82,7 +82,7 @@ function createGasHarness({ initialMeetings = [], initialDocs = [], initialPhoto
   if (initialDocs.length) makeMetaSheet('Dokumen_Agenda', ['Agenda ID', 'Dokumen JSON', 'Diperbarui'], initialDocs);
   if (initialPhotos.length) makeMetaSheet('Foto_Agenda', ['Agenda ID', 'Foto JSON', 'Diperbarui'], initialPhotos);
   if (initialHistory.length) makeMetaSheet('Riwayat_Agenda', ['Agenda ID', 'Riwayat JSON', 'Diperbarui'], initialHistory);
-  if (initialEmployees.length) makeMetaSheet('Master_Pegawai', ['ID', 'NIP', 'Nama Pegawai', 'Jabatan', 'Bidang', 'Is_LO', 'Workload_Count', 'Status_Aktif', 'Pangkat / Golongan'], initialEmployees);
+  if (initialEmployees.length) makeMetaSheet('Master_Pegawai', ['ID', 'NIP', 'Nama Pegawai', 'Jabatan', 'Bidang', 'Is_LO', 'Workload_Count', 'Status_Aktif', 'Pangkat / Golongan', 'Urutan_Pimpinan', 'Unit_Pimpinan'].slice(0, Math.max(9, ...initialEmployees.map(r => r.length))), initialEmployees);
   if (initialAttendance.length) makeMetaSheet('Data_Presensi', ['ID', 'Rapat_ID', 'Judul_Rapat', 'Kategori_Peserta', 'Nama_Peserta', 'NIP', 'Jabatan', 'Nama_OPD_Bidang', 'No_HP', 'Waktu_Hadir', 'Anggota Kunjungan ID', 'Sumber Presensi', 'Waktu Pencatatan'], initialAttendance);
   if (initialWorkflows.length) makeMetaSheet('Alur_Kunjungan', ['Kode Kunjungan', 'Versi', 'Data Alur JSON', 'Diperbarui'], initialWorkflows);
 
@@ -571,12 +571,9 @@ test('Jadwal Rapat sorts descending by meeting date/time in AutoSort, getRapatCa
 });
 
 test('attendance list orders Diskum attendees by official organizational hierarchy (RapatPimpinan 1..13 then Master_Pegawai/unit order), and non-Diskum chronologically', () => {
-  // Verify server leadership & unit ordering stay synchronized with RapatPimpinan.html and Presensi.html
-  const pimpinanHtml = fs.readFileSync('Admin/RapatPimpinan.html', 'utf8');
+  // Leadership order comes from Master_Pegawai J/K (Urutan_Pimpinan / Unit_Pimpinan); unit order stays in sync with Presensi.html
   const presensiHtml = fs.readFileSync('Admin/Presensi.html', 'utf8');
-  const pimpinanCtx = vm.createContext({});
-  vm.runInContext(pimpinanHtml.match(/<script>([^]*?)<\/script>/)[1], pimpinanCtx);
-  const expectedLeaders = JSON.parse(vm.runInContext('JSON.stringify(RAPAT_PIMPINAN_DIRECTORY)', pimpinanCtx));
+  const expectedLeaders = syntheticLeaders;
   const preferredMatch = presensiHtml.match(/const preferred=(\[[^\]]+\]);/);
   assert.ok(preferredMatch, 'Presensi.html preferred unit order exists');
   const expectedUnits = JSON.parse(preferredMatch[1].replace(/'/g, '"'));
@@ -593,8 +590,7 @@ test('attendance list orders Diskum attendees by official organizational hierarc
     [8, 9, 'Rapat Koordinasi', 'Tamu_Luar', 'Tamu Eksternal', '-', 'Staf', 'Kemenkop', '', '2026-11-11 08:00:00', '', 'QR', '2026-11-11 08:00:00']
   ];
 
-  const dir = JSON.parse(fs.readFileSync('local-test/previews/employee-directory.json', 'utf8'));
-  const employeeSheetRows = dir.map((e, i) => [i + 1, e.nip, e.nama, e.jabatan, e.bidang, 0, 0, 'Aktif', e.pangkat]);
+  const employeeSheetRows = syntheticEmployees.map(masterPegawaiRow);
 
   const { context } = createGasHarness({
     initialMeetings: [[9, 'RPT-9', 'Rapat Koordinasi', 1, 'Ruang Rapat Utama Diskum', '2026-11-11', '08:00', '10:00', 'Dinas', syntheticPeople.leader1.nama, 10, 'Koordinasi', 'Terjadwal', '2026-11-11 07:00:00']],
@@ -602,10 +598,10 @@ test('attendance list orders Diskum attendees by official organizational hierarc
     initialAttendance: attendanceRows
   });
 
-  // Verify shared server constants match existing master definitions
+  // The server derives the leader list from the sheet rows it reads for ordering
   assert.deepEqual(
-    JSON.parse(vm.runInContext('JSON.stringify(OFFICIAL_LEADERSHIP_ORDER_)', context)).map(x => ({ no: x.no, nama: x.nama, nip: x.nip })),
-    expectedLeaders.map(x => ({ no: x.no, nama: x.nama, nip: x.nip }))
+    JSON.parse(vm.runInContext('JSON.stringify(leadershipDirectoryFromEmployees_(readMasterEmployeesForOrder_(getSpreadsheet())))', context)),
+    expectedLeaders
   );
   assert.deepEqual(JSON.parse(vm.runInContext('JSON.stringify(OFFICIAL_UNIT_ORDER_)', context)), expectedUnits);
 
@@ -627,6 +623,7 @@ test('attendance list orders Diskum attendees by official organizational hierarc
 test('local HTTP server supports Revision 04 postpone, reschedule with history, descending sort, and hierarchy attendance order', async () => {
   const server = createLocalTestServer({
     now: () => new Date('2026-11-10T05:00:00Z'),
+    employees: syntheticEmployees,
     seed: {
       meetings: [
         { id: 101, kode_rapat: 'RPT-20261102-101', judul_rapat: 'Rapat Seed 1', ruangan_id: 6001, nama_ruangan: 'Ruang Rapat Utama Diskum', tanggal: '2026-11-02', jam_mulai: '09:00', jam_selesai: '10:30', penyelenggara_bidang: 'Sekretariat', pimpinan_rapat: syntheticPeople.leader2.nama, jumlah_peserta: 5, agenda: 'Agenda 1', status: 'Terjadwal' },

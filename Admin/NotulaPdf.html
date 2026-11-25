@@ -633,6 +633,7 @@
     if (saveBtn) saveBtn.disabled = true;
     try {
       const ctx = await visitRpc('getAgendaNotulaContext', { rapat_id: meeting.id });
+      if (ctx && Array.isArray(ctx.pimpinan) && ctx.pimpinan.length && typeof setRapatPimpinanDirectory === 'function') setRapatPimpinanDirectory(ctx.pimpinan);
       if (String(notulaComposerAgendaId) !== String(meeting.id)) return;
       notulaComposerContext = ctx;
       populateNotulaEmployeeList_(ctx.employees);

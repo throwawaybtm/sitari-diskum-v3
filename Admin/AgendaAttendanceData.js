@@ -1,19 +1,36 @@
 /** Admin-only, read-only attendance overview for both internal and visit agendas. */
-const OFFICIAL_LEADERSHIP_ORDER_ = [
-  { no: 1, nama: 'Salim, S.Sos, M.Si', nip: '19681021 199010 1 001' },
-  { no: 2, nama: 'Adrial, S.K.M, M.K.M.', nip: '19710520 199403 1 009' },
-  { no: 3, nama: 'Syofya Nora, S.H.I.', nip: '19771107 200212 2 007' },
-  { no: 4, nama: 'Padlinsono, M.Si.', nip: '19761206 200212 1 012' },
-  { no: 5, nama: 'Eva Corrina, S.E.', nip: '19750426 199403 2 003' },
-  { no: 6, nama: 'Leny Nuriskawaty, S.Si. Apt., M.H.', nip: '19780604 200502 2 005' },
-  { no: 7, nama: 'Zulfahri, S.E., M.M.', nip: '19781119 200212 1 003' },
-  { no: 8, nama: 'Meydiana Esterawaty Jastina, S.E.', nip: '19760521 201001 2 002' },
-  { no: 9, nama: 'Zuziani, S.E.', nip: '19810902 200212 2 004' },
-  { no: 10, nama: 'Maslinda, S.E.', nip: '19750525 200212 2 015' },
-  { no: 11, nama: 'Septia Yorita, S.E.', nip: '19810906 200901 2 002' },
-  { no: 12, nama: 'Intan Permata Sari, S.E.', nip: '19810322 200604 2 012' },
-  { no: 13, nama: 'Hafidz Qodli Abdillah, S.E.', nip: '19920215 202012 1 005' }
-];
+// Rapat Pimpinan / leadership order lives in Master_Pegawai, appended after "Pangkat / Golongan" (I):
+//   J "Urutan_Pimpinan": 1..n leadership order (blank = not a leader)
+//   K "Unit_Pimpinan":   unit label shown in Bidang Penyelenggara (e.g. "Dinas", "Sekretariat")
+// Sheets without these columns yield no leaders; nothing is rewritten.
+const MASTER_PEGAWAI_LEADER_ORDER_INDEX_ = 9;
+const MASTER_PEGAWAI_LEADER_UNIT_INDEX_ = 10;
+const MASTER_PEGAWAI_READ_WIDTH_ = 11;
+function parseLeaderOrder_(value) {
+  const n = Number(String(value == null ? '' : value).trim());
+  return Number.isInteger(n) && n > 0 ? n : 0;
+}
+function readMasterLeaderFields_(row) {
+  const r = Array.isArray(row) ? row : [];
+  return {
+    pimpinan_no: parseLeaderOrder_(r[MASTER_PEGAWAI_LEADER_ORDER_INDEX_]),
+    pimpinan_unit: String(r[MASTER_PEGAWAI_LEADER_UNIT_INDEX_] == null ? '' : r[MASTER_PEGAWAI_LEADER_UNIT_INDEX_]).trim()
+  };
+}
+/** Leaders (Rapat Pimpinan) in leadership order, from employee records that carry pimpinan_no. */
+function leadershipDirectoryFromEmployees_(employees) {
+  return (Array.isArray(employees) ? employees : [])
+    .map((e, idx) => ({ e: e || {}, idx, no: parseLeaderOrder_(e && e.pimpinan_no) }))
+    .filter(x => x.no > 0 && String(x.e.nama || '').trim())
+    .sort((a, b) => a.no - b.no || a.idx - b.idx)
+    .map(x => ({
+      no: x.no,
+      nama: String(x.e.nama).trim(),
+      nip: String(x.e.nip == null ? '' : x.e.nip).trim(),
+      pangkat_golongan: String(x.e.pangkat_golongan || x.e.pangkat || '').trim(),
+      bidang: String(x.e.pimpinan_unit || '').trim()
+    }));
+}
 const OFFICIAL_UNIT_ORDER_ = [
   'Dinas',
   'Sekretariat',
@@ -40,11 +57,11 @@ function normalizeAttendanceName_(value) {
 function readMasterEmployeesForOrder_(ss) {
   const sheet = ss && typeof ss.getSheetByName === 'function' ? ss.getSheetByName('Master_Pegawai') : null;
   if (sheet && typeof sheet.getLastRow === 'function' && sheet.getLastRow() > 1) {
-    const width = typeof sheet.getLastColumn === 'function' ? Math.max(5, Math.min(9, sheet.getLastColumn())) : 9;
+    const width = typeof sheet.getLastColumn === 'function' ? Math.max(5, Math.min(MASTER_PEGAWAI_READ_WIDTH_, sheet.getLastColumn())) : 9;
     const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, width).getValues();
     const valid = rows
       .filter(r => String(r[2] || '').trim() && String(r[3] || '').trim() && String(r[4] || '').trim())
-      .map(r => ({ nip: r[1], nama: r[2], jabatan: r[3], bidang: normalizeAttendanceUnit_(r[4]) }));
+      .map(r => Object.assign({ nip: r[1], nama: r[2], jabatan: r[3], bidang: normalizeAttendanceUnit_(r[4]), pangkat: r[8] || '' }, readMasterLeaderFields_(r)));
     if (valid.length) return valid;
   }
   return typeof DISKUM_EMPLOYEE_DIRECTORY !== 'undefined' && Array.isArray(DISKUM_EMPLOYEE_DIRECTORY)
@@ -54,7 +71,7 @@ function readMasterEmployeesForOrder_(ss) {
 function buildAttendanceHierarchyLookup_(employees) {
   const leaderByNip = new Map();
   const leaderByName = new Map();
-  OFFICIAL_LEADERSHIP_ORDER_.forEach((item, idx) => {
+  leadershipDirectoryFromEmployees_(employees).forEach((item, idx) => {
     const nip = normalizeAttendanceNip_(item.nip);
     const name = normalizeAttendanceName_(item.nama);
     if (nip) leaderByNip.set(nip, idx);

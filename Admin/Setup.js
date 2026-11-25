@@ -75,7 +75,7 @@ function setupSheetMasterPegawai(ss) {
 function setupSheetMasterPegawai_(ss) {
   let sheet = ss.getSheetByName("Master_Pegawai");
   if (!sheet) sheet = ss.insertSheet("Master_Pegawai");
-  formatHeader_(sheet, ["ID", "NIP", "Nama Pegawai", "Jabatan", "Bidang", "Is_LO", "Workload_Count", "Status_Aktif"]);
+  formatHeader_(sheet, ["ID", "NIP", "Nama Pegawai", "Jabatan", "Bidang", "Is_LO", "Workload_Count", "Status_Aktif", "Pangkat / Golongan", "Urutan_Pimpinan", "Unit_Pimpinan"]);
 }
 
 function setupSheetMasterOPD(ss) {

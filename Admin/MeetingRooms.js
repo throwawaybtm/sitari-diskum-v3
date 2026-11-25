@@ -28,7 +28,11 @@ function readMeetingRoomOptions_(ss) {
 function getMeetingRoomOptions() {
   try {
     requireVisitAdmin_();
-    return {success:true,data:{ruangan:readCachedMeetingRoomOptions_(getSpreadsheet())}};
+    const ss=getSpreadsheet();
+    // One cached master read serves both: same rooms as readMeetingRoomOptions_, plus Rapat Pimpinan.
+    const all=typeof cachedMasterRead_==='function'&&typeof readMasterData_==='function'?cachedMasterRead_(ss,'all',()=>readMasterData_(ss)):null;
+    if(!all||!all.data)return {success:true,data:{ruangan:readCachedMeetingRoomOptions_(ss),pimpinan:[]}};
+    return {success:true,data:{ruangan:all.data.ruangan||[],pimpinan:Array.isArray(all.data.pimpinan)?all.data.pimpinan:[]}};
   } catch (error) {
     return {success:false,error:error.message};
   }
