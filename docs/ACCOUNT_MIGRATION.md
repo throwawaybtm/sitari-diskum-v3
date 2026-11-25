@@ -19,8 +19,8 @@ Only the owner performs these steps. Agents may help prepare and check, but the 
 
 ## Choose a path
 
-- **Path A, recommended: transfer ownership** of everything, including both Apps Script projects. Script IDs, deployment IDs, the spreadsheet ID and every file ID stay the same. So the `/exec` links, the printed attendance QR codes, the Script Properties and the stored file links should all keep working.
-- **Path B, fallback: new projects in the new account.** Use it only if Path A's rehearsal fails. Every `/exec` link and QR code changes; see [Path B](#path-b-new-projects-new-links).
+- **Path A, recommended: transfer ownership** of everything, including both Apps Script projects. The spreadsheet ID, every file ID and the Script Properties stay the same, so the stored file links keep working and nothing needs re-entering. The `/exec` links usually stay the same too. If they don't, that's accepted: see [If a link changes](#if-a-link-changes).
+- **Path B, fallback: new projects in the new account.** Use it only if transferring the Apps Script projects themselves fails. See [Path B](#path-b-new-projects-new-links).
 
 ## Before you start
 
@@ -60,25 +60,6 @@ Recommended for the move:
 - `FONNTE_DISABLED` = `true`.
 - Keep `ADMIN_DEMO_MODE` exactly as it is today, so behaviour doesn't change during the move.
 - Restricting the dashboard is its own change afterwards ([after the move](#after-the-move)).
-
-## Rehearsal (do this first, about 15 minutes)
-
-Path A depends on Google keeping a web app's deployment, and its URL, when a script changes owner. Check that with a throwaway project before touching SITARI:
-
-1. **Old account:** create a new standalone Apps Script project with:
-
-   ```js
-   function doGet() {
-     return HtmlService.createHtmlOutput('Owner: ' + Session.getEffectiveUser().getEmail());
-   }
-   ```
-
-   Deploy it as a web app (Execute as **Me**, access **Anyone**) and note its URL.
-2. **Transfer:** in Drive, find the project → Share → add the new account as **Editor** → change their role to **Transfer ownership**. Then, signed in as the new account, accept the transfer (email, or Drive → Shared with me).
-3. **New account:** open the project → Deploy → **Manage deployments** → edit (pencil) the existing deployment → Version: **New version** → Deploy. Authorise when asked.
-4. **Check:** open the **same** URL from step 1. It must load and show the **new account's** email.
-
-If step 4 works, use Path A. If the URL changed, the deployment disappeared, or it still runs as the old account, stop and use Path B. Delete the test project either way.
 
 ## Path A, step by step
 
@@ -120,9 +101,9 @@ If step 4 works, use Path A. If the URL changed, the deployment disappeared, or 
    - set `APPROVER_EMAIL` to the new admin email,
    - set `APPROVER_NAME` to the new admin's name.
 2. Recreate the triggers you noted in [Before you start](#before-you-start), signed in as the new account.
-3. Deploy → **Manage deployments** → edit the **existing** web app deployment → Version: **New version** → Deploy. Authorise Sheets, Drive and external requests when asked.
+3. Deploy → **Manage deployments** → edit the **existing** web app deployment → Version: **New version** → Deploy. Authorise Sheets, Drive and external requests when asked. Editing the existing deployment keeps its URL.
 
-   Always edit the existing deployment. A new deployment would get a new URL.
+   If there is no existing deployment to edit, or the app still runs as the old account (Executions shows the old account), create one instead: Deploy → **New deployment** → Web app, Execute as **Me**, access as before. That gives Admin a new link; see [If a link changes](#if-a-link-changes).
 4. Note the new Admin version number.
 
 ### 5. Redeploy Public as the new account
@@ -130,11 +111,26 @@ If step 4 works, use Path A. If the URL changed, the deployment disappeared, or 
 1. Public → Libraries (left panel) → **SiTariCore** → set the version to the Admin version from step 4 → Save. If you release from the PC instead, run `node maintenance/build-public.js <Admin version>` and `clasp push` from `Public/`.
 2. Deploy → **Manage deployments** → edit the **existing** deployment → New version → Deploy. Authorise when asked.
 
+   Same fallback as Admin: if that doesn't work, use Deploy → **New deployment** → Web app, Execute as **Me**, access **Anyone**. Then follow [If a link changes](#if-a-link-changes).
+
+### If a link changes
+
+Changed links are accepted for this move. Only the links change; the data, Script Properties and code stay as they are.
+
+- **Public link changed:** in Admin's Script Properties, set:
+  - `PUBLIC_FORMS_BASE_URL` to the new Public `/exec` URL,
+  - `TAMU_LUAR_URL` to `<that URL>?page=tld`,
+  - `TAMU_FO_URL` to `<that URL>?page=tdd`.
+
+  Then regenerate and reprint the attendance QR codes for upcoming agendas, and update any posters, websites or WhatsApp messages that carry the form link.
+- **Admin link changed:** only bookmarks change. Share the new link with the admin.
+- **Old links:** if old printed QR codes or posters are still around, the old account can keep its old deployments showing a "moved to a new address" notice. `maintenance/build-legacy-tdd.js` is the pattern to copy.
+
 ### 6. Test (new account and a private browser window)
 
 | Check | Expected |
 |---|---|
-| Admin URL (unchanged) | Loads, with data, as before |
+| Admin URL (same link, or the new one) | Loads, with data, as before |
 | Admin as a different account, or signed out | Matches the `ADMIN_DEMO_MODE` / `APPROVER_EMAIL` setting you chose |
 | `?page=tld` with two files | Registration succeeds, and both files land in the letters folder, **owned by the new account** |
 | `?page=tdd` | Check-in succeeds |
@@ -171,7 +167,7 @@ Delete or cancel the test records afterwards.
 
 ## Path B: new projects, new links
 
-Use this only if the rehearsal shows that ownership transfer loses the deployment or its URL.
+Use this only if transferring the Apps Script projects themselves fails, for example if the transfer can't be completed. A changed link alone is not a reason; that's covered in [If a link changes](#if-a-link-changes).
 
 1. **Data:** transfer the spreadsheet and files exactly as in [Path A step 2](#2-transfer-the-data-old-account). This keeps every ID and stored link.
 2. **Admin project:**
