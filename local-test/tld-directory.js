@@ -5,7 +5,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const context = vm.createContext({});
-vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'Tamu-Luar', 'Destinations.js'), 'utf8'), context);
+// Private data array plus the tracked intake rules.
+for (const file of ['Destinations.js', 'IntakeRules.js']) vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'Tamu-Luar', file), 'utf8'), context);
 
 module.exports = {
   getPublicDestinations: () => context.getTldPublicDestinations_(),

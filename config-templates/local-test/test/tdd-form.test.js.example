@@ -12,7 +12,7 @@ const picFor = id => destinations.find(item => item.id === id).pic;
 
 function loadFo() {
   const context = vm.createContext({});
-  for (const file of ['Destinations.js', 'Code.js']) {
+  for (const file of ['Destinations.js', 'IntakeRules.js', 'Code.js']) {
     vm.runInContext(fs.readFileSync(path.join(__dirname, '../../Tamu-FO', file), 'utf8'), context);
   }
   return context;

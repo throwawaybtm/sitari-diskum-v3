@@ -13,8 +13,8 @@ const { completeTddPayload } = require('./tdd-test-data');
 
 const ROOT = path.resolve(__dirname, '../..');
 const SOURCES = {
-  luar: ['Tamu-Luar/Destinations.js', 'Tamu-Luar/Code.js'],
-  fo: ['Tamu-FO/Destinations.js', 'Tamu-FO/Code.js'],
+  luar: ['Tamu-Luar/Destinations.js', 'Tamu-Luar/IntakeRules.js', 'Tamu-Luar/Code.js'],
+  fo: ['Tamu-FO/Destinations.js', 'Tamu-FO/IntakeRules.js', 'Tamu-FO/Code.js'],
   bundle: ['config-templates/Admin/PublicIntake.js.example']
 };
 

@@ -9,7 +9,7 @@ const { completeTldPayload, testDocument } = require('./tld-test-data');
 
 const ROOT = path.resolve(__dirname, '../..');
 const SOURCES = {
-  luar: ['Tamu-Luar/Destinations.js', 'Tamu-Luar/Code.js'],
+  luar: ['Tamu-Luar/Destinations.js', 'Tamu-Luar/IntakeRules.js', 'Tamu-Luar/Code.js'],
   bundle: ['config-templates/Admin/PublicIntake.js.example']
 };
 

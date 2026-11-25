@@ -39,6 +39,7 @@ node_modules/
 # Keep build tooling, not maintenance endpoints or live data receipts
 /maintenance/*
 !/maintenance/build-public.js
+!/maintenance/private-destinations.js
 !/maintenance/build-legacy-tdd.js
 !/maintenance/build-tailwind.js
 !/maintenance/tailwind/

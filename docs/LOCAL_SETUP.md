@@ -42,9 +42,9 @@ This creates local gitignored copies (if absent) for:
 node local-test/run-synthetic-tests.js
 ```
 
-Expected: **361/361 passed** (checked at `5c0c2da`, 2026-11-25).
+Expected: **366/366 passed** (checked on branch `rev/intake-logic-tracked`, 2026-11-25).
 
-Running the files directly, `node --test local-test/test/*.test.js`, uses your checkout as it is, without those swaps. With templates alone it passes **337/361**; the other **24** fail because they expect the injected fictional data, not because of a code fault:
+Running the files directly, `node --test local-test/test/*.test.js`, uses your checkout as it is, without those swaps. With templates alone it passes **342/366**; the other **24** fail because they expect the injected fictional data, not because of a code fault:
 
 | Group | Failing tests | What the test expects | What a templates-only checkout has |
 |---|---|---|---|
@@ -54,6 +54,16 @@ Running the files directly, `node --test local-test/test/*.test.js`, uses your c
 | Hierarchy order | `presensi-validation-hierarchy` (2), `rapat-internal-rev04` (2) | Synthetic leaders and employees in a known order | The real or empty lists above |
 
 Restoring the authorized data (Step 4) is expected to fix the employee-directory group. The leadership and hierarchy tests compare against the synthetic names (none of which match the tracked real leaders), so they are expected to keep failing under a direct `node --test` run even with real data. This has not been checked against the real private files.
+
+### Trim the private destinations files (one time)
+
+The intake logic (upload limits, validation and visit preparation) used to live inside the private `Tamu-Luar/Destinations.js` and `Tamu-FO/Destinations.js`. It is now tracked in `Tamu-Luar/IntakeRules.js` and `Tamu-FO/IntakeRules.js`. The private files hold only their data array: `const TLD_DESTINATIONS = [ ... ];` or `const TDD_DESTINATIONS = [ ... ];`.
+
+An older private copy still defines that logic, so `node maintenance/build-public.js` refuses to build and `node local-test/setup-local.js --check` exits 1. Both name each extra symbol and never print the file contents. To migrate a PC that has the real private files:
+
+1. In each of the two private files, keep the `const ..._DESTINATIONS = [ ... ];` array with its real rows, and delete everything else: the `TLD_MAX_UPLOAD_BYTES` / `TLD_MAX_UPLOAD_FILES` constants and every function. `config-templates/*/Destinations.js.example` shows the expected shape.
+2. Run `node local-test/setup-local.js --check`. It should list no "not data-only" problems.
+3. Build and test only as part of an approved release: `node maintenance/build-public.js <AdminCoreVersion>`, then `node local-test/run-synthetic-tests.js`.
 
 ## 4. Import Authorized `Master_Pegawai` CSV
 
@@ -83,7 +93,7 @@ node local-test/run-synthetic-tests.js
 node local-test/server.js
 ```
 
-The synthetic runner is the regression check, with or without the authorized data: expected **361/361** (Step 3). A direct `node --test local-test/test/*.test.js` run is only useful for seeing which tests depend on the injected fictional data; see the table in Step 3.
+The synthetic runner is the regression check, with or without the authorized data: expected **366/366** (Step 3). A direct `node --test local-test/test/*.test.js` run is only useful for seeing which tests depend on the injected fictional data; see the table in Step 3.
 
 ## 6. Additional Requirements Before Release / GAS Deployment
 
@@ -91,4 +101,4 @@ Local tests use placeholder values and mocks. Before an explicitly approved Goog
 
 1. Restore real PIC WhatsApp numbers in gitignored `Admin/VisitPicContacts.js`, `Tamu-FO/Destinations.js`, `Tamu-Luar/Destinations.js`, and `APPROVER_EMAIL` in `Admin/DeploymentConfig.js` (**never** deploy empty `EmployeeDirectory.js` placeholders to live Sheets).
 2. Configure GAS Script Properties in the target project (`APPROVER_EMAIL`, Fonnte token, `ADMIN_DEMO_MODE`, shared spreadsheet/folder IDs, public URLs).
-3. Authenticate `clasp` locally (`npx --yes @google/clasp login`) and regenerate `Public/` + `Admin/PublicIntake.js` via `node maintenance/build-public.js <AdminCoreVersion>` once approved.
+3. Authenticate `clasp` locally (`npx --yes @google/clasp login`) and regenerate `Public/` + `Admin/PublicIntake.js` via `node maintenance/build-public.js <AdminCoreVersion>` once approved. The build refuses private `Destinations.js` files that still hold intake logic; see "Trim the private destinations files" in Step 3.
