@@ -10,15 +10,15 @@ function normalizeNotulaName_(value) {
 function readNotulaEmployeeRows_(ss) {
   const sheet=ss&&typeof ss.getSheetByName==='function'?ss.getSheetByName('Master_Pegawai'):null;
   if(sheet&&typeof sheet.getLastRow==='function'&&sheet.getLastRow()>1){
-    const width=typeof sheet.getLastColumn==='function'?Math.max(5,Math.min(9,sheet.getLastColumn())):9;
+    const width=typeof sheet.getLastColumn==='function'?Math.max(5,Math.min(typeof MASTER_PEGAWAI_READ_WIDTH_!=='undefined'?MASTER_PEGAWAI_READ_WIDTH_:11,sheet.getLastColumn())):9;
     const rows=sheet.getRange(2,1,sheet.getLastRow()-1,width).getValues();
     const valid=rows
       .filter(r=>String(r[2]||'').trim())
-      .map(r=>({nip:cleanNotulaField_(r[1]),nama:String(r[2]||'').trim(),jabatan:cleanNotulaField_(r[3]),bidang:cleanNotulaField_(r[4]),pangkat:cleanNotulaField_(r[8])}));
+      .map(r=>Object.assign({nip:cleanNotulaField_(r[1]),nama:String(r[2]||'').trim(),jabatan:cleanNotulaField_(r[3]),bidang:cleanNotulaField_(r[4]),pangkat:cleanNotulaField_(r[8])},typeof readMasterLeaderFields_==='function'?readMasterLeaderFields_(r):{}));
     if(valid.length)return valid;
   }
   return typeof DISKUM_EMPLOYEE_DIRECTORY!=='undefined'&&Array.isArray(DISKUM_EMPLOYEE_DIRECTORY)
-    ?DISKUM_EMPLOYEE_DIRECTORY.map(e=>({nip:cleanNotulaField_(e.nip),nama:String(e.nama||'').trim(),jabatan:cleanNotulaField_(e.jabatan),bidang:cleanNotulaField_(e.bidang),pangkat:cleanNotulaField_(e.pangkat)}))
+    ?DISKUM_EMPLOYEE_DIRECTORY.map(e=>({nip:cleanNotulaField_(e.nip),nama:String(e.nama||'').trim(),jabatan:cleanNotulaField_(e.jabatan),bidang:cleanNotulaField_(e.bidang),pangkat:cleanNotulaField_(e.pangkat),pimpinan_no:e.pimpinan_no,pimpinan_unit:e.pimpinan_unit}))
     :[];
 }
 function findNotulaEmployeeMatch_(name,employees) {
@@ -28,10 +28,6 @@ function findNotulaEmployeeMatch_(name,employees) {
   const found=list.find(e=>normalizeNotulaName_(e.nama)===key);
   if(found){
     return {nama:found.nama,jabatan:cleanNotulaField_(found.jabatan),pangkat:cleanNotulaField_(found.pangkat),nip:cleanNotulaField_(found.nip)};
-  }
-  if(typeof OFFICIAL_LEADERSHIP_ORDER_!=='undefined'&&Array.isArray(OFFICIAL_LEADERSHIP_ORDER_)){
-    const leader=OFFICIAL_LEADERSHIP_ORDER_.find(e=>normalizeNotulaName_(e.nama)===key);
-    if(leader)return {nama:leader.nama,jabatan:'',pangkat:'',nip:cleanNotulaField_(leader.nip)};
   }
   return null;
 }
@@ -74,6 +70,7 @@ function buildAgendaNotulaContextData_(agenda,attendanceRecords,employees,visitN
     participants:participants,
     pimpinanMatch:pimpinanMatch,
     employees:directory,
+    pimpinan:typeof leadershipDirectoryFromEmployees_==='function'?leadershipDirectoryFromEmployees_(employees):[],
     notula:agenda.notula||null,
     visitNote:String(visitNote||'').trim()
   };

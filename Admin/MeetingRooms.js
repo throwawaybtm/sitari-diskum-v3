@@ -28,10 +28,17 @@ function readMeetingRoomOptions_(ss) {
 function getMeetingRoomOptions() {
   try {
     requireVisitAdmin_();
-    return {success:true,data:{ruangan:readCachedMeetingRoomOptions_(getSpreadsheet())}};
+    const ss=getSpreadsheet();
+    return {success:true,data:{ruangan:readCachedMeetingRoomOptions_(ss),pimpinan:readCachedLeadership_(ss)}};
   } catch (error) {
     return {success:false,error:error.message};
   }
+}
+/** Rapat Pimpinan from the same cached master read as getMasterData (no extra read on a cache hit). */
+function readCachedLeadership_(ss) {
+  if(typeof cachedMasterRead_!=='function'||typeof readMasterData_!=='function')return [];
+  const result=cachedMasterRead_(ss,'all',()=>readMasterData_(ss));
+  return result&&result.data&&Array.isArray(result.data.pimpinan)?result.data.pimpinan:[];
 }
 function readCachedMeetingRoomOptions_(ss) {
   const read=()=>readMeetingRoomOptions_(ss);

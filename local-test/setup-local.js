@@ -145,7 +145,10 @@ function importEmployeeCsv(csvFilePath) {
     jabatan: findCol(['jabatan'], 3),
     bidang: findCol(['bidang', 'unit'], 4),
     status: findCol(['status aktif', 'status'], 7),
-    pangkat: findCol(['pangkat golongan', 'pangkat', 'golongan'], 8)
+    pangkat: findCol(['pangkat golongan', 'pangkat', 'golongan'], 8),
+    // Optional Rapat Pimpinan columns (Master_Pegawai J/K); only by header, never by position.
+    pimpinanNo: findCol(['urutan pimpinan'], -1),
+    pimpinanUnit: findCol(['unit pimpinan'], -1)
   };
 
   if (col.nama >= headers.length || col.bidang >= headers.length) {
@@ -171,6 +174,11 @@ function importEmployeeCsv(csvFilePath) {
       bidang,
       pangkat: col.pangkat < r.length ? String(r[col.pangkat] || '').trim() : ''
     };
+    const pimpinanNo = col.pimpinanNo >= 0 ? Number(String(r[col.pimpinanNo] || '').trim()) : 0;
+    if (Number.isInteger(pimpinanNo) && pimpinanNo > 0) {
+      record.pimpinan_no = pimpinanNo;
+      record.pimpinan_unit = col.pimpinanUnit >= 0 ? String(r[col.pimpinanUnit] || '').trim() : '';
+    }
     jsEntries.push(record);
     jsonEntries.push({ ...record, id: String(rawId || numId) });
   });

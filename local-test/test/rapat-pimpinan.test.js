@@ -8,7 +8,7 @@ const vm = require('node:vm');
 const { once } = require('node:events');
 const { createLocalTestServer, renderAdminHtml } = require('../server');
 const { createFixtureStore } = require('../fixtures');
-const { people: syntheticPeople } = require('./synthetic-fixtures');
+const { people: syntheticPeople, employees: syntheticEmployees } = require('./synthetic-fixtures');
 
 const EXPECTED_RAPAT_PIMPINAN = [
   {
@@ -129,7 +129,16 @@ function createSelectElement() {
   };
 }
 
-function loadRapatPimpinanHarness() {
+// Leaders arrive the production way: Master_Pegawai rows -> cached master data -> getMeetingRoomOptions.
+function leadersFromMasterData(employees = syntheticEmployees) {
+  const store = createFixtureStore(new Date('2026-11-24T03:00:00Z'), { employees });
+  const room = store.responses.getMeetingRoomOptions;
+  assert.equal(room.success, true);
+  assert.deepEqual(store.responses.getMasterData.data.pimpinan, room.data.pimpinan);
+  return room.data.pimpinan;
+}
+
+function loadRapatPimpinanHarness({ leaders = leadersFromMasterData() } = {}) {
   const html = renderAdminHtml({ baseUrl: 'http://127.0.0.1:4173' });
   const selectBidang = createSelectElement();
   const selectRuangan = createSelectElement();
@@ -174,8 +183,9 @@ function loadRapatPimpinanHarness() {
   const moduleSource = fs.readFileSync(path.join(__dirname, '../../Admin/RapatPimpinan.html'), 'utf8');
   const scriptBody = moduleSource.match(/<script>([^]*?)<\/script>/)?.[1];
   assert.ok(scriptBody, 'Admin/RapatPimpinan.html should contain a <script> block');
-  assert.ok(html.includes('const RAPAT_PIMPINAN_DIRECTORY ='), 'rendered Admin HTML should include RapatPimpinan');
+  assert.ok(html.includes('let RAPAT_PIMPINAN_DIRECTORY ='), 'rendered Admin HTML should include RapatPimpinan');
   vm.runInContext(scriptBody, context);
+  context.setRapatPimpinanDirectory(leaders);
 
   for (const fnName of ['bukaModalRapat', 'tutupModalRapat']) {
     const fnMatch = html.match(new RegExp('    function ' + fnName + '\\([^]*?\\n    \\}'));
@@ -185,6 +195,37 @@ function loadRapatPimpinanHarness() {
 
   return { html, context, selectBidang, inputPimpinan, form, modal };
 }
+
+test('RapatPimpinan.html holds no leader identities; only organisation unit labels', () => {
+  const source = fs.readFileSync(path.join(__dirname, '../../Admin/RapatPimpinan.html'), 'utf8');
+  assert.match(source, /let RAPAT_PIMPINAN_DIRECTORY = Object\.freeze\(\[\]\);/);
+  assert.doesNotMatch(source, /\bnama\s*:\s*'/);
+  assert.doesNotMatch(source, /\bnip\s*:\s*'/);
+  assert.doesNotMatch(source, /\d{8} \d{6} [12] \d{3}/, 'no NIP-shaped values');
+});
+
+test('without leader columns the dropdown keeps the standard units and does not auto-fill', () => {
+  const legacyEmployees = syntheticEmployees.map(({ pimpinan_no, pimpinan_unit, ...rest }) => rest);
+  assert.deepEqual(leadersFromMasterData(legacyEmployees), []);
+  const { context, selectBidang, inputPimpinan } = loadRapatPimpinanHarness({ leaders: [] });
+  context.populateRapatBidangOptions();
+  assert.deepEqual(selectBidang.options.map(opt => opt.value), ['', ...EXPECTED_RAPAT_PIMPINAN.map(row => row.bidang)]);
+  selectBidang.value = 'Sekretariat';
+  assert.equal(context.applyRapatBidangAutoFill(), null);
+  assert.equal(inputPimpinan.value, '');
+});
+
+test('leaders loaded after the modal opens fill the selected unit without overwriting typed input', () => {
+  const { context, selectBidang, inputPimpinan } = loadRapatPimpinanHarness({ leaders: [] });
+  context.populateRapatBidangOptions();
+  selectBidang.value = 'Sekretariat';
+  context.setRapatPimpinanDirectory(leadersFromMasterData());
+  assert.equal(selectBidang.value, 'Sekretariat');
+  assert.equal(inputPimpinan.value, syntheticPeople.leader2.nama);
+  inputPimpinan.value = 'Pejabat Pengganti';
+  context.setRapatPimpinanDirectory(leadersFromMasterData());
+  assert.equal(inputPimpinan.value, 'Pejabat Pengganti');
+});
 
 test('Rapat reference data matches all 13 rows, exact values, and exact 1..13 order', () => {
   const { context } = loadRapatPimpinanHarness();

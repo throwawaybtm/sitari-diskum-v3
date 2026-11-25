@@ -31,11 +31,31 @@ const people = {
 };
 people.legacy80.id = '80';
 people.legacy81.id = '81';
-const leaders = Array.from({ length: 13 }, (_, index) => {
+// Leadership (Rapat Pimpinan) travels on the employee rows, as in Master_Pegawai columns
+// I "Pangkat / Golongan", J "Urutan_Pimpinan" and K "Unit_Pimpinan". Unit and rank labels are
+// public organisational labels; the people are the fabricated employees above.
+const leaderUnits = [
+  ['Dinas', 'Pembina Utama Muda - IV/c'], ['Sekretariat', 'Pembina Tingkat I - IV/b'],
+  ['Bidang Kewirausahaan', 'Pembina - IV/a'], ['Bidang Pemberdayaan dan Pelindungan Koperasi', 'Pembina - IV/a'],
+  ['Bidang Pengawasan Koperasi', 'Pembina - IV/a'], ['Bidang Pengembangan Usaha Mikro', 'Pembina - IV/a'],
+  ['UPTD Pengelolaan Dana Bergulir', 'Pembina - IV/a'], ['UPTD PLUT KUMKM', 'Penata Tingkat I - III/d'],
+  ['Subbagian Keuangan dan Aset', 'Penata Tingkat I - III/d'], ['Subbagian Perencanaan Program', 'Penata Tingkat I - III/d'],
+  ['Subbagian Umum dan Kepegawaian', 'Penata - III/c'],
+  ['Subbagian Tata Usaha UPTD Pengelolaan Dana Bergulir', 'Penata Tingkat I - III/d'],
+  ['Subbagian Tata Usaha UPTD PLUT KUMKM', 'Penata Muda Tingkat I - III/b']
+];
+const leaders = leaderUnits.map(([unit, pangkat], index) => {
   const key = `leader${index + 1}`;
   people[key] ||= employees[45 + index];
-  return { no: index + 1, nama: people[key].nama, nip: people[key].nip };
+  Object.assign(people[key], { pangkat, pimpinan_no: index + 1, pimpinan_unit: unit });
+  return { no: index + 1, nama: people[key].nama, nip: people[key].nip, pangkat_golongan: pangkat, bidang: unit };
 });
+/** A Master_Pegawai sheet row (A..K) for an employee, in the live column order. */
+function masterPegawaiRow(employee, index) {
+  return [employee.id || index + 1, employee.nip, employee.nama, employee.jabatan, employee.bidang,
+    employee.is_lo || 0, employee.workload_count || 0, employee.status_aktif || 'Aktif', employee.pangkat || '',
+    employee.pimpinan_no || '', employee.pimpinan_unit || ''];
+}
 const destinationLabels = [
   ['sekretariat-umpeg', 'Sekretariat (Umum dan Kepegawaian)'],
   ['sekretariat-perencanaan', 'Sekretariat (Program dan Perencanaan)'],
@@ -69,4 +89,4 @@ function configureNewDeployment_() {
 }
 `;
 
-module.exports = { employees, people, leaders, destinations, deploymentConfigSource };
+module.exports = { employees, people, leaders, destinations, deploymentConfigSource, masterPegawaiRow };

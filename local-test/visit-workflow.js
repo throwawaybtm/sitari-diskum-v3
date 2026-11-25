@@ -430,5 +430,6 @@ module.exports = {
   normalizeJakartaDateKey: model.normalizeJakartaDateKey_,
   isDisplayDateOnOrAfterCutoff: model.isDisplayDateOnOrAfterCutoff_,
   isVisitDisplayDateOnOrAfterCutoff: model.isVisitDisplayDateOnOrAfterCutoff_,
-  parseVisitCodeDateKey: model.parseVisitCodeDateKey_
+  parseVisitCodeDateKey: model.parseVisitCodeDateKey_,
+  leadershipDirectoryFromEmployees: employees => JSON.parse(JSON.stringify(model.leadershipDirectoryFromEmployees_(employees)))
 };
