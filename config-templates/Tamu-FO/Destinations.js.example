@@ -1,4 +1,4 @@
-/** Server-only directory. Keep this mapping in sync with TLD; parity is tested locally. */
+/** Server-only TDD directory data. Logic lives in tracked Tamu-FO/IntakeRules.js; keep this file to the array only (build-public.js and setup-local.js --check enforce it). Keep in sync with TLD; parity is tested locally. */
 const TDD_DESTINATIONS = [
   { id: 'sekretariat-umpeg', bidang: 'Sekretariat (Umum dan Kepegawaian)', pic: 'Novirianti, A.Md.', phone: 'PHONE_NUMBER_PLACEHOLDER' },
   { id: 'sekretariat-perencanaan', bidang: 'Sekretariat (Program dan Perencanaan)', pic: 'Ilhami Kurnia Putri, S.Kom.', phone: 'PHONE_NUMBER_PLACEHOLDER' },
@@ -10,33 +10,3 @@ const TDD_DESTINATIONS = [
   { id: 'plut-kumkm', bidang: 'UPTD PLUT KUMKM', pic: 'Hafidz Qodli Abdillah, S.E.', phone: 'PHONE_NUMBER_PLACEHOLDER' },
   { id: 'dana-bergulir', bidang: 'UPTD Pengelolaan Dana Bergulir', pic: 'Intan Permata Sari, S.E.', phone: 'PHONE_NUMBER_PLACEHOLDER' }
 ];
-
-function getTddPublicDestinations_() {
-  return TDD_DESTINATIONS.map(item => ({ bidang: item.bidang, pic: item.pic }));
-}
-
-function prepareTddVisit_(payload) {
-  const fields = {
-    ketua_nama: 'Nama ketua rombongan',
-    pengikut_list: 'Daftar anggota rombongan',
-    narahubung_hp: 'WhatsApp narahubung',
-    keperluan: 'Agenda'
-  };
-  Object.keys(fields).forEach(field => {
-    if (!payload || !String(payload[field] || '').trim()) throw new Error(fields[field] + ' wajib diisi.');
-  });
-  if (!Number.isInteger(Number(payload.jumlah_orang)) || Number(payload.jumlah_orang) < 1) {
-    throw new Error('Total orang harus berupa bilangan bulat minimal 1.');
-  }
-  const requested = Array.isArray(payload.tujuan_bidang) ? payload.tujuan_bidang : [payload.tujuan_bidang];
-  const names = [...new Set(requested)];
-  if (!names.length || names.some(name => !TDD_DESTINATIONS.some(item => item.bidang === name))) {
-    throw new Error('Pilih minimal satu Bidang Tujuan yang tersedia.');
-  }
-  const selected = TDD_DESTINATIONS.filter(item => names.indexOf(item.bidang) !== -1);
-  return {
-    bidang: selected.map(item => item.bidang).join('; '),
-    pic: selected.map(item => item.pic).join('; '),
-    picIds: selected.map(item => item.id).join('; ')
-  };
-}

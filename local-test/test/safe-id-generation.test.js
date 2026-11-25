@@ -126,6 +126,7 @@ function loadApi(kind, env) {
   }
   const directoryPath = kind === 'fo' ? 'Tamu-FO/Destinations.js' : 'Tamu-Luar/Destinations.js';
   vm.runInContext(fs.readFileSync(path.join(ROOT, directoryPath), 'utf8'), context);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, directoryPath.replace('Destinations.js', 'IntakeRules.js')), 'utf8'), context);
   vm.runInContext(readSource(kind), context);
   context.getSharedSpreadsheet_ = () => env.spreadsheet;
   context.saveBase64ToDrive_ = () => 'https://example.invalid/document';

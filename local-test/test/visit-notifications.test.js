@@ -215,10 +215,12 @@ test('PIC directory configs stay in parity across Admin, Tamu-FO, Tamu-Luar, and
 
   const foCtx = vm.createContext({});
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'Tamu-FO/Destinations.js'), 'utf8'), foCtx);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'Tamu-FO/IntakeRules.js'), 'utf8'), foCtx);
   const foList = clone(vm.runInContext('TDD_DESTINATIONS', foCtx));
 
   const luarCtx = vm.createContext({});
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'Tamu-Luar/Destinations.js'), 'utf8'), luarCtx);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'Tamu-Luar/IntakeRules.js'), 'utf8'), luarCtx);
   const luarList = clone(vm.runInContext('TLD_DESTINATIONS', luarCtx));
 
   const intakeCtx = vm.createContext({ getSpreadsheet: () => ({}) });

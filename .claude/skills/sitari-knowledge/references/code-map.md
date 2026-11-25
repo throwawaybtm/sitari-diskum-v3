@@ -28,7 +28,7 @@ App code is ~583 KB of .html (client JS in `<script>`) vs ~165 KB of .js. Files 
 ## Intake
 - `Tamu-Luar/Index.html` (TLD form; two required document slots, 5 MB, PDF/JPG/PNG/WebP/HEIC, base64 payload) and `Tamu-Luar/Code.js` (`registerTamuLuar`, `saveBase64ToDrive_`, `getSuratFolder_`, visit code, `nextRecordId_`).
 - `Tamu-FO/Index.html` (TDD form) and `Tamu-FO/Code.js` (`registerTamuFo`).
-- Validation helpers `validateTldUpload_`, `validateTldRequiredFields_`, `prepareTldVisit_` live in private `Destinations.js` / generated `PublicIntake.js`; templates in `config-templates/`.
+- Intake logic (`TLD_MAX_UPLOAD_*`, `validateTldUpload_`, `normalizeTldUploads_`, `validateTldRequiredFields_`, `prepareTldVisit_`, `prepareTddVisit_`, the public directory getters) is tracked in `Tamu-Luar/IntakeRules.js` and `Tamu-FO/IntakeRules.js`. The private `Destinations.js` files hold only their data array (build and `setup-local.js --check` enforce it); templates in `config-templates/`.
 
 ## Private, gitignored (never read; restore from the owner's secure channel)
 `Admin/DeploymentConfig.js`, `Admin/EmployeeDirectory.js`, `Admin/PublicIntake.js`, `Admin/VisitPicContacts.js`, `Tamu-FO/Destinations.js`, `Tamu-Luar/Destinations.js` (+ preview JSON and three private tests). Templates: `config-templates/**.example`. Check with `node local-test/setup-local.js --check`.

@@ -3,6 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const { findPrivateDestinationProblems, findStaleIntakeBundle } = require('../maintenance/private-destinations');
 
 const ROOT = path.resolve(__dirname, '..');
 const TEMPLATES_DIR = path.join(ROOT, 'config-templates');
@@ -220,13 +221,19 @@ function checkLocalSetup() {
     const list = JSON.parse(fs.readFileSync(EMPLOYEE_JSON_PATH, 'utf8'));
     if (Array.isArray(list)) jsonEmployees = list.length;
   }
+  // Private destinations files must be data-only; report extra symbol names, never contents.
+  const destinationProblems = findPrivateDestinationProblems(ROOT);
+  // The generated Admin/PublicIntake.js must carry every tracked intake rule (an old build broke the live form).
+  const staleIntakeNames = findStaleIntakeBundle(ROOT);
   return {
     totalRequired: mappings.length,
     presentCount: mappings.length - missing.length,
     missing,
     jsEmployees,
     jsonEmployees,
-    readyForFullSuite: missing.length === 0 && jsEmployees === 70 && jsonEmployees === 70
+    destinationProblems,
+    staleIntakeNames,
+    readyForFullSuite: missing.length === 0 && jsEmployees === 70 && jsonEmployees === 70 && destinationProblems.length === 0 && staleIntakeNames.length === 0
   };
 }
 
@@ -276,9 +283,16 @@ if (require.main === module) {
         `Setup check: ${status.presentCount}/${status.totalRequired} gitignored files present; ` +
           `EmployeeDirectory=${status.jsEmployees}, preview JSON=${status.jsonEmployees}.`
       );
+      if (status.destinationProblems.length) {
+        console.log('Private destinations files are not data-only (trim them to the data array; see docs/LOCAL_SETUP.md):');
+        status.destinationProblems.forEach(problem => console.log('  - ' + problem.message));
+      }
+      if (status.staleIntakeNames.length) {
+        console.log('Admin/PublicIntake.js is an old build; it lacks: ' + status.staleIntakeNames.join(', ') + '. Rebuild it with node maintenance/build-public.js <AdminCoreVersion> as part of an approved release.');
+      }
       if (status.missing.length) {
         console.log('Missing files:', status.missing.join(', '));
-      } else if (!status.readyForFullSuite) {
+      } else if (!status.readyForFullSuite && !status.destinationProblems.length && !status.staleIntakeNames.length) {
         console.log('Note: Import the authorized 70-record Master_Pegawai CSV for full employee-import & hierarchy test parity.');
       }
       if (opts.check && !status.readyForFullSuite) process.exit(1);
