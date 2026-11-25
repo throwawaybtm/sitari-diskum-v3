@@ -3,7 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const { findPrivateDestinationProblems } = require('../maintenance/private-destinations');
+const { findPrivateDestinationProblems, findStaleIntakeBundle } = require('../maintenance/private-destinations');
 
 const ROOT = path.resolve(__dirname, '..');
 const TEMPLATES_DIR = path.join(ROOT, 'config-templates');
@@ -215,6 +215,8 @@ function checkLocalSetup() {
   }
   // Private destinations files must be data-only; report extra symbol names, never contents.
   const destinationProblems = findPrivateDestinationProblems(ROOT);
+  // The generated Admin/PublicIntake.js must carry every tracked intake rule (an old build broke the live form).
+  const staleIntakeNames = findStaleIntakeBundle(ROOT);
   return {
     totalRequired: mappings.length,
     presentCount: mappings.length - missing.length,
@@ -222,7 +224,8 @@ function checkLocalSetup() {
     jsEmployees,
     jsonEmployees,
     destinationProblems,
-    readyForFullSuite: missing.length === 0 && jsEmployees === 70 && jsonEmployees === 70 && destinationProblems.length === 0
+    staleIntakeNames,
+    readyForFullSuite: missing.length === 0 && jsEmployees === 70 && jsonEmployees === 70 && destinationProblems.length === 0 && staleIntakeNames.length === 0
   };
 }
 
@@ -276,9 +279,12 @@ if (require.main === module) {
         console.log('Private destinations files are not data-only (trim them to the data array; see docs/LOCAL_SETUP.md):');
         status.destinationProblems.forEach(problem => console.log('  - ' + problem.message));
       }
+      if (status.staleIntakeNames.length) {
+        console.log('Admin/PublicIntake.js is an old build; it lacks: ' + status.staleIntakeNames.join(', ') + '. Rebuild it with node maintenance/build-public.js <AdminCoreVersion> as part of an approved release.');
+      }
       if (status.missing.length) {
         console.log('Missing files:', status.missing.join(', '));
-      } else if (!status.readyForFullSuite && !status.destinationProblems.length) {
+      } else if (!status.readyForFullSuite && !status.destinationProblems.length && !status.staleIntakeNames.length) {
         console.log('Note: Import the authorized 70-record Master_Pegawai CSV for full employee-import & hierarchy test parity.');
       }
       if (opts.check && !status.readyForFullSuite) process.exit(1);

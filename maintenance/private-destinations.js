@@ -44,6 +44,22 @@ function matchBracket(masked, start) {
   return -1;
 }
 
+/** Names of top-level declarations in already-masked source (locals inside braces are skipped). */
+function topLevelDeclarations(masked) {
+  const depthAt = [];
+  let depth = 0;
+  for (let i = 0; i < masked.length; i++) {
+    depthAt[i] = depth;
+    if (masked[i] === '{') depth++;
+    else if (masked[i] === '}') depth = Math.max(0, depth - 1);
+  }
+  const names = [];
+  const declRe = /\b(?:const|let|var|function\*?|class|async\s+function)\s+([A-Za-z_$][\w$]*)/g;
+  let m;
+  while ((m = declRe.exec(masked))) if (depthAt[m.index] === 0 && !names.includes(m[1])) names.push(m[1]);
+  return names;
+}
+
 /**
  * Inspects one private destinations source. Returns { hasData, extras, otherCode }:
  * hasData   - the `const SYMBOL = [ ... ];` declaration exists
@@ -55,28 +71,21 @@ function inspectDestinationsSource(source, symbol) {
   const decl = new RegExp('\\b(?:const|let|var)\\s+' + symbol + '\\s*=\\s*\\[');
   const match = decl.exec(masked);
   let rest = masked;
+  let dataBody = '';
   if (match) {
     const open = match.index + match[0].length - 1;
     const close = matchBracket(masked, open);
     if (close > 0) {
+      dataBody = masked.slice(open + 1, close - 1);
       let end = close;
       while (end < masked.length && /[\s;]/.test(masked[end])) end++;
       rest = masked.slice(0, match.index) + ' '.repeat(end - match.index) + masked.slice(end);
     }
   }
-  // Brace depth at each offset, so only top-level declarations are named (not locals inside functions).
-  const depthAt = [];
-  let depth = 0;
-  for (let i = 0; i < rest.length; i++) {
-    depthAt[i] = depth;
-    if (rest[i] === '{') depth++;
-    else if (rest[i] === '}') depth = Math.max(0, depth - 1);
-  }
-  const extras = [];
-  const declRe = /\b(?:const|let|var|function\*?|class|async\s+function)\s+([A-Za-z_$][\w$]*)/g;
-  let m;
-  while ((m = declRe.exec(rest))) if (depthAt[m.index] === 0 && !extras.includes(m[1])) extras.push(m[1]);
-  const otherCode = !extras.length && rest.replace(/[\s;]/g, '').length > 0;
+  const extras = topLevelDeclarations(rest);
+  // Code hidden inside the array (an IIFE, an arrow function, a call) is not data.
+  const codeInData = Boolean(dataBody) && /\bfunction\b|=>|\(/.test(dataBody);
+  const otherCode = codeInData || (!extras.length && rest.replace(/[\s;]/g, '').length > 0);
   return { hasData: Boolean(match), extras, otherCode };
 }
 
@@ -89,9 +98,29 @@ function findPrivateDestinationProblems(root) {
     const result = inspectDestinationsSource(fs.readFileSync(full, 'utf8'), symbol);
     if (!result.hasData) problems.push({ file, symbol, message: `${file} does not declare ${symbol}.` });
     if (result.extras.length) problems.push({ file, symbol, extras: result.extras, message: `${file} defines ${result.extras.join(', ')} besides ${symbol}.` });
-    else if (result.otherCode) problems.push({ file, symbol, message: `${file} contains code besides ${symbol}.` });
+    if (result.otherCode) problems.push({ file, symbol, message: `${file} contains code besides ${symbol}.` });
   }
   return problems;
+}
+
+const INTAKE_RULE_FILES = Object.freeze(['Tamu-Luar/IntakeRules.js', 'Tamu-FO/IntakeRules.js']);
+const INTAKE_BUNDLE_FILE = 'Admin/PublicIntake.js';
+
+/**
+ * The generated, gitignored Admin/PublicIntake.js is what the Admin library actually runs. Returns the
+ * names declared in the tracked IntakeRules.js files that this bundle lacks (an old build), or [] when
+ * it is current or absent. Names only, never contents.
+ */
+function findStaleIntakeBundle(root) {
+  const bundlePath = path.join(root, INTAKE_BUNDLE_FILE);
+  if (!fs.existsSync(bundlePath)) return [];
+  const bundle = maskCommentsAndStrings(fs.readFileSync(bundlePath, 'utf8'));
+  const required = [];
+  for (const rel of INTAKE_RULE_FILES) {
+    const full = path.join(root, rel);
+    if (fs.existsSync(full)) required.push(...topLevelDeclarations(maskCommentsAndStrings(fs.readFileSync(full, 'utf8'))));
+  }
+  return required.filter(name => !new RegExp('\\b(?:const|let|var|function)\\s+' + name.replace(/\$/g, '\\$') + '\\b').test(bundle));
 }
 
 /** Throws a clear, content-free error when a private destinations file is not data-only. */
@@ -105,4 +134,4 @@ function assertDataOnlyDestinations(root) {
   ].join('\n'));
 }
 
-module.exports = { PRIVATE_DESTINATION_FILES, inspectDestinationsSource, findPrivateDestinationProblems, assertDataOnlyDestinations };
+module.exports = { PRIVATE_DESTINATION_FILES, INTAKE_BUNDLE_FILE, inspectDestinationsSource, findPrivateDestinationProblems, findStaleIntakeBundle, assertDataOnlyDestinations };

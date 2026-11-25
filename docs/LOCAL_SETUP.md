@@ -42,9 +42,9 @@ This creates local gitignored copies (if absent) for:
 node local-test/run-synthetic-tests.js
 ```
 
-Expected: **366/366 passed** (checked on branch `rev/intake-logic-tracked`, 2026-11-25).
+Expected: **368/368 passed** (checked on branch `rev/intake-logic-tracked`, 2026-11-25).
 
-Running the files directly, `node --test local-test/test/*.test.js`, uses your checkout as it is, without those swaps. With templates alone it passes **342/366**; the other **24** fail because they expect the injected fictional data, not because of a code fault:
+Running the files directly, `node --test local-test/test/*.test.js`, uses your checkout as it is, without those swaps. With templates alone it passes **344/368**; the other **24** fail because they expect the injected fictional data, not because of a code fault:
 
 | Group | Failing tests | What the test expects | What a templates-only checkout has |
 |---|---|---|---|
@@ -62,7 +62,7 @@ The intake logic (upload limits, validation and visit preparation) used to live 
 An older private copy still defines that logic, so `node maintenance/build-public.js` refuses to build and `node local-test/setup-local.js --check` exits 1. Both name each extra symbol and never print the file contents. To migrate a PC that has the real private files:
 
 1. In each of the two private files, keep the `const ..._DESTINATIONS = [ ... ];` array with its real rows, and delete everything else: the `TLD_MAX_UPLOAD_BYTES` / `TLD_MAX_UPLOAD_FILES` constants and every function. `config-templates/*/Destinations.js.example` shows the expected shape.
-2. Run `node local-test/setup-local.js --check`. It should list no "not data-only" problems.
+2. Run `node local-test/setup-local.js --check`. It should list no "not data-only" problems. If it also reports `Admin/PublicIntake.js is an old build`, naming the intake rules that file lacks, the generated bundle predates the tracked rules: pushing Admin from it would break the live forms again, so the build in step 3 must come first.
 3. Build and test only as part of an approved release: `node maintenance/build-public.js <AdminCoreVersion>`, then `node local-test/run-synthetic-tests.js`.
 
 ## 4. Import Authorized `Master_Pegawai` CSV
@@ -93,7 +93,7 @@ node local-test/run-synthetic-tests.js
 node local-test/server.js
 ```
 
-The synthetic runner is the regression check, with or without the authorized data: expected **366/366** (Step 3). A direct `node --test local-test/test/*.test.js` run is only useful for seeing which tests depend on the injected fictional data; see the table in Step 3.
+The synthetic runner is the regression check, with or without the authorized data: expected **368/368** (Step 3). A direct `node --test local-test/test/*.test.js` run is only useful for seeing which tests depend on the injected fictional data; see the table in Step 3.
 
 ## 6. Additional Requirements Before Release / GAS Deployment
 

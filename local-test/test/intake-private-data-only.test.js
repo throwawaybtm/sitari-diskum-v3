@@ -11,7 +11,7 @@ const os = require('node:os');
 const path = require('node:path');
 const vm = require('node:vm');
 const { buildPublic } = require('../../maintenance/build-public');
-const { inspectDestinationsSource, findPrivateDestinationProblems, assertDataOnlyDestinations } = require('../../maintenance/private-destinations');
+const { INTAKE_BUNDLE_FILE, inspectDestinationsSource, findPrivateDestinationProblems, findStaleIntakeBundle, assertDataOnlyDestinations } = require('../../maintenance/private-destinations');
 const { destinations } = require('./synthetic-fixtures');
 const { completeTldPayload } = require('./tld-test-data');
 const { completeTddPayload } = require('./tdd-test-data');
@@ -149,4 +149,26 @@ test('tracked config templates are data-only and pass the same check the build u
   }
   assert.deepEqual(findPrivateDestinationProblems(dir), []);
   assert.doesNotThrow(() => assertDataOnlyDestinations(dir));
+});
+
+test('inspection rejects code hidden inside the data array', () => {
+  for (const body of ["(function () { globalThis.prepareTldVisit_ = () => 1; })()", "...(() => [])()", "{ id: 'a', pic: String(1) }"]) {
+    assert.equal(inspectDestinationsSource(`const TLD_DESTINATIONS = [${body}];`, 'TLD_DESTINATIONS').otherCode, true, body);
+  }
+  const dir = sourceRoot({ tld: 'const TLD_DESTINATIONS = [(function () { return {}; })()];\n' });
+  assert.throws(() => assertDataOnlyDestinations(dir), /Tamu-Luar\/Destinations\.js contains code besides TLD_DESTINATIONS/);
+});
+
+test('setup check flags a generated Admin/PublicIntake.js built before the tracked intake rules', () => {
+  const dir = sourceRoot();
+  const current = build(dir);
+  fs.mkdirSync(path.join(dir, 'Admin'), { recursive: true });
+  fs.writeFileSync(path.join(dir, INTAKE_BUNDLE_FILE), current);
+  assert.deepEqual(findStaleIntakeBundle(dir), [], 'a fresh build is current');
+  // The incident: an old bundle missing the upload constant and normaliser.
+  const old = current.replace(/\bconst TLD_MAX_UPLOAD_BYTES\b/, 'const OLD_LIMIT').replace(/\bfunction normalizeTldUploads_\b/, 'function oldNormalize');
+  fs.writeFileSync(path.join(dir, INTAKE_BUNDLE_FILE), old);
+  assert.deepEqual(findStaleIntakeBundle(dir), ['TLD_MAX_UPLOAD_BYTES', 'normalizeTldUploads_']);
+  fs.rmSync(path.join(dir, INTAKE_BUNDLE_FILE));
+  assert.deepEqual(findStaleIntakeBundle(dir), [], 'no bundle, nothing to report');
 });
