@@ -257,6 +257,21 @@ function appendMeetingRow_(sheet,row) {
   sheet.getRange(sheet.getLastRow()+1,6,1,3).setNumberFormat('@');
   sheet.appendRow(row);
 }
+/**
+ * Neutralise spreadsheet formula injection for free text typed by anonymous visitors.
+ * A string whose first non-blank character is = + - or @ gets a leading apostrophe so Sheets stores literal text.
+ * Apps Script treats the leading ' like the user-typed text prefix and getValues returns the text without it;
+ * confirm this once in the live smoke test. Non-string values (numbers, dates, IDs) pass through unchanged.
+ */
+function guardSheetText_(value) {
+  if (typeof value !== 'string') return value;
+  return /^[\s ﻿]*[=+\-@]/.test(value) ? "'" + value : value;
+}
+/** Phone cells are text-formatted; plain phone-like numbers (also +62...) stay untouched, anything else is guarded. */
+function guardSheetPhone_(value) {
+  const text = String(value || '').trim();
+  return /^\+?[0-9\s().-]*$/.test(text) ? text : guardSheetText_(text);
+}
 /** Return max numeric ID in column A plus one so gaps, sorting, or deletions cannot reuse IDs. */
 function nextRecordId_(sheet) {
   const lastRow=sheet&&typeof sheet.getLastRow==='function'?sheet.getLastRow():0;
@@ -1263,13 +1278,13 @@ function savePresensiRapat_(p, source) {
 
   sheet.appendRow([
     nextId, p.rapat_id, meeting.judul_rapat, p.kategori_peserta,
-    p.nama, p.nip || '-', p.jabatan || '-', p.nama_opd || 'Diskum Batam', p.no_hp || '-', times.attendance,
+    guardSheetText_(p.nama), guardSheetText_(p.nip || '-'), guardSheetText_(p.jabatan || '-'), guardSheetText_(p.nama_opd || 'Diskum Batam'), guardSheetPhone_(p.no_hp || '-'), times.attendance,
     visitData?p.member_id:'',source==='Admin'?'Admin':source==='AdminEntry'?'AdminEntry':'QR',times.recorded
   ]);
   // appendRow ignores the Plain text format prepared above; rewrite the phone as text so a leading 0 survives.
   const phoneCell=sheet.getRange(sheet.getLastRow(),9);
   phoneCell.setNumberFormat('@');
-  phoneCell.setValue(String(p.no_hp||'-').trim());
+  phoneCell.setValue(guardSheetPhone_(p.no_hp||'-'));
 
   // Buku Tamu keeps the scheduled Jam_Kunjungan; the actual arrival lives in Data_Presensi.
   autoSortPresensi(ss);

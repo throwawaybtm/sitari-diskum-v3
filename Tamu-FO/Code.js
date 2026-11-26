@@ -129,6 +129,21 @@ function generateVisitCode_(sheet, prefix, dateValue) {
   return buildVisitCode_(prefix, dateValue, existingCodes);
 }
 
+/**
+ * Neutralise spreadsheet formula injection for free text typed by anonymous visitors.
+ * A string whose first non-blank character is = + - or @ gets a leading apostrophe so Sheets stores literal text.
+ * Apps Script treats the leading ' like the user-typed text prefix and getValues returns the text without it;
+ * confirm this once in the live smoke test. Non-string values (numbers, dates, IDs) pass through unchanged.
+ */
+function guardSheetText_(value) {
+  if (typeof value !== 'string') return value;
+  return /^[\s ﻿]*[=+\-@]/.test(value) ? "'" + value : value;
+}
+/** Phone cells are text-formatted; plain phone-like numbers (also +62...) stay untouched, anything else is guarded. */
+function guardSheetPhone_(value) {
+  const text = String(value || '').trim();
+  return /^\+?[0-9\s().-]*$/.test(text) ? text : guardSheetText_(text);
+}
 /** Return max numeric ID in column A plus one so gaps, sorting, or deletions cannot reuse IDs. */
 function nextRecordId_(sheet) {
   const lastRow = sheet && typeof sheet.getLastRow === 'function' ? sheet.getLastRow() : 0;
@@ -161,13 +176,13 @@ function registerTamuFo(payload) {
 
     sheetTamu.getRange(sheetTamu.getLastRow() + 1, 12, 1, 3).setNumberFormat('@');
     sheetTamu.appendRow([
-      nextId, kodeKunjungan, 'dalam_daerah_fo', payload.instansi || 'Perorangan', payload.alamat || '',
-      Number(payload.jumlah_orang), payload.ketua_nama, payload.pengikut_list || '',
-      destination.bidang, payload.keperluan, payload.ketua_nama, payload.narahubung_hp,
+      nextId, kodeKunjungan, 'dalam_daerah_fo', guardSheetText_(payload.instansi || 'Perorangan'), guardSheetText_(payload.alamat || ''),
+      Number(payload.jumlah_orang), guardSheetText_(payload.ketua_nama), guardSheetText_(payload.pengikut_list || ''),
+      destination.bidang, guardSheetText_(payload.keperluan), guardSheetText_(payload.ketua_nama), guardSheetPhone_(payload.narahubung_hp),
       today, nowHours, '', '', destination.picIds, destination.pic, 0, 'Diterima', timeNow
     ]);
     // appendRow ignores the Plain text format prepared above, so rewrite the WhatsApp cell as text to keep a leading 0.
-    sheetTamu.getRange(sheetTamu.getLastRow(), 12).setNumberFormat('@').setValue(String(payload.narahubung_hp || '').trim());
+    sheetTamu.getRange(sheetTamu.getLastRow(), 12).setNumberFormat('@').setValue(guardSheetPhone_(payload.narahubung_hp));
 
     sortTamu_(ss);
     return {

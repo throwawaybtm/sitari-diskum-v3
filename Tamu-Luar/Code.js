@@ -163,6 +163,21 @@ function includeOrganizationStructure_() {
   return HtmlService.createHtmlOutputFromFile('OrganizationStructure').getContent();
 }
 
+/**
+ * Neutralise spreadsheet formula injection for free text typed by anonymous visitors.
+ * A string whose first non-blank character is = + - or @ gets a leading apostrophe so Sheets stores literal text.
+ * Apps Script treats the leading ' like the user-typed text prefix and getValues returns the text without it;
+ * confirm this once in the live smoke test. Non-string values (numbers, dates, IDs) pass through unchanged.
+ */
+function guardSheetText_(value) {
+  if (typeof value !== 'string') return value;
+  return /^[\s ﻿]*[=+\-@]/.test(value) ? "'" + value : value;
+}
+/** Phone cells are text-formatted; plain phone-like numbers (also +62...) stay untouched, anything else is guarded. */
+function guardSheetPhone_(value) {
+  const text = String(value || '').trim();
+  return /^\+?[0-9\s().-]*$/.test(text) ? text : guardSheetText_(text);
+}
 /** Return max numeric ID in column A plus one so gaps, sorting, or deletions cannot reuse IDs. */
 function nextRecordId_(sheet) {
   const lastRow = sheet && typeof sheet.getLastRow === 'function' ? sheet.getLastRow() : 0;
@@ -207,21 +222,21 @@ function registerTamuLuar(payload) {
 
     sheetTamu.getRange(sheetTamu.getLastRow() + 1, 12, 1, 3).setNumberFormat('@');
     sheetTamu.appendRow([
-      nextId, kodeKunjungan, 'luar_daerah', payload.instansi, payload.alamat || '',
-      Number(payload.jumlah_orang) || 1, payload.ketua_nama, payload.pengikut_list || '',
-      destination.bidang, payload.keperluan, payload.narahubung_nama || payload.ketua_nama,
-      payload.narahubung_hp, dateValue, payload.jam_kunjungan || '09:00',
+      nextId, kodeKunjungan, 'luar_daerah', guardSheetText_(payload.instansi), guardSheetText_(payload.alamat || ''),
+      Number(payload.jumlah_orang) || 1, guardSheetText_(payload.ketua_nama), guardSheetText_(payload.pengikut_list || ''),
+      destination.bidang, guardSheetText_(payload.keperluan), guardSheetText_(payload.narahubung_nama || payload.ketua_nama),
+      guardSheetPhone_(payload.narahubung_hp), dateValue, payload.jam_kunjungan || '09:00',
       urlSuratKunjungan, urlSuratTugas, destination.picIds, destination.pic, isBawaSppd, 'Menunggu Konfirmasi', timeNow
     ]);
     // appendRow ignores the Plain text format prepared above, so rewrite the WhatsApp cell as text to keep a leading 0.
-    sheetTamu.getRange(sheetTamu.getLastRow(), 12).setNumberFormat('@').setValue(String(payload.narahubung_hp || '').trim());
+    sheetTamu.getRange(sheetTamu.getLastRow(), 12).setNumberFormat('@').setValue(guardSheetPhone_(payload.narahubung_hp));
 
     if (isBawaSppd) {
       const sheetSppd = ss.getSheetByName('Kendali_SPPD');
       if (sheetSppd) {
         const sppdId = nextRecordId_(sheetSppd);
         sheetSppd.appendRow([
-          sppdId, nextId, kodeKunjungan, payload.instansi, payload.ketua_nama,
+          sppdId, nextId, kodeKunjungan, guardSheetText_(payload.instansi), guardSheetText_(payload.ketua_nama),
           '', '', '', 'Belum Lengkap', 'Belum TTD', '-', '-', 'Belum TTD', '-', '-',
           'Pendaftaran tamu luar daerah. Menunggu pelaksanaan dan kelengkapan bukti.', timeNow
         ]);
